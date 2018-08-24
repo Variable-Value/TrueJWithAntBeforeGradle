@@ -1,3 +1,10 @@
+# Backup files
+*.bak
+
+# Text files currently clutter up the workspace
+*.txt
+!ReadMe_leancop.txt
+
 # Compiled class file
 *.class
 
@@ -6,6 +13,10 @@
 
 # BlueJ files
 *.ctxt
+
+# Eclipse files
+.classpath
+.project
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
