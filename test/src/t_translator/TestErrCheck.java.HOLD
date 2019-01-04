@@ -1,0 +1,727 @@
+/**
+ *
+ */
+package t_translator;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import org.antlr.runtime.RecognitionException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import t_translator.ErrCheck.ValueScope_scope;
+import t_translator.T2TreeParser.Lang;
+
+
+/**
+ * @author cowang
+ *
+ */
+public class TestErrCheck extends TTester {
+
+//private ANTLRStringStream input;
+//private TokenRewriteStream tokenStream;
+//private T2TreeLexer  lexer;
+// private T2TreeParser parser;
+//private CommonTreeNodeStream treeStream;
+//private ErrCheck checker;
+//private Tree tree;
+
+private void
+checkSemanticsFAILS(String msg) {
+  final String[][] expected = new String[][] {};
+  checkSemanticsFAILS(msg, expected);
+}
+
+private void
+checkSemanticsFAILS(String msg, String[][] expected) {
+  if (expected.length == 0) { // just looking for failure
+    if (checker.errors().length()==0) {   // no errors found
+      assertEquals(msg, "FAIL", "OK");
+    } else {      // expected error was not present
+      assertEquals(msg, "FAIL", "FAIL");
+    }
+  } else { // we are checking for content in each error line
+    final String checkerErrs = checker.errors().toString();
+    String[] errLines = checkerErrs.split("(?m)$");
+    System.err.println("expected.length == "+expected.length+" and errLines follow:");
+    for (String err : errLines) {
+      System.err.println("::"+err);
+    }
+    System.err.println("end of errLines");
+    int line;
+    for (line=0; line < expected.length && line < errLines.length; line++) {
+      for (int i = 0; i < expected[line].length; i++){
+        if ( ! errLines[line].contains(expected[line][i]) ) {
+          assertEquals(msg+": NO MATCH.", expected[line][i], errLines[line]);
+        }
+      }
+    }
+    for ( /* expected line without errLines */; line < expected.length /* therefore >= errLines.length */; line++) {
+      for (int i = 0; i < expected[line].length; i++){
+        assertEquals(msg+": ERROR NOT FOUND.", expected[line][i], "NO ERROR FOUND");
+      }
+    }
+    for ( /* errLine without expected line */; line < errLines.length /* therefore >= expected.length */; line++) {
+      if (errLines[line].length()>2) {
+        assertEquals(msg+": UNEXPECTED ERROR FOUND.", "END OF ERROR MSGS", errLines[line]);
+      }
+    }
+  }
+}
+
+/**
+ * @throws java.lang.Exception
+ */
+@Before
+public void setUp() throws Exception {
+}
+
+/**
+ * @throws java.lang.Exception
+ */
+@After
+public void tearDown() throws Exception {
+}
+
+
+@Test
+public void testValueNameStillAvailableInForContainerAfterObjectFunctionUpdate() throws RecognitionException {
+  parser = prepare
+  ( "public class BadIdea {"
+  , ""
+  , "private static List<Integer> ints = new ArrayList<Integer>();"
+  , ""
+  , "public static void fillList(List<Integer> list') {"
+  , ""  // TODO: forall should not accept i, should require 'i or i'
+  , ""  // TODO: should not allow 'list if using i'
+  , "  for (Integer i' : list') {"
+  , "    ints'.add(i');"
+  , "  }"
+  , "}"
+  , ""
+  , "public static void printList() {"
+  , "  for (Integer i' : 'ints) {" // TODO: ditto
+  , "    System.out.println(i');"
+  , "  }"
+  , "}"
+  , "} // class BadIdea"
+  );
+  checker = buildSemanticCheckerIfOk(parser.normalClassDeclaration());
+  checker.normalClassDeclaration();
+  checkSemantics();
+}
+
+//TODO modification of class must go into the signature of each public method
+@Test 
+public void testClassSignatureOfModifyingMethod() throws RecognitionException {
+  parser = prepare
+  ( "public class BadIdea {"
+  , "  static List<Integer> ints = new ArrayList<Integer>();"
+  , "  List<Integer> list' = new List<Integer>();"
+  , ""
+  , "  public static void printList() {"
+  , "    for (Integer i : 'list) {"
+  , "      'ints.add('i);"
+  , "    }"
+  , "  }"
+  , "}"
+  , ""
+  );
+  checker = buildSemanticCheckerIfOk(parser.normalClassDeclaration());
+  checker.normalClassDeclaration();
+  checkSemanticsFAILS(  "Forall requires loop variabe to be decorated"
+           ,inExpected( line("6:19", "forstatement failed predicate: {shouldBeDecoratedInTProcess($iterationID.text)}?")
+//                      , line("7:18", "primary failed predicate: {vnm.thisValueNameIsStillAvailable()}?") 
+                           // TODO get above err msg to happen (requires knowing that Collection.add() changes the collection
+                      )
+           );
+}  
+
+@Test
+public void testUndecoratedLoopVariable() throws RecognitionException {
+  parser = prepare( "public class BadIdea {"
+                  , "  static List<Integer> ints = new ArrayList<Integer>();"
+                  , "  List<Integer> list' = new List<Integer>();"
+                  , ""
+                  , "  public static void printList() {"
+                  , "    for (Integer i : 'list) {"
+                  , "      'ints.add('i);"
+                  , "    }"
+                  , "  }"
+                  , "}"
+                  );
+  checker = buildSemanticCheckerIfOk(parser.normalClassDeclaration());
+  checker.normalClassDeclaration();
+  checkSemanticsFAILS( "Forall requires loop variabe to be pre- or post-decorated"
+           , inExpected( line("6:19", "forstatement failed predicate: {shouldBeDecoratedInTProcess($iterationID.text)}?") 
+//                       ,line("6:26") 
+                       )
+           );
+}
+
+@Test
+public void testChangeToIterationVariable() throws RecognitionException {
+  parser = prepare("public class UpdateCollection {"
+                  ,"  static List<Integer> ints = new ArrayList<Integer>();"
+                  ,"  List<Integer> 'list = new List<Integer>();"
+                  ,""
+                  ,"  public static void printList() {"
+                  ,"    for (Integer 'i : 'list) {"
+                  ,"      'ints.add('i);" //TODO: ensure that no changes can be made to members of 'ints because they are aliases of members of list'
+                  ,"    }"
+                  ,"  }"
+                  ,"}"
+                  );
+  checker = buildSemanticCheckerIfOk(parser.normalClassDeclaration());
+  checker.normalClassDeclaration();
+  checkSemantics("Forall with iteration value that may be changed.");
+}
+
+
+//TODO changing members of collections changes (some part of) the collection and must be appropriately decorated
+//@Test
+//public void testImplicitChangeToFinalIterationValueOfCollection() throws RecognitionException {
+//  parser = prepare("public class testForallContainerUnchangeable {"
+//              ,"  static List<UpdateableInt> ints = new ArrayList<UpdateableInt>();"
+//                  ,"  List<UpdateableInt> list' = new List<UpdateableInt>();"
+//                  ,""
+//                  ,"  public static void printList() {"
+//                  ,"    for (UpdateableInt 'i : list') {"
+//                  ,"      i'.value = 'i.value+1;" // but i' is a member of list', so list' changes, but it cannot because list' is the old value. 
+//                  ,"      'ints.add(i');" 
+//                  ,"    }"
+//                  ,"  }"
+//                  ,"}"
+//                  );
+//  checker = checkParseResults(parser.normalClassDeclaration());
+//  checker.normalClassDeclaration();
+//  checkFAIL("Forall requires container to be changeable if iteration value is changeable."  //TODO: needs to be diff for immutable objects
+//           ,inExpected( line("6:33", "rule primary failed predicate: {vnm.theValueNameMayBeUpdated()}?")
+//                      , line("0:0", "mismatched tree node: UP expecting RBRACE")
+//                      )
+//           );
+//}
+
+//TODO: after this is working, require forall values to always be final so the iterated list cannot be updated via aliases (still allow add and delete)
+@Test
+public void testUpdateOfForallFinalValue() throws RecognitionException {
+  parser = prepare("public class BadIdea {"
+                  ,"  static List<Integer> ints = new ArrayList<Integer>();"
+                  ,"  List<Integer> list' = new List<Integer>();"
+                  ,""
+                  ,"  public static void printList() {"
+                  ,"    for (Integer i' : list') {"
+                  ,"      i'updated = i'+1;"
+                  ,"      'ints.add(i'updated);"
+                  ,"    }"
+                  ,"  }"
+                  ,"}"
+                  );
+  checker = buildSemanticCheckerIfOk(parser.normalClassDeclaration());
+  checker.normalClassDeclaration();
+  checkSemantics("Find Error.");
+//  checkFAIL("Cannot change value after the final value is used."
+//              ,inExpected( line("line 7:18", "rule primary failed predicate: {vnm.thisValueNameIsStillAvailable()}?")
+//              )
+//           );
+}
+
+//TODO: final value must be last one assigned for that variable
+//@Test
+//public void testUpdateOfFinalValue() throws RecognitionException {
+//  parser = prepare("public class valueError {"
+//                  ,"  int 'first = 2;"
+//                  ,"  int second' = 3;"
+//                  ,""
+//                  ,"  public int genError() {"
+//                  ,"    first' = 'first + second';"
+//                  ,"    second'next = first';"
+//                  ,"    return second'next;"
+//                  ,"  }"
+//                  ,"}"
+//                  );
+//  checker = checkParseResults(parser.normalClassDeclaration());
+//  checker.normalClassDeclaration();
+// // checkOK("Find Error.");
+//  checkFAIL("Cannot change value after the final value is used."
+//           ,inExpected( line("line 7:15", "rule primary failed predicate: {vnm.thisValueNameIsStillAvailable()}?") // need to fix msg
+//                      )
+//           );
+//}
+
+@Test
+public void testCreatorAsArgument() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+
+//System.err.println("START testCreatorAsArgument"); System.err.flush();
+  parser = prepare("package com.oreilly.tiger.ch01;"
+                  ,""
+                  ,"import java.util.Comparator;"
+                  ,"import java.util.PriorityQueue;"
+                  ,"import java.util.Queue;"
+                  ,""
+                  ,"public class PriorityQueueTester {"
+                  ,"  public static void main(String[] args') {"
+                  ,"    PriorityQueue<Integer> 'pq ="
+                  ,"      new PriorityQueue<Integer>(20,"
+                  ,"        new Comparator<Integer>() {"
+                  ,"          public int compare(Integer i', Integer j') {"
+                  ,"            int 'result = i'%2 - j'%2;"
+                  ,"            if ('result == 0)"
+                  ,"              result' = i'-j';"
+                  ,"            return result';"
+                  ,"          }"
+                  ,"        }"
+                  ,"      );"
+                  ,"  }"
+                  ,"}"
+                  );
+  parseResults = parser.compilationUnit();
+  checkParserASTOK("Parser produces expected tree"
+      ,indentedAST("package com . oreilly . tiger . ch01 ; "
+                  ,"import java . util . Comparator ; "
+                  ,"import java . util . PriorityQueue ; "
+                  ,"import java . util . Queue ; "
+                  ,""
+                  ,"(class PriorityQueueTester SAVING "
+                  ,"  { public static void main ( String [ ] args' ) "
+                  ,"    ({ "
+                  ,"      (VARDECLARATION PriorityQueue < Integer > 'pq) "
+                  ,"      (ASSIGNMENT 'pq = new PriorityQueue < Integer > "
+                  ,"        ( 20 , new Comparator < Integer > ( ) "
+                  ,"          { public int compare ( Integer i' , Integer j' ) "
+                  ,"            ({ "
+                  ,"               (VARDECLARATION int 'result) "
+                  ,"               (ASSIGNMENT 'result = i' % 2 - j' % 2) ; "
+                  ,"               if ( 'result == 0 ) "
+                  ,"                 (ASSIGNMENT result' = i' - j') ; "
+                  ,"                 return result' ; "
+                  ,"            }) "
+                  ,"          } "
+                  ,"        )"
+                  ,"      ) ; "
+                  ,"    }) "
+                  ,"  }"
+                  ,") <EOF>"
+                  )
+      , parseResults          
+      );
+  checker = buildSemanticCheckerIfOk(parser.compilationUnit());
+  checker.compilationUnit();
+  checkSemantics("Translate a class.");
+}
+
+//TODO: testArgumentPostDecoration
+@Test
+public void testArgumentPostDecoration() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+
+  parser = prepare("public class PriorityQueueTester {"
+                  ,"  public static void main(String[] args') {"
+                  ,"    PriorityQueue<Integer> 'pq ="
+                  ,"      new PriorityQueue<Integer>(20,"
+                  ,"        new Comparator<Integer>() {"
+                  ,"          public int compare(Integer 'i, Integer j') {"
+                  ,"            int 'result = 'i%2 - j'%2;"
+                  ,"            if ('result == 0)"
+                  ,"              result' = 'i-j';"
+                  ,"            return result';"
+                  ,"          }"
+                  ,"        }"
+                  ,"      );"
+                  ,"  }"
+                  ,"}"
+                  );
+  parseResults = parser.normalClassDeclaration();
+  checkParserASTOK("Parser produces expected tree"
+                  ,indentedAST("(class PriorityQueueTester SAVING "
+                              ,"  { public static void main ( String [ ] args' ) "
+                              ,"    ({ "
+                              ,"      (VARDECLARATION PriorityQueue < Integer > 'pq) "
+                              ,"      (ASSIGNMENT 'pq = new PriorityQueue < Integer > "
+                              ,"        ( 20 , new Comparator < Integer > ( ) "
+                              ,"          { public int compare ( Integer 'i , Integer j' ) "
+                              ,"            ({ "
+                              ,"               (VARDECLARATION int 'result) "
+                              ,"               (ASSIGNMENT 'result = 'i % 2 - j' % 2) ; "
+                              ,"               if ( 'result == 0 ) "
+                              ,"                 (ASSIGNMENT result' = 'i - j') ; "
+                              ,"                 return result' ; "
+                              ,"            }) "
+                              ,"          } "
+                              ,"        )"
+                              ,"      ) ; "
+                              ,"    }) "
+                              ,"  }"
+                              ,")"
+                              )
+                              , parseResults          
+                  );
+  checker = buildSemanticCheckerIfOk(parseResults);
+  // checker.DEBUGMSGS = true;
+  checker.normalClassDeclaration();
+  checkSemantics("Using predecorated variable in declaration.");
+}
+
+@Test public void testMissingVar() throws RecognitionException {
+  checker = buildSemanticCheckerIfOk(prepare("public class dummy {}").compilationUnit());
+  ValueScope_scope s = (ValueScope_scope)checker.ValueScope_stack.peek();
+
+  ErrCheck.ValueNameSymbol vnm = checker.createValNmSymbol("test'name", s);
+  assertTrue(vnm.theVariableIsAvailableForDefinitionInThisScope());
+  assertFalse(vnm.theLhsVariableNameIsInScope());
+  assertFalse(vnm.theLhsValueNameIsAvailableForDefinitionInThisScope());
+  assertFalse(vnm.thisValueNameHasBeenDefined());
+}
+
+@Test public void testFindsVarAndValInCurrentScope() throws RecognitionException {
+  final String valueNm = "test'name";
+  final String varNm   = "test";
+
+  // value nm is the current value
+  checker = buildSemanticCheckerIfOk(prepare("public class dummy {}").compilationUnit());
+  ValueScope_scope s = (ValueScope_scope)checker.ValueScope_stack.peek();
+  s.currentValueNames.put(varNm,valueNm);
+
+  ErrCheck.ValueNameSymbol vnm = checker.createValNmSymbol(valueNm, s);
+  assertEquals(valueNm, vnm.valueName);
+  assertFalse(vnm.theVariableIsAvailableForDefinitionInThisScope());
+  assertTrue(vnm.theLhsVariableNameIsInScope());
+  assertFalse(vnm.theLhsValueNameIsAvailableForDefinitionInThisScope());
+  assertTrue(vnm.thisValueNameHasBeenDefined());
+}
+
+@Test public void testFindsVarAndValInPreviousScope() throws RecognitionException {
+  final String valueNm = "test'name";
+  final String varNm   = "test";
+
+  // value nm is the current value
+  checker = buildSemanticCheckerIfOk(prepare("public class dummy {}").compilationUnit());
+  ValueScope_scope s1 = (ValueScope_scope)checker.ValueScope_stack.peek();
+  s1.currentValueNames.put(varNm,valueNm);
+
+  checker.ValueScope_stack.push(new ValueScope_scope());
+  Map<String,String> initCurrent = new TreeMap<String,String>();
+  ((ValueScope_scope)checker.ValueScope_stack.peek()).currentValueNames = initCurrent;
+  Set<String> initUsed = new TreeSet<String>();
+  ((ValueScope_scope)checker.ValueScope_stack.peek()).usedValueNames = initUsed;
+
+  ValueScope_scope sTop = (ValueScope_scope)checker.ValueScope_stack.peek();
+  sTop.currentValueNames.put("dummyVar","dummyVar'value");
+  sTop.parent = s1;
+
+
+  ErrCheck.ValueNameSymbol vnm = checker.createValNmSymbol(valueNm, sTop);
+  assertEquals(valueNm, vnm.valueName);
+  assertTrue(vnm.theVariableIsAvailableForDefinitionInThisScope());
+  assertTrue(vnm.theLhsVariableNameIsInScope());
+  assertFalse(vnm.theLhsValueNameIsAvailableForDefinitionInThisScope());
+  assertTrue(vnm.thisValueNameHasBeenDefined());
+}
+
+@Test public void testVarInPrevScopeWithValOverwritten() throws RecognitionException {
+  final String oldValueNm = "test'name1";
+  final String newValueNm = "test'name2";
+  final String varNm   = "test";
+
+  // value nm is the current value
+  checker = buildSemanticCheckerIfOk(prepare("public class dummy {}").compilationUnit());
+  ValueScope_scope s1 = (ValueScope_scope)checker.ValueScope_stack.peek();
+  s1.currentValueNames.put(varNm,newValueNm);
+  s1.usedValueNames.add(oldValueNm);
+
+  checker.ValueScope_stack.push(new ValueScope_scope());
+  Map<String,String> initCurrent = new TreeMap<String,String>();
+  ((ValueScope_scope)checker.ValueScope_stack.peek()).currentValueNames = initCurrent;
+  Set<String> initUsed = new TreeSet<String>();
+  ((ValueScope_scope)checker.ValueScope_stack.peek()).usedValueNames = initUsed;
+
+  ValueScope_scope sTop = (ValueScope_scope)checker.ValueScope_stack.peek();
+  sTop.currentValueNames.put("dummyVar","dummyVar'value");
+  sTop.parent = s1;
+
+
+  ErrCheck.ValueNameSymbol vnm = checker.createValNmSymbol(oldValueNm, sTop);
+  assertEquals(oldValueNm, vnm.valueName);
+  assertTrue(vnm.theVariableIsAvailableForDefinitionInThisScope());
+  assertTrue(vnm.theLhsVariableNameIsInScope());
+  assertFalse(vnm.theLhsValueNameIsAvailableForDefinitionInThisScope());
+  assertTrue(vnm.thisValueNameHasBeenDefined());
+}
+
+
+@Test
+public void testLogicValues() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+  parseResults = prepare("class TryOne { "
+                       ,"  void x() {"
+                       ,"    int 'i;"
+                       ,"    javalanguage (i') {"
+                       ,"      i = 4;"
+                       ,"    } // end java"
+                       ,"    conjecture .9 (i'=4);"
+                       ,"  } // end x()"
+                       ,"} // end class TryOne"
+                       ).normalClassDeclaration(); 
+  checkParserASTOK("Parser produces expected tree"
+      ,indentedAST("(class TryOne SAVING "
+                  ,"  { void x ( ) "
+                  ,"    ({ (VARDECLARATION int 'i) ; "
+                  ,"       (javalanguage javalanguage (( i' )) ({ i = 4 ; }) "
+                  ,"         (conjecture .9 (LOGIC i' = 4))"
+                  ,"       ) "
+                  ,"    }) "
+                  ,"  }"
+                  ,")"
+                  )
+      , parseResults          
+      );
+  checker = buildSemanticCheckerIfOk(parseResults);
+  checker.normalClassDeclaration();
+  checkSemantics("Values in Logic");
+}
+
+
+@Test
+public void testConstructorAssignToPredecoratedThis() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+
+  checker = buildSemanticCheckerIfOk(
+          prepare("class Point2D {"
+                  ,"  protected int x, y;"
+                  ,""
+                  ,"  public Point2D() {"
+                  ,"    this'.x=0;"
+                  ,"    'this.y=0;"
+                  ,"  }"
+                  ,"}"
+                  ).normalClassDeclaration());
+  checker.normalClassDeclaration();
+  checkSemanticsFAILS("Can't assign to predecorated this."
+           ,inExpected( line("line 6:9", "rule primary failed predicate: {vnm.theLhsValueNameIsAvailableForDefinitionInThisScope()}?")
+                      , line("line 6:11", "rule assignment failed predicate: {/* while assigning variable */ vnm.theLhsValueNameIsAvailableForDefinitionInThisScope()}?")
+                      )
+           );
+}
+
+@Test
+public void testConstructorAssignToThis() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+
+  checker = buildSemanticCheckerIfOk(
+                prepare("class Point2D {"
+                       ,"  protected int x, y;"
+                       ,""
+                       ,"  public Point2D() {"
+                       ,"    this'xIs0.x=0;"
+                       ,"    this'.y=0;"
+                       ,"  }"
+                       ,"}"
+                       ).normalClassDeclaration());
+  checker.normalClassDeclaration();
+  checkSemantics("Translate a class.");
+}
+
+/**
+ * Test method for {@link t_translator.ErrCheck#normalClassDeclaration()}.
+ * @throws RecognitionException
+ */
+@Test
+public void testNormalClassDeclaration() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+  System.err.println("START testNormalClassDeclaration"); System.err.flush();
+  checker = buildSemanticCheckerIfOk(
+                prepare("public class ArraysTester {"
+                        ,""
+                        ," private int[] ar;"
+                        ,""
+                        ," public ArraysTester(int numValues') {"
+                        ,"   ar'init = new int[numValues'];"
+                        ,""
+                        ,"   for (int 'i=0; 'i < ar'init.length; i'++) {"
+                        ,"     ar'['i] = (1000 - (300 + 'i));"  //TODO: reset variables to the value names they held at entry to for statement
+                        ,"   }"
+                        ," }"
+                        ,""
+                        ," public int[] get() {"                          // line 13
+                        ,"   return 'ar;"
+                        ," }"
+                        ,""
+                        ," public static void main(String[] args') {"
+                        ,"   ArraysTester tester' = new ArraysTester(50);"     // 18
+                        ,"   int[] 'myArray = tester'.get();"
+                        ," }"
+                        ,"}"                                                   // 21
+                        ).normalClassDeclaration());
+//  checker.DEBUGMSGS = true;
+  checker.normalClassDeclaration();
+  checkSemantics("Translate a class.");
+}
+
+@Test
+public void testForLoopVariantReset()  throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+  System.err.println("START testForLoopVariantReset"); System.err.flush();
+  final T2TreeParser preparedT = prepare(Lang.tProcess
+                                        ,"for (int 'i=0; 'i<20; i'++) {"
+                                        ,"  FakeObject 'pq= new FakeObject();"
+                                        ,"  int a' = 'i;"  //TODO: reset variables to the value names they held at entry to for statement
+                                        ,"  pq'.offer(20- ++i'incremented);"
+                                        ,"}"
+                                        );
+
+  preparedT.DEBUGMSGS = true;
+  checker = buildSemanticCheckerIfOk( preparedT.forstatement() );
+  checker.forstatement();
+  checkSemantics("For loop body resets to initialization");
+}
+
+@Test
+public void testPrePostOperatorsUseNewValueName()  throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+  System.err.println("START testPrePostOperatorsUseNewValueName"); System.err.flush();
+  final T2TreeParser preparedT = prepare(Lang.tProcess
+                                        ,"for (int 'i=0; 'i<20; 'i++) {"
+                                        ,"  FakeObject 'pq= new FakeObject();"
+                                        ,"  pq'.offer(20-'i);"
+                                        ,"}"
+                                        );
+
+  checker = buildSemanticCheckerIfOk( preparedT.forstatement() );
+  // final forstatement_return forstatementAsProcessed = checker.forstatement();
+  checker.forstatement();
+  checkSemanticsFAILS("Must use new value name for pre/post operators"
+           ,inExpected( line("line 1:24", "rule primary failed predicate: {vnm.theLhsValueNameIsAvailableForDefinitionInThisScope()}?" )
+                      )
+           );
+}
+
+@Test
+public void testReuseOfOldValueName() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+
+//  System.err.println("START reuseOfOldValueName");
+//  System.err.flush();
+  parser = prepare("public class OrderedPair {"
+                  ,"  private int first;"
+                  ,"  private int second;"
+                  ,""
+                  ,"  public static void swap() {"
+                  ,"    first' = 'second;"
+                  ,"    second' = 'first;"
+                  ,"  }"
+                  ,""
+                  ,"}"
+                  );
+//  parser.DEBUGMSGS = true;
+  checker = buildSemanticCheckerIfOk(parser.normalClassDeclaration());
+//  checker.DEBUGMSGS = true;
+  checker.normalClassDeclaration();
+  checkSemanticsFAILS("Can't use a value that has been overwritten."
+           ,inExpected( line("line 7:14", "rule primary failed predicate: {vnm.thisValueNameIsStillAvailable()")
+                      )
+           );
+}
+
+@Test
+public void testLocalDefinition() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+
+  System.err.println("START testLocalDefinition");
+  System.err.flush();
+  parser = prepare("public class PriorityQueueTester {"
+                  ,"  public static void main(String[] args') {"
+                  ,"    PriorityQueue<Integer> 'pq ="
+                  ,"      'PriorityQueue.exampleForInteger;"
+                  ,""
+                  ,"    // Fill up with data, in an odd order"
+                  ,"    for (int 'i=0; 'i<20; i'++) {"
+                  ,"      pq'.offer(20-'i);" //TODO: reset variables to the value names they held at entry to for statement
+                  ,"    }"
+                  ,"  }"
+                  ,""
+                  ,"}"
+                  );
+//  parser.DEBUGMSGS = true;
+  checker = buildSemanticCheckerIfOk(
+              parser.normalClassDeclaration());
+//  checker.DEBUGMSGS = true;
+  checker.normalClassDeclaration();
+  checkSemantics("Translate a class.");
+}
+
+@Test
+public void testUnnestedClassCreator() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+
+  System.err.println("START testUnnestedClassCreator");
+  checker = buildSemanticCheckerIfOk(
+                prepare("public class PriorityQueueTester {"
+                       ,"  public static void main(String[] args') {"
+                       ,"    PriorityQueue<Integer> 'pq ="
+                       ,"      new PriorityQueue<Integer>(20);"
+                       ,""
+                       ,"    // Fill up with data, in an odd order"
+                       ,"    for (int 'i=0; 'i<20; i'++) {"
+                       ,"      pq'.offer(20-'i);" //TODO: reset variables to the value names they held at entry to for statement
+                       ,"    }"
+                       ,"  }"
+                       ,""
+                       ,"}"
+                       ).normalClassDeclaration());
+//  checker.DEBUGMSGS = true;
+  checker.normalClassDeclaration();
+  checkSemantics("Translate a class.");
+}
+
+@Test
+public void testNestedClassCreator() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+
+  checker = buildSemanticCheckerIfOk(
+                prepare("public class PriorityQueueTester {"
+                       ,"  public static void main(String[] args') {"
+                       ,"    PriorityQueue<Integer> 'pq ="
+                       ,"      new PriorityQueue<Integer>(20,"
+                       ,"        new Comparator<Integer>() {"
+                       ,"          public int compare(Integer 'i, Integer 'j) {"
+                       ,"            int 'result = 'i%2 - 'j%2;"
+                       ,"            if ('result == 0)"
+                       ,"              result' = 'i-'j;"
+                       ,"            return result';"
+                       ,"          }"
+                       ,"        }"
+                       ,"      );"
+                       ,""
+                       ,"    // Fill up with data, in an odd order"
+                       ,"    for (int 'i=0; 'i<20; i'++) {"
+                       ,"      pq'.offer(20-'i);" //TODO: reset variables to the value names they held at entry to for statement
+                       ,"    }"
+                       ,"  }"
+                       ,""
+                       ,"}"
+                       ).normalClassDeclaration());
+//  checker.DEBUGMSGS = true;
+  checker.normalClassDeclaration();
+  checkSemantics("Translate a class.");
+}
+
+} // end class TestErrCheck

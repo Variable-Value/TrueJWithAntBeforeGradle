@@ -1,0 +1,127 @@
+package t_translator;
+
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.fail;
+import org.antlr.runtime.TokenRewriteStream;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
+public class TestStartT {
+
+StartT fixture;
+
+@BeforeClass
+public static void setUpBeforeClass() throws Exception {}
+
+@AfterClass
+public static void tearDownAfterClass() throws Exception {}
+
+@Before
+public void setUp() throws Exception {
+  fixture = new StartT();
+}
+
+@After
+public void tearDown() throws Exception {}
+
+
+// ******* UTILITY METHODS ******
+
+private String linesToString(String... textLines){
+  
+  StringBuilder result = new StringBuilder();
+  boolean firstLine = true; // so far
+  for (String line : textLines){
+    if (firstLine) {
+      firstLine = false;
+      result.append(line);
+    } else {
+      result.append("\n"+line);
+    }
+  }
+  return result.toString();
+}
+
+
+// ******** TESTS ********
+
+@Test
+public void testJavaCompile() {
+  fixture.parseSucceeded = true;
+  fixture.tokenStream = new TokenRewriteStream();
+  fixture.className = "TestTemp";
+  fixture.javaText = linesToString( "class TestTemp"
+      , "{"
+      , "  public static void main(String[] args)" 
+      , "  {"
+      , "    System.out.println(\"Running TestTemp\");"
+      , "  }"
+      , "}"
+  );
+  Assert.assertEquals("OK", fixture.javaCompile());
+  
+  fixture.tokenStream = new TokenRewriteStream();
+  fixture.className = "TestTemp";
+  fixture.javaText = linesToString( "class TestTemp"
+      , "{"
+      , "  public static void main(String[] args)" 
+      , "  {"
+      , "    System.out.printline(\"Running TestTemp\");"
+      , "  }"
+      , "}"
+  );
+  Assert.assertThat
+    (fixture.fixDisplay( fixture.javaCompile() )
+    , equalTo
+      (fixture.fixDisplay
+        (linesToString
+              ( "string:///FitNesse/test/TestTemp.java:5: cannot find symbol"
+              , "symbol  : method printline(java.lang.String)"
+              , "location: class java.io.PrintStream"
+              , "    System.out.printline(\"Running TestTemp\");"
+              , "              ^"
+              , "1 error"
+              , ""
+              )
+        )
+      )
+    );
+  
+}
+
+@Ignore("Not yet implemented") @Test
+public void testStartNewTProgram() {
+  fail("Not yet implemented");
+}
+
+@Ignore @Test
+public void testResultOfParse() {
+  fail("Not yet implemented");
+}
+
+@Ignore @Test
+public void testSemanticErrors() {
+  fail("Not yet implemented");
+}
+
+@Ignore @Test
+public void testJavaGeneration() {
+  fail("Not yet implemented");
+}
+
+@Ignore @Test
+public void testJavaOutput() {
+  fail("Not yet implemented");
+}
+
+@Ignore @Test
+public void testMain() {
+  fail("Not yet implemented");
+}
+
+}

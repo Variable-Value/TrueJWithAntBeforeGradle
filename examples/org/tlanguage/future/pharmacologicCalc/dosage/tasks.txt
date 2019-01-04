@@ -1,0 +1,32 @@
+Outstanding Tasks for examples of T programming
+        * means NEED TO DO
+        - means DONE
+
+- Check if it is Error or Exception that allows a message
+- rewrite for Only adding predicated Java
+- code Compound class
+- add tests
+* recode with SolvationPlan that takes a stock sol and a desired sol and gives 
+  stock vol needed, distilled water needed, and NaCl needed to make isotonic with blood
+  * first code test copying "phenylephrine hydrochloride results" test from Solution
+* recode Solution class for use with SolvationPlan
+* translate all classes to Java code
+    * all variables are blocking to ensure use of formulas in proofs
+    * all imports automatically allow access to the constants of the imported class
+    * constraints are checked to find SAT when true and not when false
+    * boolean is checked by SAT to find true example and false example 
+      within constraints
+    * Preconditions are checked for consistency, Pre -> Post is checked 
+      for consistency with constraints
+    * each fn and procedure is checked for correctness
+    *  = constraints are cascaded to all other linear components
+    * floats have a tolerance component that is only used in comparisons
+    * everytime there is an assigment to a component, all the constraints 
+      are checked/calculated
+      Of course underspecification is OK, the rest of the constraint is just 
+      skipped
+* translate all classes to Naked Objects
+* use Intervals for float
+* Add meas and count with dimensionality
+* allow powers of units (mass^2).per(mol), represent as prime integers?
+* code for Java with threads

@@ -1,0 +1,225 @@
+package t_translator;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import org.antlr.runtime.RecognitionException;
+import org.antlr.runtime.tree.CommonTree;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
+public class TestTTree2LogicAST extends TTester {
+
+
+@BeforeClass
+public static void 
+setUpBeforeClass() throws Exception {}
+
+@AfterClass
+public static void 
+tearDownAfterClass() throws Exception {}
+
+@Before
+public void 
+setUp() throws Exception {}
+
+@After
+public void 
+tearDown() throws Exception {}
+
+//////////  TESTS  /////////////////////
+
+@Ignore //TODO test for compilation unit rule
+@Test 
+public final void 
+testCompilationUnit() {
+  assertEquals("a", "b");
+  fail("Not yet implemented");
+}
+
+
+// @Ignore //TODO implement conversion of assignment to PREMISE
+@Test
+public final void 
+testAssignAndMeans() throws RecognitionException {
+  prepare( "public class OrderedPair {"
+         , "private int first;"
+         , "private int second;"
+         , ""
+         , "void swap() {"
+         , "  int temp' = 'first;"
+         , "  first' = 'second;"
+         , "  second' = temp';"
+         , "  means  (first' = 'second && second' = 'first);"
+         , "}"
+         , "} // end class OrderedPair"
+         );
+parseResults = parser.normalClassDeclaration();
+checkParserASTOK("Parser produces expected tree"
+                ,indentedAST("(class OrderedPair "
+                            ,"  (SAVING 'first 'second) "
+                            ,"  { private int first ; "
+                            ,"    private int second ; "
+                            ,"    void swap ( ) " 
+                            ,"      ({ int temp' = 'first ; " 
+                            ,"         (ASSIGNMENT first' = 'second) ; "
+                            ,"         (ASSIGNMENT second' = temp') ; "
+                            ,"         (means (LOGIC first' = 'second && second' = 'first)) "
+                            ,"      }) "
+                            ,"  }"                                                                   
+                            ,")"                                                                     
+                            )
+                , parseResults          
+                );
+checker = buildSemanticCheckerIfOk(parseResults);
+checker.normalClassDeclaration();
+javaMaker = buildJavaTranslatorIfOk(parseResults);
+checkJavaOK(javaMaker.normalClassDeclaration());    // modifies tokenStream from T to Java
+// tokenStream.deleteProgram(); // Not needed: only the Template was changed by javaMaker
+checkParserASTOK("Tree restored after checking and writing Java."
+    ,indentedAST("(class OrderedPair "
+        ,"  (SAVING 'first 'second) "
+        ,"  { private int first ; "
+        ,"    private int second ; "
+        ,"    void swap ( ) " 
+        ,"      ({ int temp' = 'first ; " 
+        ,"         (ASSIGNMENT first' = 'second) ; "
+        ,"         (ASSIGNMENT second' = temp') ; "
+        ,"         (means (LOGIC first' = 'second && second' = 'first)) "
+        ,"      }) "
+        ,"  }"                                                                   
+        ,")"                                                                     
+        )
+    , parseResults          
+    );
+System.out.println(tree.toStringTree()); // DEBUG
+logicASTMaker = buildLogicExtractorIfOK(parseResults);
+final boolean showTransformations = true;
+final boolean dontShowTransformations = ! showTransformations;
+tree = (CommonTree)logicASTMaker.downup(tree, showTransformations);
+System.out.println(tree.toStringTree()); // DEBUG
+//TODO generate Verification Conditions from AST
+assertLogicASTOK("Correctly transformed from T to logic AST"
+    ,indentedAST("(class OrderedPair "
+        ,"  (SAVING 'first 'second) "
+        ,"  { private int first ; "
+        ,"    private int second ; "
+        ,"    void swap ( ) " 
+        ,"      ({ (PREMISE temp' = 'first) " 
+        ,"         (PREMISE first' = 'second) "
+        ,"         (PREMISE second' = temp') "
+        ,"         (CONCLUSION first' = 'second && second' = 'first) "
+        ,"      }) "
+        ,"  }"                                                                   
+        ,")"                                                                     
+        )
+    , tree
+    );
+}
+
+
+@Test
+public final void
+testJavaLanguage() throws RecognitionException {
+  prepare( "class OrderedPair {                                                 "
+         , "  private int first;                                                "
+         , "  private int second;                                               "
+         , "                                                                    "
+         , "  // The constructor for the object                                 "
+         , "  OrderedPair(int item_1', int item_2') {                           "
+         , "    javalanguage {                                                  "
+         , "      first = item_1;                                               "
+         , "      second = item_2;                                              "
+         , "    }                                                               "
+         , "    conjecture .999 (first' = item_1' && second' =  item_2');       "
+         , "  }                                                                 "
+         , "} // end class OrderedPair                                          "
+         );
+  parseResults = parser.normalClassDeclaration();
+  checkParserASTOK("Parser produces expected tree"
+                  ,shapedAST("(class OrderedPair "," "
+                            ,"  (SAVING 'first 'second) " ," "
+                            ,"  { private int first ;" ," "
+                            ,"    private int second ;" , " "
+                            ,"    OrderedPair ( int item_1' , int item_2' ) {"," "
+                            ,"       (javalanguage javalanguage"," "
+                            ,"         ({ first = item_1 ;"," "
+                            ,"              second = item_2 ;"," "
+                            ,"          }"                                                           
+                            ,"         )"," "
+                            ,"         (conjecture .999 (LOGIC first' = item_1' && second' = item_2'))"  
+                            ,"       ) "," "
+                            ,"    }" ," "
+                            ,"  }"                                                                   
+                            ,")"                                                                     
+                            )
+                  , parseResults          
+                  );
+  checker = buildSemanticCheckerIfOk(parseResults);
+  checker.normalClassDeclaration();
+  javaMaker = buildJavaTranslatorIfOk(parseResults);
+  checkJavaOK(javaMaker.normalClassDeclaration());    // modifies tokenStream from T to Java
+  // tokenStream.deleteProgram(); // Not needed: only the Template was changed by javaMaker
+  checkParserASTOK("Tree restored after checking and writing Java."
+                  ,shapedAST("(class OrderedPair "                                                   , " "
+                            ,"  (SAVING 'first 'second) "                                            , " "
+                            ,"  { private int first ;"                                               , " "
+                            ,"    private int second ;"                                              , " "
+                            ,"    OrderedPair ( int item_1' , int item_2' ) {"                       , " "
+                            ,"       (javalanguage javalanguage"                                     , " "
+                            ,"         ({ first = item_1 ;"                                          , " "
+                            ,"            second = item_2 ;"                                       , " "
+                            ,"          }"                                                           
+                            ,"         )"                                                            , " "
+                            ,"         (conjecture .999 (LOGIC first' = item_1' && second' = item_2'))"  
+                            ,"       ) "                                                             , " "
+                            ,"    }"                                                                 , " "
+                            ,"  }"                                                                   
+                            ,")"                                                                     
+                            )
+                  , parseResults
+                  );
+  System.out.println(tree.toStringTree()); // DEBUG
+  logicASTMaker = buildLogicExtractorIfOK(parseResults);
+  final boolean showTransformations = true;
+  final boolean dontShowTransformations = ! showTransformations;
+  tree = (CommonTree)logicASTMaker.downup(tree, showTransformations);
+  System.out.println(tree.toStringTree()); // DEBUG
+  assertLogicASTOK("Correctly transformed from T to logic AST"
+      ,shapedAST("(class OrderedPair "                                                   , " "
+                ,"  (SAVING 'first 'second) "                                            , " "
+                ,"  { private int first ;"                                               , " "
+                ,"    private int second ;"                                              , " "
+                ,"    OrderedPair ( int item_1' , int item_2' ) {"                       , " "
+                ,"         (PREMISE .999 (LOGIC first' = item_1' && second' = item_2')) ", " "
+                ,"    }"                                                                 , " "
+                ,"  }"                                                                   
+                ,")"                                                                     
+                )
+      , tree
+      );
+
+// USE THIS IN THE TestLTree2Prolog.java   
+//  assertLogicTextOK("Correctly transformed code from T to logic text."
+//      , shapedText(" class OrderedPair {                                                 "
+//                  , "  private int first;                                                "
+//                  , "  private int second;                                               "
+//                  , "                                                                    "
+//                  , "  // The constructor for the object                                 "
+//                  , "  OrderedPair(int item_1', int item_2') {                           " 
+//                  , "    javalanguage {                                                  " // should be removed
+//                  , "      first = item_1;                                               " // "
+//                  , "      second = item_2;                                              " // "
+//                  , "    }                                                               " // "
+//                  , "    conjecture .999 (first' = item_1' && second' =  item_2');       " // LOGIC ?
+//                  , "  }                                                                 "
+//                  , "} // end class OrderedPair                                          "
+//                  )
+//      , logicResults
+//      );
+}
+
+} // end class TestTTree2LogicAST

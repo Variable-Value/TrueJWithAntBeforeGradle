@@ -1,0 +1,69 @@
+!3 Callback may be required when an object has a reference to an object that can change
+
+When an object has a reference to an object that might be changed outside the methods of the referring object, we must either prove that all changes leave the referring object constraints in a valid state or provide a callback to allow the referring object to adjust. If the change causes a change to the behavior of the referring object - that is, some method responds differently because of the change - then the callback must cascade.
+
+One category of object that does not require the above analyses is an "owned" object. When an object owns a contained object, then it has the only reference to that object and other objects can only access the owned object through methods of its owner. This means that the owned object must never be returned in a method and must never be assigned as the component-child of another object that is either returned or is a parameter of a method. All components of the owned object must be owned components, because otherwise, the behaviour of the owned object and it's owner might be changed.
+
+Another category of object that does not require callbacks is a object that "behaves as if it is owned". Another object may refer to this object, but may only invoke methods of it that leave the behavior of other methods unchanged. These other unchanged methods are the only ones that the owning object is allowed to use. I envision these behavour-invisible changes being for efficiency reasons, like sorting a list. However, one can also imagine a two-faced object that presents separate state to two "owners", either for reasons of implementation constraints or as a temporary step in a refactoring. A better name might be a "partitioned ownership" object. For the time being we will not address these partitioned ownership objects.
+
+If a class is marked owned in its definition, then it may only be used as an owned object in any class that contains it. This allows us to bypass certain implementation issues in the implementation of the owned object that are discussed in the next few paragraphs.
+
+When an unowned object changes, we need a way to ensure that the contained object is in a valid state. This is accomplished by having the implementation of every unowned object issue a callback to every one of its containing objects.
+
+For now I am assuming a new kind of method in every object that contains unowned methods. This method is specified as the callback method for a method in the contained object. It looks much like any other method but has a single call to 'contained-object'.method(parameter*) as one of the statements in its top level block. A containing object must have a callback method for every contained-object method which changes the state of the contained object - unless the contained object is marked as owned by the containing object. The parameters of the 'contained-object'.method() must be the parameters of the callback method so they can appear to be passed to the method. Treating the pre- and post-callback as a single method allows the prover to analyze the effect before and after the change to ensure accomplishment of the post-condition of the combined callback. We may need to check that there are no cycles that call a method of the containing class in the 'contained-object'.method().
+
+The implementation inserts into the contained object a list of every object that contains it, which the implementation uses to make a pre- and post-callback in every method that modifies state. Everything in the containing object callback method before the 'contained-object'.method() call is implemented as a separate pre-callback method, and everything after it is implemented as a post-callback method, though sytactically they are combined into a single method. As part of implementing the callback method as two separate methods, any local variables must be implemented as private class variables that are never referred to by any other method. 
+
+However, if the callback method is empty except for the call to the 'contained-object'.method(), then the implementation may be compiled away. And obviously, if the pre-portion does not contain any statements, then the pre-callback method may be compiled away - and similarly for the post-callback. But the code must exist in the containing class in order to invoke the prover and ensure that the containing class constraints are maintained by the contained-class method.
+
+
+!|t_translator.StartT|
+----
+!***** !3 OLD CODE TO USE AS TEMPLATE
+|start new T program|
+|program code lines|
+|{{{class OrderedPair {                                                 }}}|
+|{{{  private int first;                                                }}}|
+|{{{  private int second;                                               }}}|
+|{{{                                                                    }}}|
+|{{{  // The constructor for the object                                 }}}|
+|{{{  OrderedPair(int item_1', int item_2') {                           }}}|
+|{{{    first' = item_1';                                               }}}|
+|{{{    second' = item_2';                                              }}}|
+|{{{  }                                                                 }}}|
+|{{{                                                                    }}}|
+|{{{  void swap() {                                                     }}}|
+|{{{    first' = 'second;                                               }}}|
+|{{{    second' = 'first;                                               }}}|
+|{{{  }                                                                 }}}|
+|{{{} // end class OrderedPair                                          }}}|
+
+|check|result of parse|OK|
+
+!3 Template for generated code.
+We can translate to a simple form of Java, because the translator must check for the validity of the
+T code anyway.
+
+|Java output|
+|code lines|
+|{{{class OrderedPair {                                         }}}|
+|{{{  private int first;                                        }}}|
+|{{{  private int second;                                       }}}|
+|{{{                                                            }}}|
+|{{{  // The constructor for the object                         }}}|
+|{{{  OrderedPair(int item_1/*post*/, int item_2/*post*/) {     }}}|
+|{{{    first/*post*/ = item_1/*post*/;                         }}}|
+|{{{    second/*post*/ = item_2/*post*/;                        }}}|
+|{{{  }                                                         }}}|
+|{{{                                                            }}}|
+|{{{  void swap(bool keepThis) {                                }}}|
+|{{{    if (keepThis) {                                         }}}|
+|{{{      final OrderedPair t$pre$t_this = clone(this);         }}}|
+|{{{    }                                                       }}}|
+|{{{    final int t$pre$t_first = /*pre*/first;                 }}}|
+|{{{    first/*post*/ = /*pre*/second;                          }}}|
+|{{{    second/*post*/ = t$pre$t_first;                         }}}|
+|{{{  }                                                         }}}|
+|{{{} // end class OrderedPair                                  }}}|
+----
+**********!

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<properties>
+	<Edit/>
+	<Files/>
+	<Help/>
+	<Properties/>
+	<RecentChanges/>
+	<Refactor/>
+	<Search/>
+	<Suite/>
+	<Suites/>
+	<SymbolicLinks>
+		<DecoratedVariables>.FitNesse.ProjectPage.CompilerForT.DecoratedVariables</DecoratedVariables>
+		<NestedJavaAndTcodeGeneration>.FitNesse.ProjectPage.CompilerForT.NestedJavaAndTcodeGeneration</NestedJavaAndTcodeGeneration>
+	</SymbolicLinks>
+	<Versions/>
+	<WhereUsed/>
+	<saveId>1193234545701</saveId>
+	<symbolicLink>
+		<name>GeneratedJavaForNestedJavaAndT</name>
+		<path>.FitNesse.ProjectPage.CompilerForT.GeneratedJavaForNestedJavaAndT</path>
+	</symbolicLink>
+	<ticketId>4428253835532293559</ticketId>
+</properties>

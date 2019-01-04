@@ -1,0 +1,2120 @@
+/* ErrCheck.g -  Copyright (c) 2010 George S. Cowan
+
+ Check the AST from T2Tree.g for errors in the use of value decorators and generate Java code
+
+
+ Based on grammar by Terence Parr and Yang Jiang
+
+ [The "BSD licence"]
+ Copyright (c) 2007-2008 Terence Parr
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ 3. The name of the author may not be used to endorse or promote products
+    derived from this software without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+/* Modifications
+2010
+02/24 Copied from TTree2Java.g w minor changes to delete the options for
+      printing Java.
+
+*/
+
+
+/*
+ *  NOTE: If you try to compile this file from command line and Antlr gives an exception
+ *    like error message while compiling, add option
+ *    -Xconversiontimeout 100000
+ *    to the command line.
+ *    If it still doesn't work or the compilation process
+ *    takes too long, try to comment out the following two lines:
+ *    |    {isValidSurrogateIdentifierStart((char)input.LT(1), (char)input.LT(2))}?=>('\ud800'..'\udbff') ('\udc00'..'\udfff')
+ *    |    {isValidSurrogateIdentifierPart((char)input.LT(1), (char)input.LT(2))}?=>('\ud800'..'\udbff') ('\udc00'..'\udfff')
+ */
+
+
+tree grammar ErrCheck;
+options { // output=AST;
+          // rewrite=true;
+          tokenVocab=T2Tree;
+          ASTLabelType=CommonTree;
+
+          // backtrack=true;
+          // memoize=true;
+        }
+
+scope LangScope { // allows us to swap between T Language and Java
+  Lang language;
+  boolean argument;
+}
+
+scope CommentScope {
+  boolean comment
+}
+
+scope ClassScope {
+  /** all the initial values for the variables defined in this class,
+    * including superclass variables
+    */
+  Map<String,String> initialValues;
+}
+
+scope ValueScope {
+  ValueScope_scope parent;
+  ValueScope_scope thisScope;
+  Map<String,String> currentValueNames;
+  Set<String>        usedValueNames;
+}
+// $ValueScope[level]::currentValueNames.get(V) != null
+//   <--> variable V is defined at at this scope level
+// $ValueScope[level]::usedValueNames.contains(name)
+//   <--> value name is a previous value name for a variable defined at this scope level
+
+scope Assign {
+  boolean lookingForLHS;
+  boolean lookingForChangeable;
+  String soughtValueName;
+  boolean optionalLValue;
+}
+
+scope Constructor { boolean inConstructor; }
+
+@header {
+package t_translator;
+import static t_translator.T2TreeParser.Lang;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.Set;
+import java.io.File;
+}
+
+@members {
+
+  public String className = null;
+
+  //************* DEBUGGING AND ERROR MESSAGES *********************************
+
+  public boolean DEBUGMSGS = false; // <<<====================== DEBUGMSGS
+
+          private final void
+  errln(String msg) {
+    if (DEBUGMSGS){
+      System.err.println(msg+"; Token="+((Tree)input.LT(1)).getText()+"; "+(state.failed ? "failed" : "succeeded")+" ; backtracking="+bktrk());
+      System.err.flush();
+    }
+  }
+
+  private StringBuilder errors = new StringBuilder();
+  public StringBuilder errors() {return errors;}
+
+  // Override to eliminate grammar file name because we are using a tree very close to the code
+  // Add name of T file being compiled
+          @Override
+          public String
+  getErrorHeader(RecognitionException e) {
+    if ( getSourceName()==null ) {
+      return "Semantic error " +(e.approximateLineInfo?" after ":" at ")
+            +"line "+e.line+":"+e.charPositionInLine;
+    } else {
+      String source = input.getSourceName();
+      if (source == null) { source = "Test"; }
+      final File file = new File(source);
+      final String filename = file.getName();
+      return "Semantic error in "+filename
+            +(e.approximateLineInfo?" after ":" at ")
+            +"line "+e.line+":"+e.charPositionInLine;
+    }
+  }
+
+  // also collect messages in the errors StringBuilder for reporting in FitNesse
+          @Override
+          public void
+  emitErrorMessage(String msg) {
+    errors.append(msg +"\n") ;
+    super.emitErrorMessage(msg);
+  }
+
+  @Override
+  public String
+  getErrorMessage(RecognitionException e, String[] tokenNames) {
+    if (DEBUGMSGS) {
+      List stack = getRuleInvocationStack(e, this.getClass().getName());
+      String msg = null;
+      final int contextSize = 3;
+      StringBuilder inputContext = new StringBuilder();
+      for (int i = -contextSize; i<0; i++) {
+        inputContext.append(treeTokenText(i)+" ");
+      }
+      inputContext.append(">>>");
+      inputContext.append(treeTokenText(1));
+      inputContext.append("<<<");
+      for (int i = 2; i<=contextSize+1; i++) {
+        inputContext.append(" "+treeTokenText(i));
+      }
+      if ( e instanceof NoViableAltException ) {
+         NoViableAltException nvae = (NoViableAltException)e;
+         msg = " no viable alt; token="+e.token+
+            " (decision="+nvae.decisionNumber+
+            " state "+nvae.stateNumber+")"+
+            " decision=<<"+nvae.grammarDecisionDescription+">>";
+      }
+      else {
+         msg = super.getErrorMessage(e, tokenNames);
+      }
+      return stack+" "+msg+" context=..."+inputContext+"...";
+    } else {
+      return super.getErrorMessage(e, tokenNames);
+    }
+  }
+
+          public String
+  getTokenErrorDisplay(Token t) {
+    if (DEBUGMSGS) {
+      return t.toString();
+    }else {
+      return super.getTokenErrorDisplay(t);
+    }
+  }
+
+          private String
+  treeTokenText(int offset) {
+    if (offset==0) {
+      return "";
+    } else {
+      try { final Tree t = (Tree)input.LT(offset);
+            return (t==null ? "" : t.getText());
+      } catch (Exception e) {
+        return "";
+      }
+    }
+  }
+
+
+  /** We have DOWN/UP nodes in the stream that have no line info; override.
+   *  plus we want to alter the exception type.  Don't try to recover
+   *  from tree parser errors inline...
+   */
+            @Override
+            protected Object
+  recoverFromMismatchedToken(IntStream input, int ttype, BitSet follow) throws RecognitionException
+  {
+    // throw new MismatchedTreeNodeException(ttype, (TreeNodeStream)input);
+    MismatchedTreeNodeException e = new MismatchedTreeNodeException();
+    // super(input);
+      //this.input = input;
+      e.input = input;
+      //this.index = input.index();
+      e.index = input.index();
+    extractInformationFromTreeNodeStream(input, e);
+    // e.node = this.node;
+    // e.line = this.line;
+    // e.charPositionInLine = this.charPositionInLine;
+    // e.token = this.token;
+    // e.approximateLineInfo = this.approximateLineInfo;
+
+    e.expecting = ttype;
+    throw e;
+  }
+
+// to avoid changing following method (from RecognitionException) any more than neccessary
+  // Object node;
+  // public int line;
+  // public int charPositionInLine;
+  // public Token token;
+  // public boolean approximateLineInfo;
+
+
+          protected void
+  extractInformationFromTreeNodeStream(IntStream input, RecognitionException e) {
+    TreeNodeStream nodes = (TreeNodeStream)input;
+    e.node = nodes.LT(1);
+    Object earliestConfirmedNode = e.node;
+    boolean foundTheMostRecentTokenInformaion = false;
+    TreeAdaptor adaptor = nodes.getTreeAdaptor();
+    Token payload = adaptor.getToken(e.node);
+    if ( payload!=null ) {
+      e.token = payload;
+      if ( payload.getLine() > 0 ) { // node created from real token
+        e.line = payload.getLine();
+        e.charPositionInLine = payload.getCharPositionInLine();
+        foundTheMostRecentTokenInformaion = true;
+      } else { // imaginary node; no line/pos info; scan backwards
+        Object priorNode = e.node;
+        int i = 0;
+        while ( priorNode != null & foundTheMostRecentTokenInformaion == false) {
+          earliestConfirmedNode = priorNode;
+          --i;
+          priorNode = treeNodeOrNull(nodes, i);
+          if (priorNode != null) {
+            foundTheMostRecentTokenInformaion
+              = extractApproximateInformationIfFound(priorNode, adaptor, e);
+          }
+        }
+      }
+    }
+    if ( ! foundTheMostRecentTokenInformaion) {
+      extractInformationFromNodeDirectly(earliestConfirmedNode, adaptor, e);
+    }
+  }
+
+          private boolean
+  extractApproximateInformationIfFound(Object priorNode, TreeAdaptor adaptor, RecognitionException e) {
+    Token priorPayload = adaptor.getToken(priorNode);
+    if ( priorPayload!=null && priorPayload.getLine()>0 ) {
+      // we have real line / pos info
+      e.line = priorPayload.getLine();
+      e.charPositionInLine = priorPayload.getCharPositionInLine();
+      e.approximateLineInfo = true;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * This method is only required because the parameter nodes is a
+   * TreeNodeStream that may throw an exception for inaccessible nodes.
+   * @param nodes is a TreeNodeStream that may only allow access to a
+   *   limited number of previous tokens
+   * @param i is > 0 for the next and following nodes, i < 0 for previous nodes
+   *           (i==0 is meaningless because we imagine the current state as
+   *           sitting between the previous and next nodes)
+   * @return null if i==0 or if the desired node cannot be provided, perhaps
+   *   because it is before the first node, after the last node, or is
+   *   a previous node that has been discarded by the implementation.
+   */
+          private Object
+  treeNodeOrNull(TreeNodeStream nodes, int i) {
+    try {
+      return nodes.LT(i);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+          private void
+  extractInformationFromNodeDirectly(Object node, TreeAdaptor adaptor, RecognitionException e) {
+    if ( e.node instanceof Tree) {
+      e.line = ((Tree)e.node).getLine();
+      e.charPositionInLine = ((Tree)e.node).getCharPositionInLine();
+      if ( e.node instanceof CommonTree) {
+        e.token = ((CommonTree)e.node).token;
+      }
+    } else {
+      int type = adaptor.getType(e.node);
+      String text = adaptor.getText(e.node);
+      e.token = new CommonToken(type, text);
+    }
+  }
+
+  Object previousInputErrorElement;
+
+  /** BaseRecognizer.recover sometimes has problems because
+   *    input.currentElementIndex is updated incorrectly.
+   */
+  @Override
+  public void recover(IntStream input, RecognitionException re) {
+    super.recover(input, re);
+    final Object currentErrorElement = ((CommonTreeNodeStream)input).LT(1);
+    if (previousInputErrorElement == currentErrorElement ) {
+      input.consume();
+    } else {
+      previousInputErrorElement = currentErrorElement;
+    }
+  }
+
+  public class NoViableAltException extends org.antlr.runtime.NoViableAltException {
+    // public String grammarDecisionDescription;
+    // public int decisionNumber;
+    // public int stateNumber;
+
+    /** Used for remote debugger deserialization */
+    public NoViableAltException() {;}
+
+    public NoViableAltException(String grammarDecisionDescription,
+                                int decisionNumber,
+                                int stateNumber,
+                                IntStream input)
+    {
+      // super(input);
+      /* from public RecognitionException(IntStream input) */
+      /* the real way to correct the problem would be to include the
+       *   revised ErrCheck.this.extractInformationFromTreeNodeStream()
+       *   into RecognitionException, along with extractApproximateInformationIfFound(),
+       *   extractInformationFromNodeDirectly() and treeNodeOrNull()
+       */
+      {
+        this.input = input;
+        this.index = input.index();
+        if ( input instanceof TokenStream ) {
+            this.token = ((TokenStream)input).LT(1);
+            this.line = token.getLine();
+            this.charPositionInLine = token.getCharPositionInLine();
+        }
+        if ( input instanceof TreeNodeStream ) {
+            ErrCheck.this.extractInformationFromTreeNodeStream(input, this);
+        }
+        else if ( input instanceof CharStream ) {
+            this.c = input.LA(1);
+            this.line = ((CharStream)input).getLine();
+            this.charPositionInLine = ((CharStream)input).getCharPositionInLine();
+        }
+        else {
+            this.c = input.LA(1);
+        }
+      }
+      this.grammarDecisionDescription = grammarDecisionDescription;
+      this.decisionNumber = decisionNumber;
+      this.stateNumber = stateNumber;
+    }
+
+
+
+    // public String toString() {
+    //     if ( input instanceof CharStream ) {
+    //         return "NoViableAltException('"+(char)getUnexpectedType()+"'@["+grammarDecisionDescription+"])";
+    //     }
+    //     else {
+    //         return "NoViableAltException("+getUnexpectedType()+"@["+grammarDecisionDescription+"])";
+    //     }
+    // }
+
+  } // end subclass NoViableAltException
+
+
+  final private int
+  type(Object token) {
+    return ((CommonToken)token).getType();
+  }
+
+  final private String
+  text(Object treeNode) {
+    return ((CommonTree)treeNode).getText();
+  }
+
+  final private int
+  bktrk() {
+    return state.backtracking;
+  }
+
+  final private boolean
+  backtracking() {
+    return (bktrk() > 0);
+  }
+
+// ************************ SCOPE RELATED COMPONENTS ***************************
+
+  final private boolean
+  isaCurrentValueName(String valueName) {
+    String currentValueName = $ValueScope::currentValueNames.get(nameForVariable(valueName));
+    return valueName == currentValueName;
+  }
+
+  //   GET THIS FROM T2TreeParser.java
+  // enum Lang { tLanguage, tLogic, tProcess, javaLanguage }
+
+  // INITIALIZATION - required for testing in gUnit
+  //                  but may also simplify initialization code
+  { LangScope_stack.push(new LangScope_scope());
+    $LangScope::language = Lang.tLanguage;
+
+    CommentScope_stack.push(new CommentScope_scope());
+    $CommentScope::comment = false;
+
+    ClassScope_stack.push(new ClassScope_scope());
+    Map<String,String> init = new TreeMap<String,String>();
+    init.put("this" , "'this");  // all classes will need
+    init.put("super", "'super"); //     these two values
+    $ClassScope::initialValues = init;
+
+    ValueScope_stack.push(new ValueScope_scope());
+    ValueScope_scope s = ((ValueScope_scope)ValueScope_stack.peek());
+    $ValueScope::thisScope = s;
+    $ValueScope::currentValueNames = new TreeMap<String,String>();
+    $ValueScope::usedValueNames = new TreeSet<String>();
+
+    Assign_stack.push(new Assign_scope());
+    $Assign::lookingForLHS = false;
+    $Assign::soughtValueName = ""; // so .equals() will work
+    $Assign::optionalLValue = false;
+
+    Constructor_stack.push(new Constructor_scope());
+    $Constructor::inConstructor = false;
+  }
+
+    public
+  class ValueNameSymbol {
+    String valueName = "";
+    String previousValueName = "";
+    boolean valWasOverwritten = false;
+    boolean definedInCurrentScope = false;
+      //TODO: add definedInMethod (see createValNmSymbol_helper below).
+      //TODO: check if definedInCurrentScope is needed when definedInMethod is available.
+
+    public ValueNameSymbol() {
+      // use defaults - all tests return true
+    }
+
+    public ValueNameSymbol(String valueName) {
+      // for when the scope.currentValueNames does not contain the variable name
+      this.valueName = valueName;
+    }
+
+    public ValueNameSymbol( String newValueName         , String currentValueName
+                          , boolean valWasOverwritten, boolean definedInCurrentScope
+                          ) {
+      this.valueName = (newValueName==null) ? "" : newValueName;
+      this.previousValueName = (currentValueName == null) ? "" : currentValueName;
+      this.valWasOverwritten = valWasOverwritten;
+      this.definedInCurrentScope = definedInCurrentScope;
+    }
+
+    private boolean isDefaultSymbol() {
+      return (valueName == "" && previousValueName == "");
+    }
+
+    boolean theVariableIsAvailableForDefinitionInThisScope() {
+      if (isDefaultSymbol()){
+        return true;
+      } else {
+        return (backtracking() || ! definedInCurrentScope);
+      }
+    }
+
+    boolean theLhsVariableNameIsInScope() {
+      if (isDefaultSymbol()){
+        return true;
+      } else {
+        return (backtracking() || previousValueName != "");
+      }
+    }
+
+    boolean thisValueNameIsStillAvailable() {
+        return (  backtracking() || isDefaultSymbol()
+               || ( ! valWasOverwritten && valueName.equals(previousValueName))
+               );
+    }
+
+    boolean thisValueNameHasBeenDefined() {
+      if (isDefaultSymbol()){
+        return true;
+      } else {
+        return (backtracking() || valWasOverwritten || valueName.equals(previousValueName));
+      }
+    }
+
+    boolean theValueNameMayBeUpdated() {
+      if (isDefaultSymbol()){
+        return true;
+      } else {
+        return ( backtracking() || (theLhsVariableNameIsInScope() && isModificationDecorated(valueName)) );
+      }
+    }
+
+    boolean theLhsValueNameIsAvailableForDefinitionInThisScope() {
+      if (isDefaultSymbol()){
+        return true;
+      } else {
+        return ( backtracking() || (theLhsVariableNameIsInScope() && ! thisValueNameHasBeenDefined()) );
+      }
+    }
+
+    boolean theValueNameIsAvailableForLogic() {
+      return (  backtracking() || isDefaultSymbol()
+             || (valWasOverwritten|| definedInCurrentScope)
+             );
+    }
+
+    public void
+    ensureLatestNameRecorded() {
+      if ( ! (valueName.equals("") || valueName.equals(previousValueName)) ) {
+        final ValueScope_scope s = ((ValueScope_scope)ValueScope_stack.peek());
+        s.currentValueNames.put(nameForVariable(valueName),valueName);
+        if (! previousValueName.equals("") && previousValueName != null){
+          s.usedValueNames.add(previousValueName);
+        }
+      }
+    }
+  } // end inner class ValueNameSymbol
+
+  // Singleton default that allows Java code to pass all tests
+  ValueNameSymbol theDefaultValueNameSymbol = new ValueNameSymbol();
+
+  // the vnm global is used when a local vnm has not been defined in order to fool lookahead
+  ValueNameSymbol vnm = theDefaultValueNameSymbol;
+
+    public ValueNameSymbol
+  createValNmSymbol(String valueName, ValueScope_scope topScope) {
+    if (valueName == null || valueName.equals("")) {
+      return theDefaultValueNameSymbol;
+    } else {
+      final int thisScopeLevel = 0;
+      return createValNmSymbol_helper(valueName, topScope, thisScopeLevel);
+    }
+  }
+
+  /*TODO: Mark method original scope. Then, in createValNmSymbol_helper,
+          When variable name not found within or below the method scope,
+          mark the variable name as available for definition.
+  */
+    private ValueNameSymbol
+  createValNmSymbol_helper(String newValueName, ValueScope_scope scope, int levelFromScopeWhereDefined) {
+    final String currentValueName = scope.currentValueNames.get(nameForVariable(newValueName));
+    if (currentValueName != null){ // found currentValueName
+      final boolean newValueNameWasAlreadyOverwrittenInThisScope = scope.usedValueNames.contains(newValueName);
+      final boolean newValueNameUsedInScopeWhereDefined = (levelFromScopeWhereDefined==0);
+      return new ValueNameSymbol( newValueName, currentValueName
+                                , newValueNameWasAlreadyOverwrittenInThisScope
+                                , newValueNameUsedInScopeWhereDefined
+                                );
+    } else { // variable not defined in this level of scope
+      if (scope.parent != null){
+        return createValNmSymbol_helper(newValueName, scope.parent, levelFromScopeWhereDefined+1);
+      } else { // we have checked all levels
+        return new ValueNameSymbol(newValueName);
+      }
+    }
+  }
+
+// *********** IDENTIFIER FUNCTIONS FOR VALUES *********************************
+//
+// THE FOLLOWING FUNCTIONS WORK FOR IDENTIFIERS, THIS, OR SUPER
+
+  final private boolean
+  isThis(String id) {
+    return (nameForVariable(id).equals("this"));
+  }
+
+  final private boolean
+  isSuper(String id) {
+    return (nameForVariable(id).equals("super"));
+  }
+
+  final private boolean
+  isThisOrSuper(String id) {
+    return (isThis(id) || isSuper(id));
+  }
+
+    final private boolean
+  isClass(String id) {
+    /* TODO:
+       This function will require much work. In fact we may track the available
+       variables and make sure it is not one of those. Or we may track the
+       includes along with the java.lang.* classes.
+
+       Currently we just check that it follows standard naming conventions for
+       java classes and begins with an uppercase letter. The problem is that
+       this may let variables be undecorated as long as they begin with an
+       uppercase letter.
+    */
+    return Character.isUpperCase(nameForVariable(id).toCharArray()[0]);
+  }
+
+  final private int
+  decoratorPosition(String id) {
+    return id.indexOf('\'');
+  }
+
+  final private boolean
+  isDecorated(String id) {
+    return (backtracking() || id.contains("'"));
+  }
+
+  final private boolean
+  shouldBeDecorated(String id) {
+    return (isDecorated(id));
+  }
+
+  final private boolean
+  isUndecorated(String id) {
+    return (backtracking() || ! isDecorated(id));
+  }
+
+  final private boolean
+  shouldBeUndecorated(String id) {
+    return (isUndecorated(id));
+  }
+
+  private String
+  nameForVariable(String id) {
+    final int pos = decoratorPosition(id);
+    if      (pos == -1)                       { return id; }
+    else if (pos ==  0)                       { return id.substring(1); }
+    else if (pos == id.length()-1)  { return id.substring(0,pos); }
+    else /* decorated with a value name */    { return id.substring(0,pos); }
+  }
+
+  private String
+  javaName(String id) {
+    final int pos = decoratorPosition(id);
+    if      (pos == -1)                  { return id; }
+    else if (pos ==  0)                  { return "/*'*/" + id.substring(1); }
+    else if (pos == id.length()-1)       { return id.substring(0,pos) + "/*'*/"; }
+    else /* decorated with value name */ { return id.substring(0,pos) + "/*'" + id.substring(pos+1) + "*/"; }
+  }
+
+  private String
+  tempName(String id) {
+    final int pos = decoratorPosition(id);
+    if      (pos == -1) { throw new Error("No value identifier for undecorated identifiers"); }
+    else                { return id.replace("\'","\$t\$"); }
+  }
+
+  private boolean
+  isPreDecorated(String id) {
+    return (backtracking() || decoratorPosition(id) == 0);
+  }
+
+  private boolean
+  shouldBePreDecorated(String id) {
+    return (isPreDecorated(id));
+  }
+
+  private boolean
+  isPostDecorated(String id) {
+    return (backtracking() || decoratorPosition(id) == id.length()-1);
+  }
+
+  private boolean
+  shouldBePostDecorated(String id) {
+    return (isPostDecorated(id));
+  }
+
+  private boolean
+  isDeclarationDecorated(String id) {
+    final int pos = decoratorPosition(id);
+    return (backtracking() || pos == 0 || pos == id.length()-1);
+  }
+
+  private boolean
+  shouldBeDeclarationDecoratedInT(String id) {
+    return (  isDeclarationDecorated(id)
+           || !(  $LangScope::language == Lang.tProcess
+               || $LangScope::language == Lang.tLogic
+               )
+           );
+  }
+
+  private boolean
+  isModificationDecorated(String id) {
+    return (backtracking() || decoratorPosition(id) > 0 );
+  }
+
+  private boolean
+  isValueDecorated(String id) {
+    final int pos = decoratorPosition(id);
+    return (backtracking() || ( 0 < pos && pos < id.length()-1 ));
+  }
+
+  private boolean
+  shouldBeValueDecorated(String id) {
+    return isValueDecorated(id);
+  }
+
+  private boolean
+  shouldNotBeValueDecorated(String id) {
+    return (backtracking() || ! shouldBeValueDecorated(id));
+  }
+
+  private String
+  decorationValue(String id) {
+    final int pos = decoratorPosition(id);
+    if      ( 0 < pos && pos < id.length()-1 ) {
+      return id.substring(pos+1);
+    } else {
+      throw new Error("Identifier does not have {value} type");
+    }
+  }
+
+  private String
+  decorationType(String id) {
+    final int pos = decoratorPosition(id);
+    if      (pos == -1)                       { return "{none}"; }
+    else if (pos ==  0)                       { return "{pre}" ;}
+    else if (pos == id.length()-1)            { return "{post}"; }
+    else /* decorated with a value name */    { return "{value}"; }
+  }
+
+  private boolean
+  shouldBeUndecoratedForJava(String id) {
+    return ($LangScope::language == Lang.javaLanguage ? shouldBeUndecorated(id)
+                                                      : true
+           );
+  }
+
+  private boolean
+  shouldBeDecoratedInTProcess(String id) {
+    return ($LangScope::language == Lang.tProcess ? shouldBeDecorated(id)
+                                                  : true
+           );
+  }
+
+  private boolean
+  shouldBeDecoratedInTLogic(String id) {
+    return ($LangScope::language == Lang.tLogic ? shouldBeDecorated(id)
+                                                : true
+           );
+  }
+
+  private boolean
+  shouldHaveCorrectDecoration(String id) {
+    Lang language = $LangScope::language;
+    if      (language == Lang.tProcess || language == Lang.tLogic)
+                                              return shouldBeDecorated(id);
+    else if (language == Lang.tLanguage)      return shouldNotBeValueDecorated(id);
+    else if (language == Lang.javaLanguage)   return shouldBeUndecorated(id);
+    else                                      return true;
+  }
+
+
+//   // *** OVERRIDES FOR CONSTRUCTORS FOR SPECIAL TESTING ***
+//
+//     public TTree2Java(TreeNodeStream input, boolean fromStartT) {
+//
+//       if (fromStartT) {System.err.println("About to set input in TTree2Java constructor 1");}
+//       this.input = input;
+//       if (fromStartT) {System.err.println("About to set state in TTree2Java constructor 1");}
+//       this.state = new RecognizerSharedState();
+//       if (fromStartT) {System.err.println("Exiting TTree2Java constructor 1");}
+//     }
+//
+// //    public TTree2Java(TreeNodeStream input, RecognizerSharedState state, boolean fromStartT) {
+// //      super(input, state);
+// //      if (fromStartT) {
+// //        System.err.println("Exiting TTree2Java constructor 2");
+// //      }
+// //    }
+
+
+}
+
+
+
+/*******************************************************************************
+                            AST RULES for Semantic Checking
+*******************************************************************************/
+
+compilationUnit
+scope LangScope ;
+@init { className = null;
+        $LangScope::language = Lang.tLanguage;
+        // Clear the previous changes to the TokenRewriteStream.
+          // ((TokenRewriteStream)input).deleteProgram();
+      }
+    :   ( ( annotations? 'package' )
+          =>(annotations )?
+            packageDeclaration
+        )?
+        (importDeclaration)*
+        (typeDeclaration)*
+        EOF
+    ;
+
+packageDeclaration
+    :   'package' qualifiedName
+        ';'
+    ;
+
+importDeclaration
+    : ( 'import' 'static'? 'javalanguage'?
+        id1=IDENTIFIER {shouldBeUndecorated($id1.text)}? '.' '*'
+        ';'
+      | 'import' 'static'? 'javalanguage'?
+        id2=IDENTIFIER {shouldBeUndecorated($id2.text)}?
+        ('.' id3=IDENTIFIER {shouldBeUndecorated($id3.text)}?)+
+        ('.' '*')?
+        ';'
+      )
+    ;
+
+typeDeclaration
+    : ( classOrInterfaceDeclaration
+      | ';'
+      )
+    ;
+
+classOrInterfaceDeclaration
+    :   (modifiers ('class'|'enum'))=> classDeclaration
+    |   interfaceDeclaration
+    ;
+
+
+modifiers
+    :
+    (    annotation // always starts with '@'
+    |   'public'
+    |   'protected'
+    |   'private'
+    |   'static'
+    |   'abstract'
+    |   'final'
+    |   'native'
+    |   'synchronized'
+    |   'transient'
+    |   'optional'
+    |   'logical'
+    |   'volatile'
+    |   'strictfp'
+    )*
+    ;
+
+
+variableModifiers
+    :   (   'final'
+        |   'optional'
+        |   annotation
+        )*
+    ;
+
+classDeclaration
+    :   /* (modifiers 'class')=> */ normalClassDeclaration
+    |   enumDeclaration
+    ;
+
+normalClassDeclaration
+    scope ClassScope;
+    @init {
+      $ClassScope::initialValues = new TreeMap($ClassScope[-1]::initialValues);
+    }
+    : ^( 'class' /* modifiers */ classID=IDENTIFIER { if (className == null) className = $classID.text;}
+             typeParameters? ('extends' type)? ('implements' typeList)?
+         ^(SAVING
+            ( id=IDENTIFIER
+              {$ClassScope::initialValues.put(nameForVariable($id.text), $id.text);}
+            )*
+          )
+         classBody
+       )
+//    :   modifiers  'class' id=IDENTIFIER {shouldBeUndecorated($id.text)}?
+//        (typeParameters)?
+//        ('extends' type)?
+//        ('implements' typeList)?
+//        classBody
+    ;
+
+
+typeParameters
+    :   '<'
+            typeParameter
+            (',' typeParameter)*
+        '>'
+    ;
+
+typeParameter
+    :   id=IDENTIFIER {shouldBeUndecorated($id.text)}?
+        ('extends' typeBound)?
+    ;
+
+
+typeBound
+    :   type
+        ('&' type)*
+    ;
+
+
+enumDeclaration
+    :   modifiers
+        ('enum')
+        id=IDENTIFIER {shouldBeUndecorated($id.text)}?
+          { if (className == null) className = $id.text;}
+        ('implements' typeList)?
+        enumBody
+    ;
+
+
+enumBody
+    :   '{'
+        (enumConstants)?
+        ','?
+        (enumBodyDeclarations)?
+        '}'
+    ;
+
+enumConstants
+    :   enumConstant
+        (',' enumConstant)*
+    ;
+
+/**
+ * NOTE: here differs from the javac grammar, missing TypeArguments.
+ * EnumeratorDeclaration = AnnotationsOpt [TypeArguments] IDENTIFIER [ Arguments ] [ "{" ClassBody "}" ]
+ */
+enumConstant
+    :   (annotations)?
+        id=IDENTIFIER {shouldBeUndecorated($id.text)}?
+        (arguments)?
+        (classBody)?
+        /* TODO: $GScope::name = names.empty. enum constant body is actually
+        an anonymous class, where constructor isn't allowed, have to add this check*/
+    ;
+
+enumBodyDeclarations
+    :   ';' (classBodyDeclaration)*
+    ;
+
+interfaceDeclaration
+    :   (modifiers 'interface')=> normalInterfaceDeclaration
+    |   /* else */                annotationTypeDeclaration
+    ;
+
+normalInterfaceDeclaration
+    :   modifiers 'interface' id=IDENTIFIER {shouldBeUndecorated($id.text)}?
+          { if (className == null) className = $id.text;}
+        (typeParameters)?
+        ('extends' typeList)?
+        interfaceBody
+    ;
+
+typeList
+    :   type (',' type)*
+    ;
+
+classBody
+    :   '{'
+        (classBodyDeclaration)*
+        '}'
+    ;
+
+interfaceBody
+    :   '{'
+        (interfaceBodyDeclaration)*
+        '}'
+    ;
+
+classBodyDeclaration
+    :   ';'
+    |   ('static')? (('{')=>block | languageBlock)
+    |   memberDecl
+    ;
+
+memberDecl
+    : (modifiers (typeParameters)? (type | 'void')? IDENTIFIER '(' )=> methodDeclaration
+    | (modifiers ('class'|'enum')                                  )=> classDeclaration
+    | (modifiers ('@')? 'interface'                                )=> interfaceDeclaration
+    | fieldDeclaration
+    ;
+
+methodDeclaration
+scope LangScope, ValueScope ;
+@init {
+  $LangScope::language = $LangScope[-1]::language;
+  $ValueScope::currentValueNames = new TreeMap($ClassScope::initialValues);
+  // System.out.println("Map for new Method");
+  // for (Map.Entry<String,String> maplet : $ValueScope::currentValueNames.entrySet()) {
+  //   System.out.println("  "+maplet.getKey()+" maps to "+maplet.getValue());
+  //}
+  $ValueScope::usedValueNames = new TreeSet<String>();
+  $ValueScope::parent = $ValueScope[-1]::thisScope ; // previous ValueScope
+  $ValueScope::thisScope = (ValueScope_scope)$ValueScope.peek();
+}
+    : (modifiers (typeParameters)? IDENTIFIER '(' )
+      =>
+      modifiers
+      (typeParameters)?
+//      {{errln("BACKTRACKING type TEST at " +text(input.LT(1)));}}
+//      {System.out.println("MADE IT TO type TEST at " +text(input.LT(1)));}
+//      ({ shouldBeUndecorated(text(input.LT(1)))}? type | 'void')?
+//      {{System.out.println("BACKTRACKING id TEST at " +text(input.LT(1)));}}
+      id=IDENTIFIER {shouldBeUndecorated($id.text)}?
+      formalParameters
+      ('throws' qualifiedNameList)?
+      { if ($LangScope::language != Lang.javaLanguage)
+          { $LangScope::language = Lang.tProcess; }
+      }
+      constructorBlock
+    | modifiers
+      (typeParameters)?
+      (type | 'void')
+      id=IDENTIFIER {shouldBeUndecorated($id.text)}?
+      formalParameters
+      ('[' ']')*
+      ('throws' qualifiedNameList)?
+      { if ($LangScope::language != Lang.javaLanguage)
+          { $LangScope::language = Lang.tProcess; }
+      }
+      ( block | languageBlock | ';' )
+    ;
+
+fieldDeclaration
+    :   modifiers
+        type
+        variableDeclarator (',' variableDeclarator)*
+        ';'
+    ;
+
+variableDeclarator
+// id=IDENTIFIER ('[' ']')* ('=' variableInitializer )?
+// scope Assign;
+@init { ValueNameSymbol vnm = theDefaultValueNameSymbol; }
+    :   // { $Assign::lookingForLHS = true; }
+            varDeclaratorId[vnm] ('[' ']')*
+            {/* while declaring variable */ vnm.theVariableIsAvailableForDefinitionInThisScope()}?
+        // { $Assign::lookingForLHS = false; }
+
+        ('=' variableInitializer)?
+
+        { if ($LangScope::language == Lang.tProcess) {
+            vnm.ensureLatestNameRecorded();
+            vnm.previousValueName = "DUMMY!@#$ to ensure looks like it has a value";
+          }
+        }
+    ;
+
+varDeclaratorId [ValueNameSymbol vnm]
+: id=IDENTIFIER {shouldBeDecoratedInTProcess($id.text)}?
+                {shouldNotBeValueDecorated($id.text)}?
+                {shouldBeUndecoratedForJava($id.text)}?
+  { if ($LangScope::language == Lang.tProcess){
+      vnm = createValNmSymbol($id.text, $ValueScope::thisScope);
+    }
+  }
+;
+
+/**
+ *TODO: add predicates
+ */
+interfaceBodyDeclaration
+    :   (modifiers (typeParameters)? (type|'void') IDENTIFIER '(')=> interfaceMethodDeclaration
+    |   (modifiers ('@')? 'interface'                            )=> interfaceDeclaration
+    |   (modifiers ('class'|'enum')                              )=> classDeclaration
+    |   /* else */                                                   interfaceFieldDeclaration
+    |   ';'
+    ;
+
+interfaceMethodDeclaration
+    :   modifiers
+        (typeParameters)?
+        (type|'void')
+        id=IDENTIFIER {shouldBeUndecorated($id.text)}?
+        formalParameters
+        ('[' ']')*
+        ('throws' qualifiedNameList)?
+       ';'
+    ;
+
+/**
+ * NOTE, should not use variableDeclarator here, as it doesn't necessary require
+ * an initializer, while an interface field does, or judge by the returned value.
+ * But this gives better diagnostic message, or antlr won't predict this rule.
+ */
+interfaceFieldDeclaration
+    :   modifiers type variableDeclarator (',' variableDeclarator)* ';'
+    ;
+
+
+type
+    :   classOrInterfaceType ('[' ']')*
+    |   primitiveType        ('[' ']')*
+    ;
+
+
+classOrInterfaceType
+    :   {shouldBeUndecorated(text(input.LT(1)))}? id1=IDENTIFIER
+        (typeArguments)?
+        ('.' id2=IDENTIFIER {shouldBeUndecorated($id2.text)}?
+            (typeArguments)?
+        )*
+    ;
+
+primitiveType
+    :   'boolean'
+    |   'char'
+    |   'byte'
+    |   'short'
+    |   'int'
+    |   'long'
+    |   'float'
+    |   'double'
+    ;
+
+typeArguments
+    :   '<' typeArgument (',' typeArgument)* '>'
+    ;
+
+typeArgument
+    :   type
+    |   '?' ( ('extends' | IDENTIFIER {isSuper($IDENTIFIER.text)}? ) type )?
+    ;
+
+qualifiedNameList
+    :   qualifiedName (',' qualifiedName)*
+    ;
+
+formalParameters
+scope LangScope, Assign;
+  // new Assign scope temporarily blocks any search for LHSnames
+@init {$LangScope::language = $LangScope[-1]::language; }
+    :   '('
+        { if ($LangScope::language != Lang.javaLanguage)
+            { $LangScope::language = Lang.tProcess; }
+        }
+        (formalParameterDecls)?
+        ')'
+    ;
+
+formalParameterDecls
+    :   (variableModifiers type  '...')=> ellipsisParameterDecl
+    |   normalParameterDecl (',' formalParameterDecls)?
+    ;
+
+normalParameterDecl
+    :   variableModifiers
+        type
+        ( {$LangScope::language == Lang.javaLanguage}?
+              id=IDENTIFIER {shouldBeUndecorated($id.text)}?
+        | // else
+              id=IDENTIFIER {shouldBeDecorated($id.text)}?
+        )
+
+        // id=IDENTIFIER {shouldBeDecoratedInTProcess($id.text)}?
+        //               {shouldBeUndecoratedForJava( $id.text)}?
+        { if ($LangScope::language == Lang.tProcess){
+            $ValueScope::currentValueNames.put(nameForVariable($id.text), $id.text);
+          }
+        }
+        ('[' ']')*
+    ;
+
+ellipsisParameterDecl
+    :   variableModifiers
+        type  '...'
+        id=IDENTIFIER {shouldBeDecoratedInTProcess($id.text)}?
+                      {shouldBeUndecoratedForJava( $id.text)}?
+        { if ($LangScope::language == Lang.tProcess){
+            $ValueScope::currentValueNames.put(nameForVariable($id.text), $id.text);
+          }
+        }
+    ;
+
+
+explicitConstructorInvocation
+// I'm letting the Java compiler sort this out
+    :   (primary '.')?
+        (nonWildcardTypeArguments)?
+        id=IDENTIFIER {isThisOrSuper($id.text)}?
+        arguments
+        ';'
+//     :   (nonWildcardTypeArguments)?
+//            //NOTE: the position of Identifier 'super' is set to the type args position here
+//         id1=IDENTIFIER {isThisOrSuper($id1.text)}?
+//         arguments
+//         ';'
+//     |   primary
+//         '.'
+//         (nonWildcardTypeArguments)?
+//         id=IDENTIFIER {isSuper($id.text)}?
+//         arguments
+//         ';'
+    ;
+
+qualifiedName
+    :   id1=IDENTIFIER {shouldBeUndecorated($id1.text)}?
+        ('.' id2=IDENTIFIER {shouldBeUndecorated($id2.text)}? )*
+    ;
+
+annotations
+    :   (annotation)+
+    ;
+
+/**
+ *  Using an annotation.
+ * '@' is flaged in modifier
+ */
+annotation
+// options { k = 2;
+//           // backtrack=true;
+//         }
+    :   '@' qualifiedName
+        ( '('
+             ( (IDENTIFIER '=')=> elementValuePairs |   elementValue )?
+          ')'
+        )?
+    ;
+
+elementValuePairs
+    :   elementValuePair (',' elementValuePair)*
+    ;
+
+elementValuePair
+    :   id=IDENTIFIER {shouldBeUndecorated($id.text)}? '=' elementValue
+    ;
+
+elementValue
+    :   conditionalExpression
+    |   annotation
+    |   elementValueArrayInitializer
+    ;
+
+elementValueArrayInitializer
+    :   '{'
+        ( elementValue (',' elementValue)* )?
+        (',')?
+        '}'
+    ;
+
+
+/**
+ * Annotation declaration.
+ */
+annotationTypeDeclaration
+    :   modifiers '@'
+        'interface'
+        id=IDENTIFIER  {shouldBeUndecorated($id.text)}?
+        annotationTypeBody
+    ;
+
+
+annotationTypeBody
+    :   '{'
+        (annotationTypeElementDeclaration)*
+        '}'
+    ;
+
+/**
+ * NOTE: here use interfaceFieldDeclaration for field declared inside annotation. they are sytactically the same.
+ */
+annotationTypeElementDeclaration
+    :   (modifiers 'class'               )=> normalClassDeclaration
+    |   (modifiers 'interface'           )=> normalInterfaceDeclaration
+    |   (modifiers 'enum'                )=> enumDeclaration
+    |   (modifiers '@'                   )=> annotationTypeDeclaration
+    |   (modifiers type IDENTIFIER '('   )=> annotationMethodDeclaration
+    |                            /* else */  interfaceFieldDeclaration
+    |   ';'
+    ;
+
+annotationMethodDeclaration
+    :   modifiers type IDENTIFIER
+        '(' ')'
+        ('default' elementValue)?
+        ';'
+        ;
+
+block
+: ^(Block blockStatement* '}')
+// :   '{' (blockStatement )* '}'
+;
+
+constructorBlock
+    : '{'
+        { if ($LangScope::language != Lang.javaLanguage)
+            { $LangScope::language = Lang.tProcess; }
+        }
+        ( ( (primary '.')? ('<'
+                           | {isThisOrSuper(text(input.LT(1)))}?
+                             IDENTIFIER arguments ';'
+                           )
+          )
+         => explicitConstructorInvocation
+        )?
+        (blockStatement)*
+      '}'
+    ;
+
+languageBlock
+scope LangScope ;
+@init { Lang currentLanguage = $LangScope[-1]::language; }
+    : ^(JAVALANGUAGE JAVALANGUAGE
+         javaBlockArguments?
+         {$LangScope::language = Lang.javaLanguage;} statement
+         {$LangScope::language = currentLanguage;} conjecture
+       )
+    |    ^(TLANGUAGE TLANGUAGE
+            {$LangScope::language = Lang.tProcess;} statement
+          )
+    ;
+
+javaBlockArguments
+: ^(JavaBlockArgs javaBlockArgID* ')' )
+// : '(' javaBlockArgID (',' javaBlockArgID)* ')'
+;
+
+javaBlockArgID
+@init { ValueNameSymbol vnm = theDefaultValueNameSymbol; }
+: id1=IDENTIFIER
+  {vnm = createValNmSymbol($id1.text, $ValueScope::thisScope);}
+  {vnm.theLhsValueNameIsAvailableForDefinitionInThisScope()}?
+  {vnm.ensureLatestNameRecorded();}
+;
+
+blockStatement
+    :   localVariableDeclaration
+    |   // (modifiers ('class'|'enum' | ('@')? 'interface'))=>
+        classOrInterfaceDeclaration
+    |   statement
+    ;
+
+//*** replaced by ASSIGNMENT subtree ***
+// localVariableDeclarationStatement
+//     :   localVariableDeclaration ';'
+//     ;
+
+// TODO: explore merging with variableDeclaration
+localVariableDeclaration
+// each variable is declared separately now, as opposed to java code
+// also, initializations have been set apart as an assignment statement
+@init { ValueNameSymbol vnm = theDefaultValueNameSymbol; }
+: ^(VARDECLARATION
+
+     type
+
+     // { $Assign::lookingForLHS = true; }
+       varDeclaratorId[vnm]
+       {/* while declaring variable */ vnm.theVariableIsAvailableForDefinitionInThisScope()}?
+     // { $Assign::lookingForLHS = false; }
+     { if ($LangScope::language == Lang.tProcess) {
+         vnm.ensureLatestNameRecorded();
+         vnm.previousValueName = "DUMMY!@#$ to ensure looks like it has a value";
+       }
+     }
+
+     brackets
+
+   )
+//     :   variableModifiers type variableDeclarator (',' variableDeclarator)*
+;
+
+brackets: ('[' ']')* ;
+
+statement
+    :     (IDENTIFIER ':')=> id1=IDENTIFIER {shouldBeUndecorated($id1.text)}? ':' statement
+//        |   ( '+'|'-'|'++'|'--'|'~'|'!'|'('| IDENTIFIER | literal | 'new' | primitiveType | 'void' )
+//            => expression  ';'
+       |   expression ';' // ^(EXPRESSION ^(SAVING needsTemp=IDENTIFIER*) expression)
+             // TODO: must transform saved 'super,e.g., to $t$this = this
+             // TODO: track type instead of assuming integer
+             // TODO: how do I iterate corresponding (?nested template?)
+       |   block
+       |   ( JAVALANGUAGE | TLANGUAGE )=> languageBlock
+       |   'assert'  expression (':' expression)? ';'
+       |   'if' parExpression statement (('else')=>'else' statement)?
+       |   forstatement
+       |   'while' parExpression statement
+       |   'do' statement 'while' parExpression ';'
+       |   trystatement
+       |   'switch' parExpression '{' switchBlockStatementGroups '}'
+       |   'synchronized' parExpression (block | languageBlock)
+       |   'return' (expression )? ';'
+       |   'throw' expression ';'
+       |   'break'    (IDENTIFIER)? ';'
+       |   'continue' (IDENTIFIER)? ';'
+       |   conjecture
+       |   lemma
+       |   means
+       |   ';'
+    ;
+
+switchBlockStatementGroups
+    :   (switchBlockStatementGroup )*
+    ;
+
+switchBlockStatementGroup
+    :   switchLabel (blockStatement)*
+    ;
+
+switchLabel
+    :   'case' expression ':'
+    |   'default' ':'
+    ;
+
+conjecture
+scope CommentScope;
+@init {$CommentScope::comment = true;}
+    : ^(CONJECTURE DOUBLELITERAL parenthesizedLogic )
+    ;
+
+given
+scope CommentScope;
+@init {$CommentScope::comment = true;}
+    : ^(GIVEN parenthesizedLogic )
+    ;
+
+lemma
+scope CommentScope;
+@init {$CommentScope::comment = true;}
+    : ^(LEMMA parenthesizedLogic )
+    ;
+
+means
+scope CommentScope;
+@init {$CommentScope::comment = true;}
+    : ^(MEANS parenthesizedLogic )
+    ;
+
+constraint
+scope CommentScope;
+@init {$CommentScope::comment = true;}
+    : CONSTRAINT ( id=IDENTIFIER {shouldBeUndecorated($id.text)}? )? ( parenthesizedLogic ';' | block )
+    ;
+
+axiom
+scope CommentScope;
+@init {$CommentScope::comment = true;}
+    : AXIOM      ( id=IDENTIFIER {shouldBeUndecorated($id.text)}? )? ( parenthesizedLogic ';' | block )
+    ;
+
+theorem
+scope CommentScope;
+@init {$CommentScope::comment = true;}
+    : THEOREM ( parenthesizedLogic ';' | block )
+    ;
+
+//requires
+//scope CommentScope;
+//@init {$CommentScope::comment = true;}
+//    : ^(REQUIRES parenthesizedLogic)
+//    ;
+
+
+parenthesizedLogic
+scope LangScope ;
+@init { $LangScope::language = Lang.tLogic;}
+: ^(LOGIC conditionalExpression)
+;
+// WAS
+//    : '('
+//         { $LangScope::language = Lang.tLogic;}
+//         conditionalExpression
+//       ')'
+//    ;
+
+
+
+trystatement
+    :   'try' (block | languageBlock)
+        (   'catch' '(' formalParameter ')' (block | languageBlock) ( 'finally' (block | languageBlock) )?
+        |   'finally' (block | languageBlock)
+        )
+     ;
+
+// catches
+//     :   catchClause (catchClause)*
+//     ;
+//
+// catchClause
+//     :   'catch' '(' formalParameter ')' (block | languageBlock)
+//     ;
+
+formalParameter
+    :   variableModifiers type
+        id=IDENTIFIER {shouldBeDecoratedInTProcess( $id.text )}?
+                      {shouldBeUndecoratedForJava(  $id.text )}?
+        { if ($LangScope::language == Lang.tProcess){
+            $ValueScope::currentValueNames.put(nameForVariable($id.text), $id.text);
+          }
+        }
+        ('[' ']')*
+    ;
+
+forstatement
+scope ValueScope, Assign ;
+@init {
+  $ValueScope::currentValueNames = new TreeMap<String, String>();
+  $ValueScope::usedValueNames = new TreeSet<String>();
+  $ValueScope::parent = $ValueScope[-1]::thisScope ; // previous ValueScope
+  $ValueScope::thisScope = (ValueScope_scope)$ValueScope.peek();
+  ValueNameSymbol vnmItID = theDefaultValueNameSymbol;
+  ValueNameSymbol containerBaseID = theDefaultValueNameSymbol;
+}
+  : ^(ENHANCED_FOR
+        variableModifiers type
+        iterationID=IDENTIFIER
+
+        {vnmItID = createValNmSymbol($iterationID.text, $ValueScope::thisScope);}
+        {vnmItID.theVariableIsAvailableForDefinitionInThisScope()}?
+        {shouldBeDecoratedInTProcess($iterationID.text)}?
+
+        {vnmItID.ensureLatestNameRecorded();}
+        ':'
+        (
+          // { if (! isPostDecorated($iterationID.text)) { // iterationID is available for update
+          //   $Assign::lookingForChangeable = true;
+          //   }
+          // }
+            expression
+          // {$Assign::lookingForChangeable = false;} // was already reset in rule primary
+        )
+        {containerBaseID = createValNmSymbol($Assign::soughtValueName, $ValueScope::thisScope);}
+
+        {/* container or array in for */ containerBaseID.theLhsVariableNameIsInScope()}?
+        {/* container or array in for */ containerBaseID.theValueNameMayBeUpdated()}?
+      // not needed? - if actually updated, the conflict will be there
+        { containerBaseID.ensureLatestNameRecorded(); }
+
+        ')'
+        statement
+     )
+  | ^(NORMAL_FOR ^(FOR_INIT forInit?)
+                 ^(FOR_TEST expression?)
+                 statement
+                 ^(FOR_UPDATE expressionList?)
+     )
+  ;
+
+//    : 'for' '('
+//      ( // enhanced for loop
+//          (variableModifiers type IDENTIFIER ':')
+//          => variableModifiers type id=IDENTIFIER ':' expression ')' statement
+//      | // normal for loop
+//         (forInit)? ';' (expression)? ';' (expressionList)? ')' statement
+//      )
+//    ;
+
+forInit
+options { k=1; }
+    :   (variableModifiers type variableDeclarator)=> localVariableDeclaration
+    |   expressionList
+    ;
+
+parExpression
+scope LangScope ;
+@init { $LangScope::language = $LangScope[-1]::language; }
+    : '('
+         { if ($LangScope[-1]::language != Lang.javaLanguage)
+             { $LangScope::language = Lang.tLogic; }
+         }
+         expression
+      ')'
+    ;
+
+expressionList
+    :   expression (',' expression)*
+    ;
+
+
+// expression
+//     : {$LangScope::language == Lang.tProcess || $LangScope::language == Lang.tLanguage }?
+//       ( (conditionalExpression assignmentOperator)=> assignment
+//       | conditionalExpression
+//       )
+//     | {$LangScope::language == Lang.tLogic    }?
+//         conditionalExpression
+//     | {$LangScope::language == Lang.javaLanguage}?
+//         conditionalExpression ( assignmentOperator ex2=expression )?
+//     ;
+
+expression
+    :
+      ( assignment {$LangScope::language == Lang.tProcess || $LangScope::language == Lang.tLanguage }?
+      | conditionalExpression
+        ( assignmentOperator {$LangScope::language == Lang.javaLanguage}?
+          ex2=expression
+        )?
+      )
+    ;
+
+// expression
+//     : {$LangScope::language == Lang.tProcess || $LangScope::language == Lang.tLanguage }?
+//       ( assignment
+//       | conditionalExpression
+//       )
+//     | {$LangScope::language == Lang.tLogic    }?
+//         conditionalExpression
+//     | {$LangScope::language == Lang.javaLanguage}?
+//         conditionalExpression ( assignmentOperator ex2=expression )?
+//     ;
+
+assignment
+scope Assign;
+@init { ValueNameSymbol vnm = theDefaultValueNameSymbol; }
+    : { $Assign::lookingForLHS = true; }
+        ^(ASSIGNMENT conditionalExpression      // sets soughtValueName
+      { $Assign::lookingForLHS = false; } // this has already been reset in primary rule
+
+      { vnm = createValNmSymbol($Assign::soughtValueName, $ValueScope::thisScope); }
+
+      {/* while assigning variable */ vnm.theLhsVariableNameIsInScope()}?
+      {/* while assigning variable */ vnm.theLhsValueNameIsAvailableForDefinitionInThisScope()}?
+
+      assignmentOperator expression
+      )
+
+      { // soughtValueName must take effect after RHS is evaluated
+        vnm.ensureLatestNameRecorded();
+      }
+    ;
+
+// assignment
+// scope Assign;
+// @init { ValueNameSymbol vnm = theDefaultValueNameSymbol; }
+//     : { $Assign::lookingForLHS = true; }
+//       conditionalExpression      // sets soughtValueName
+//       { $Assign::lookingForLHS = false; } // this has already been reset in primary rule
+//
+//       { vnm = createValNmSymbol($Assign::soughtValueName, $ValueScope::thisScope); }
+//
+//       {/* while assigning variable */ vnm.theLhsVariableNameIsInScope()}?
+//       {/* while assigning variable */ vnm.theLhsValueNameIsAvailableForDefinitionInThisScope()}?
+//
+//       assignmentOperator expression
+//
+//       { // soughtValueName must take effect after RHS is evaluated
+//         vnm.ensureLatestNameRecorded();
+//       }
+//     ;
+
+assignmentOperator
+    :   '='
+    |   '+='
+    |   '-='
+    |   '*='
+    |   '/='
+    |   '&='
+    |   '|='
+    |   '^='
+    |   '%='
+    |    '<' '<' '='
+    |    '>' '>' '>' '='
+    |    '>' '>' '='
+    ;
+
+
+conditionalExpression
+    :   conditionalOrExpression
+        ('?' expression ':' conditionalExpression)?
+    ;
+
+conditionalOrExpression
+    :   conditionalAndExpression ('||' conditionalAndExpression)*
+    ;
+
+conditionalAndExpression
+    :   inclusiveOrExpression ('&&' inclusiveOrExpression)*
+    ;
+
+inclusiveOrExpression
+    :   exclusiveOrExpression ('|' exclusiveOrExpression)*
+    ;
+
+exclusiveOrExpression
+    :   andExpression ('^' andExpression)*
+    ;
+
+andExpression
+    :   equalityExpression ('&' equalityExpression)*
+    ;
+
+equalityExpression
+    :   instanceOfExpression ( ('=='
+                               |'!='
+                               | {$LangScope::language == Lang.tLogic}?=> '='
+                               )
+                               instanceOfExpression
+                             )*
+    ;
+
+instanceOfExpression
+    :   relationalExpression ('instanceof' type)?
+    ;
+
+relationalExpression
+    :   shiftExpression (relationalOp shiftExpression)*
+    ;
+
+relationalOp
+    :    '<' '='
+    |    '>' '='
+    |   '<'
+    |   '>'
+    ;
+
+shiftExpression
+    :   additiveExpression (shiftOp additiveExpression)*
+    ;
+
+
+shiftOp
+    :    '<' '<'
+    |    '>' '>' '>'
+    |    '>' '>'
+    ;
+
+
+additiveExpression
+    :   multiplicativeExpression ( ('+'|'-') multiplicativeExpression )*
+    ;
+
+multiplicativeExpression
+    :   unaryExpression ( ('*'|'/'|'%') unaryExpression)*
+    ;
+
+/**
+ * NOTE: for '+' and '-', if the next token is int or long interal, then it's not a unary expression.
+ *       it's a literal with signed value. INTLTERAL AND LONG LITERAL are added here for this.
+ */
+unaryExpression
+    :   '+'  unaryExpression
+    |   '-' unaryExpression
+    |   prefixOp
+    |   unaryExpressionNotPlusMinus
+    ;
+
+prefixOp
+scope Assign;
+@init { ValueNameSymbol vnm = theDefaultValueNameSymbol; }
+  : { $Assign::lookingForLHS = true; }
+    ('++'|'--') unaryExpression  // sets soughtValueName
+    { $Assign::lookingForLHS = false; } // primary rule may have already reset this
+
+    { vnm = createValNmSymbol($Assign::soughtValueName, $ValueScope::thisScope); }
+    {/* while assigning variable */ vnm.theLhsVariableNameIsInScope()}?
+    {/* while assigning variable */ vnm.theLhsValueNameIsAvailableForDefinitionInThisScope()}?
+
+    { vnm.ensureLatestNameRecorded(); }
+  ;
+
+
+unaryExpressionNotPlusMinus
+// options { k=3; }
+    :   '~' unaryExpression
+    |   '!' unaryExpression
+        // castExpression
+    |      ('(' primitiveType ')')=>        '(' primitiveType ')' unaryExpression
+    |      ('(' classOrInterfaceType ')')=> '(' classOrInterfaceType ')' unaryExpressionNotPlusMinus
+    // The next two are left to be sorted out by the Java compiler
+//    |  {shouldBeUndecorated(text(input.LT(2))) && isClass(text(input.LT(2)))}?
+//       '(' classOrInterfaceType ')'
+//             ( unaryExpressionNotPlusMinus
+//             |  (selector)* ( '++' | '--' )? // this part really goes with a special form of primary
+//                                             // TODO: (eliminate '|' ?) selector can't start an expression
+//                                             // TODO: should force selector to be an assignmentName
+//             )
+    |   (primary (selector)* ( '++' | '--' ))=> postfixOp
+//    |   primary (selector)* ( '++' | '--' )? // TODO: should force primary to be an assignmentName
+    |   primary (selector)*
+    ;
+
+postfixOp
+scope Assign;
+@init { ValueNameSymbol vnm = theDefaultValueNameSymbol; }
+  : { $Assign::lookingForLHS = true; }
+    primary  // sets soughtValueName
+    { $Assign::lookingForLHS = false; } // primary rule may have already reset this
+
+    { vnm = createValNmSymbol($Assign::soughtValueName, $ValueScope::thisScope); }
+    {/* while assigning variable */ vnm.theLhsVariableNameIsInScope()}?
+    {/* while assigning variable */ vnm.theLhsValueNameIsAvailableForDefinitionInThisScope()}?
+
+    (selector)* ( '++' | '--' )
+
+    { // soughtValueName must take effect after names in selector are evaluated
+      vnm.ensureLatestNameRecorded();
+    }
+  ;
+
+
+// implemented directly in unaryExpressionNotPlusMinus above
+//castExpression
+//    :   '(' primitiveType ')' unaryExpression
+//    |   '(' classOrInterfaceType ')' unaryExpressionNotPlusMinus
+//    ;
+
+//TODO: return basename and it's end-position in order to report errors at higher level
+primary
+@init { boolean thePreviousIdentifierMustBeDecorated = true; // default to pass tests
+        ValueNameSymbol vnm = theDefaultValueNameSymbol;
+      }
+    // 'this' works just like any other classname, but 'super' is a little different
+    :   parExpression
+    |   {isSuper(text(input.LT(1)))}?
+          superID=IDENTIFIER {shouldBeDecoratedInTProcess($superID.text)}?
+          superSuffix
+
+
+    |   {  ( $LangScope::language == Lang.tLanguage
+          || $LangScope::language == Lang.javaLanguage
+           )
+       && ! isSuper( text(input.LT(1)) )
+        }?
+        id1=IDENTIFIER {shouldHaveCorrectDecoration($id1.text)}?
+          ( (  '.' { ! isThisOrSuper(text(input.LT(1))) }?
+            )=>
+              '.' id2=IDENTIFIER {/* following dot in T Language or Java */ shouldBeUndecorated($id2.text)}?
+          )*
+        (('.'|'('|'[')=>identifierSuffix)?
+
+
+
+    |   { ( $LangScope::language == Lang.tProcess
+         || $LangScope::language == Lang.tLogic
+          )
+       && (! isSuper( text(input.LT(1)) ) )
+       && (  isDecorated( text(input.LT(1)) ) )
+       && (! isClass(text(input.LT(1))) )
+        }?
+//        IDENTIFIER
+//        (('.' { ! ( isThis(text(input.LT(1))) || isSuper(text(input.LT(1))) )}?)=> '.' id2=IDENTIFIER {shouldBeUndecorated($id2.text)}? )*
+
+        id3=IDENTIFIER
+        { vnm = createValNmSymbol($id3.text, $ValueScope::thisScope);}
+        ( {$Assign::lookingForLHS == true}?
+            { $Assign::soughtValueName = $id3.text; }
+            {/* Looking for LHS */ vnm.theLhsVariableNameIsInScope()}?
+            {vnm.theLhsValueNameIsAvailableForDefinitionInThisScope()}?
+            // *** Rest of syntax ****
+            ( ( '.' { ! isThisOrSuper( text(input.LT(1))) }?
+              )=>
+                '.' id2=IDENTIFIER   {/* following dot in T process or logic */ shouldBeUndecorated($id2.text)}?
+            )*
+            { $Assign::lookingForLHS = false; } // other IDs may follow, e.g., array indices
+            (('.'|'('|'[')=>identifierSuffix)?
+        | {$Assign::lookingForChangeable == true}?
+            { $Assign::soughtValueName = $id3.text; }
+            {/* Looking for changeable */ vnm.theLhsVariableNameIsInScope()}?
+            {vnm.theValueNameMayBeUpdated()}?
+            // *** Rest of syntax ****
+            ( ( '.' { ! isThisOrSuper( text(input.LT(1))) }?
+              )=>
+                '.' id2=IDENTIFIER   {/* following dot in T process or logic */ shouldBeUndecorated($id2.text)}?
+            )*
+            { $Assign::lookingForLHS = false; } // other IDs may follow, e.g., array indices
+            (('.'|'('|'[')=>identifierSuffix)?
+        | /* else lookingForLHS == false */
+            // *** Rest of syntax ****
+            ( ( '.' { ! isThisOrSuper( text(input.LT(1))) }?)=>
+                '.' id2=IDENTIFIER   {/* following dot in T process or logic */ shouldBeUndecorated($id2.text)}?
+            )*
+            ( ('(')=> // a method may or may not modify its class
+                { if (isModificationDecorated($id3.text)){
+                    vnm.ensureLatestNameRecorded();
+                  }
+                }
+                arguments
+            | {$LangScope::language == Lang.tLogic}?
+              {vnm.theValueNameIsAvailableForLogic()}?
+              (('.'|'[')=>identifierSuffix)?
+            | { ; /* force parser to take this option
+                     instead of using following test as a disambiguating semantic predicate
+                   */
+              }
+              {vnm.thisValueNameIsStillAvailable()}?
+              (('.'|'[')=>identifierSuffix)?
+            )
+        )
+
+    |   {  (  $LangScope::language == Lang.tProcess
+           || $LangScope::language == Lang.tLogic
+           )
+        && (! isSuper(text(input.LT(1))) )
+        // && (  isUndecorated(text(input.LT(1))) )
+        && (  isClass(text(input.LT(1))) )
+        }?
+        id3=IDENTIFIER
+        ( ( '.' { ! isThisOrSuper( text(input.LT(1)) ) }?
+          )=>
+            '.' id2=IDENTIFIER {/* following dot after class name */ shouldBeUndecorated($id2.text)}?
+        )*
+        (('.'|'('|'[')=>identifierSuffix)?
+
+    |   { ( $LangScope::language == Lang.tProcess
+         || $LangScope::language == Lang.tLogic
+          )
+        && (! isSuper(text(input.LT(1))) )
+        && (  isUndecorated(text(input.LT(1))) )
+        && (! isClass(text(input.LT(1))) )
+        && (  text(input.LT(2)).equals("(") )
+        }?
+        IDENTIFIER arguments // method for "method()" which is (implicit) " 'this.method() "
+
+    |   { ( $LangScope::language == Lang.tProcess
+         || $LangScope::language == Lang.tLogic
+          )
+        && (! isSuper(text(input.LT(1))) )
+        && (! isDecorated(text(input.LT(1))) )
+        && (! isClass(text(input.LT(1))) )
+        && (! text(input.LT(2)).equals("(") )
+        }?
+        id4=IDENTIFIER
+        { if ( isUndecorated($id4.text) ) { thePreviousIdentifierMustBeDecorated = false; } }
+        { thePreviousIdentifierMustBeDecorated }?
+
+    |   literal
+    |   creator
+    |   primitiveType ('[' ']')* '.' 'class'
+    |   'void' '.' 'class'
+    ;
+
+superSuffix
+    :   arguments
+    |   '.' (typeArguments)?
+        IDENTIFIER
+        (arguments)?
+    ;
+
+
+identifierSuffix
+    :   ('[' ']')=>('[' ']')+ '.' 'class'
+    |   (('[')=>'[' expression ']' )+
+    |   ('(')=> arguments
+    |   '.' 'class'
+    |   ('.' 'new')=>innerCreator
+    |   ('.' '<')=>'.' nonWildcardTypeArguments IDENTIFIER arguments
+    |   '.' IDENTIFIER
+            ( arguments {isSuper($IDENTIFIER.text)}?
+            | {isThisOrSuper($IDENTIFIER.text)}?
+            )
+//     |   '.' IDENTIFIER {isThis($IDENTIFIER.text)}?
+//     |   '.' IDENTIFIER {isSuper($IDENTIFIER.text)}? arguments
+    ;
+
+
+selector
+    :   { ! ( isThisOrSuper(text(input.LT(2))) ) }?=> '.' IDENTIFIER (arguments)?
+    |   {isThis( text(input.LT(2)))              }?=> '.' IDENTIFIER
+    |   {isSuper(text(input.LT(2)))              }?=> '.' IDENTIFIER superSuffix
+    |   innerCreator
+    |   '[' expression ']'
+    ;
+
+creator
+    :   'new' nonWildcardTypeArguments classOrInterfaceType classCreatorRest
+    |   'new' primitiveType
+        (   '[' ']' ('[' ']')*
+            arrayInitializer
+        |   '[' expression ']' (('[' { !(type(input.LT(2))==RBRACKET) }?)=> '[' expression ']' )*
+            ('[' ']')*
+        )
+    |   'new' classOrInterfaceType
+        ( classCreatorRest
+        |
+          (   '[' ']' ('[' ']')*  arrayInitializer
+          |   '[' expression ']' (('[' { !(type(input.LT(2))==RBRACKET) }?)=>  '[' expression ']' )*
+              ('[' ']')*
+          )
+        )
+    ;
+
+// WHACK arrayCreator
+// WHACK     :   'new' createdName
+// WHACK     (   '[' ']' ('[' ']')*
+// WHACK         arrayInitializer
+// WHACK     |   '[' expression ']' ( '[' expression ']' )*
+// WHACK         ('[' ']')*
+// WHACK     )
+// WHACK     ;
+
+variableInitializer
+    :   arrayInitializer
+    |   expression
+    ;
+
+arrayInitializer
+    :   '{' (variableInitializer (',' variableInitializer)* )?
+            (',')?
+        '}'             //Yang's fix, position change.
+    ;
+
+
+createdName
+    :   classOrInterfaceType
+    |   primitiveType
+    ;
+
+innerCreator
+    :   '.' 'new'
+        (nonWildcardTypeArguments)?
+        IDENTIFIER
+        (typeArguments)?
+        classCreatorRest
+    ;
+
+
+classCreatorRest
+    :   arguments
+        (classBody)?
+    ;
+
+
+nonWildcardTypeArguments
+    :   '<' typeList '>'
+    ;
+
+arguments
+scope Assign;
+@init { // $Assign::lookingForLHS = false;
+        $LangScope::argument = true;
+      }
+@final { $LangScope::argument = false;
+       }
+:   '(' ( argument (',' argument)* )? ')'
+;
+
+argument
+options { backtrack = true; k = 2; }
+: ( (lhsExpression { ! ( ".(" .contains(text(input.LT(1))) ) }? )=> lhsExpression
+  | {{$Assign::lookingForLHS = false;}} expression
+  )
+;
+
+lhsExpression
+: ( thisID=IDENTIFIER {$thisID.text.startsWith("this'") || $thisID.text.equals("'this") || $thisID.text.equals("this")}? '.')?
+  IDENTIFIER
+  ('[' expression ']')?
+;
+
+literal
+    :   INTLITERAL
+    |   LONGLITERAL
+    |   FLOATLITERAL
+    |   DOUBLELITERAL
+    |   CHARLITERAL
+    |   STRINGLITERAL
+    |   TRUE
+    |   FALSE
+    |   NULL
+    ;
+
+/**
+ * These are headers help to make syntatical predicates, not necessary but helps to make grammar faster.
+ */
+
+classHeader
+    :   modifiers 'class' IDENTIFIER
+    ;
+
+enumHeader
+    :   modifiers ('enum'|IDENTIFIER) IDENTIFIER
+    ;
+
+interfaceHeader
+    :   modifiers 'interface' IDENTIFIER
+    ;
+
+annotationHeader
+    :   modifiers '@' 'interface' IDENTIFIER
+    ;
+
+typeHeader
+    :   modifiers ('class'|'enum'|('@' ? 'interface')) IDENTIFIER
+    ;
+
+methodHeader
+    :   modifiers typeParameters? (type|'void')? IDENTIFIER '('
+    ;
+
+fieldHeader
+    :   modifiers type IDENTIFIER ('['']')* ('='|','|';')
+    ;
+
+localVariableHeader
+    :   variableModifiers type IDENTIFIER ('['']')* ('='|','|';')
+    ;

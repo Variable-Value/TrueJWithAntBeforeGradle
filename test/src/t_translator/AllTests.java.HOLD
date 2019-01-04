@@ -1,0 +1,36 @@
+package t_translator;
+
+//import junit.framework.Test;
+//import junit.framework.TestSuite;
+//
+//public class AllTests {
+//
+//public static Test suite() {
+//  TestSuite suite = new TestSuite("Test for t_translator");
+//  //$JUnit-BEGIN$
+//  suite.addTestSuite(TestT2TreeParser.class);
+//  suite.addTestSuite(TestErrCheck.class);
+//  suite.addTestSuite(TestTTree2Java.class);
+//  //$JUnit-END$
+//  return suite;
+//}
+//
+//}
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+ 
+/**
+ * JUnit Suite Test
+ * @author mkyong
+ *
+ */
+ 
+@RunWith(Suite.class)
+@Suite.SuiteClasses({ TestT2TreeParser.class
+                    , TestErrCheck.class
+                    , TestTTree2Java.class
+                    , TestTTree2LogicAST.class
+})
+public class AllTests {
+}

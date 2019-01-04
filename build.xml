@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="TLantlr" default="all.tests" basedir=".">
+<description> Build and test the Antlr version of the TLanguage compiler </description>
+
+<!--  Builds the development version TLantlr parser and lexer from the TLantlr.g4 grammar
+
+      Run from directory
+         .../TLantlr/
+      therefore, basedir=TLantlr
+
+      Make the build.properties file like this:
+
+      version=TLantlr-00a
+          # version should only be embedded in production release files using, for example,
+          #    <replace dir="${build.dir}/src" token="@version@" value="${version}"/>
+      t.examples=./Examples/TLantlr
+        #t.examples=C:/Users/cowang/Documents/Projects/JavaExamples/Java5
+
+     ================================= -->
+
+<!-- Properties and paths -->
+  <property file="build.properties" />
+
+  <property name="grammarName"                value="TLantlr" />
+  <property name="prospectiveGrammarName"     value="TLprospective" />
+  <property name="t.project"                  value="tlang" />
+  <property name="ruletracebackdepth"         value="6" />
+
+  <property name="src.dir"             location="src" />
+  <property name="build.prod.dir"      location="build/prod" />
+  <property name="build.test.dir"      location="build/test" />
+  <property name="build.temp.dir"      location="build/temp" />
+  <property name="antlrsysout.dir"     location="antlrsysout" />
+  <property name="generated.dir"       location="generated"   />
+  <property name="grammar.dir"         location="grammar" />
+  <property name="vendor.dir"          location="vendor" />
+  <property name="vendor.lib"          location="${vendor.dir}/lib" />
+  <property name="fixtures.dir"        location="fixtures" />
+  <property name="stepdefinitions.dir" location="Cucumber/step-definitions" />
+
+<path id="project.classpath">
+      <pathelement location="${build.prod.dir}" />
+      <pathelement location="${build.test.dir}" />
+      <pathelement location="${build.temp.dir}" />
+      <pathelement location="${fixtures.dir}"   />
+      <fileset dir="${vendor.lib}">
+        <include name="*.jar" />
+      </fileset>
+  </path>
+<pathconvert property="project.classpath.dir.arg" refid="project.classpath" setonempty="false" />
+
+<path id="tcompile.classpath">
+      <pathelement location="${build.prod.dir}" />
+      <pathelement location="${build.temp.dir}" />
+      <fileset dir="${vendor.lib}">
+        <include name="antlr4-current.jar" />
+      </fileset>
+  </path>
+<pathconvert property="tcompile.classpath.dir.arg" refid="tcompile.classpath" setonempty="false" />
+
+
+<!-- ************ TARGETS ************ -->
+
+<target name="all.tests" depends="valid.tlantlr.test,invalid.tlantlr.test"
+    description="compile all the example files" >
+  <!-- <java fork="true" classname="${t.project}.TCompiler" classpathref="project.classpath">
+         <jvmarg value="-version" />
+       </java>
+  -->
+</target>
+
+
+<!-- current.tests - Parse TLantlr programs that are the current tests for the system
+     ================================= -->
+      <fileset id="current.to.test" dir="${t.examples}">
+        <include name="**/current/**/*.t" />
+        <exclude name="**/invalid/**/*.t" />
+      </fileset>
+      <pathconvert property="current.tlantlr.files" refid="current.to.test" pathsep=" " />
+  <target name="current.tests" depends="tlantlr.grammar.compile"
+      description="Parse TLantlr programs that are the current tests for the system" >
+    <echo>CURRENT TEST OUTPUT - CHECK FOR CORRECT OUTPUT AND EXPECTED ERROR MSGS:</echo>
+    <java fork="true" classname="${t.project}.TCompiler" classpathref="project.classpath"
+          outputproperty="all.tlantlr.test.output" 
+          errorproperty="all.tlantlr.test.error" >
+      <arg line="-cp ${project.classpath.dir.arg} -traceback ${ruletracebackdepth} ${current.tlantlr.files}" />
+        <!-- fork="true" -->
+        <!-- <arg line="-cp ${project.classpath.dir.arg} ${current.tlantlr.files}" /> -->
+        <!-- classpathref="project.classpath"  -->
+        <!-- <arg value="-javatest" /> -->
+        <!-- <arg value="-diagnostics" /> -->
+        <!-- <jvmarg value="-verbose" /> -->
+    </java>
+    <!-- ******** Setting properties does not work here. Works in general ********
+    -->
+    <echo>THIS OUTPUT IS EXPECTED - PARSER OUTPUT FOR VALID T LANGUAGE PROGRAMS:</echo>
+    <echo>${all.tlantlr.test.output}</echo>
+    <echo>${all.tlantlr.test.error}</echo>
+  </target>
+
+<!-- invalid.tlantlr.test - Compile all invalid TLantlr programs
+     ================================= -->
+      <fileset id="invalid.to.test" dir="${t.examples}">
+        <include name="**/invalid/**/*.t" />
+      </fileset>
+      <pathconvert property="invalid.tlantlr.files" refid="invalid.to.test" pathsep=" " />
+  <target name="invalid.tlantlr.test" depends="tlantlr.grammar.compile"
+      description="Compile all invalid TLantlr programs" >
+    <java fork="true" classname="${t.project}.TCompiler" classpathref="project.classpath"
+          outputproperty="invalid.tlantlr.test.output" 
+          errorproperty="invalid.tlantlr.test.error" >
+      <arg line="-cp ${project.classpath.dir.arg} -genout ./temp/ttests/gensrc  -traceback ${ruletracebackdepth} ${invalid.tlantlr.files}" 
+      />
+        <!-- fork="true" -->
+        <!-- <arg line="-cp ${project.classpath.dir.arg} ${valid.tlantlr.files}" /> -->
+        <!-- classpathref="project.classpath"  -->
+        <!-- <echo>CLASSPATH ARG: ${project.classpath.dir.arg}</echo>  -->
+        <!-- <arg value="-javatest" /> -->
+        <!-- <arg value="-diagnostics" /> -->
+        <!-- <jvmarg value="-verbose" /> -->
+    </java>
+    <echo>THIS OUTPUT IS EXPECTED - PARSER OUTPUT FOR INVALID T LANGUAGE PROGRAMS:</echo>
+    <echo>${invalid.tlantlr.test.output}</echo>
+    <echo>${invalid.tlantlr.test.error}</echo>
+    </target>
+
+<!-- valid.tlantlr.test - Parse all valid TLantlr programs
+     ================================= -->
+      <fileset id="valid.to.test" dir="${t.examples}">
+        <include name="**/*.t" />
+        <exclude name="**/invalid/**/*.t" />
+        <exclude name="**/future/**/*.t" />
+      </fileset>
+      <pathconvert property="valid.tlantlr.files" refid="valid.to.test" pathsep=" " />
+  <target name="valid.tlantlr.test" depends="tlantlr.grammar.compile"
+      description="Parse all valid TLantlr programs" >
+    <echo>SUCCESSFUL COMPILE NOTE IS EXPECTED FOR VALID T PROGRAMS:</echo>
+    <echo>${valid.tlantlr.files}</echo>
+    <java fork="true" classname="${t.project}.TCompiler" classpathref="project.classpath">
+      <arg line="-cp ${project.classpath.dir.arg} -genout ./temp/ttests/gensrc -traceback ${ruletracebackdepth} -d .\classes ${valid.tlantlr.files}" />
+        <!-- fork="true" -->
+        <!-- <arg line="-cp ${project.classpath.dir.arg} ${valid.tlantlr.files}" /> -->
+        <!-- classpathref="project.classpath"  -->
+        <!-- <arg value="-javatest" /> -->
+        <!-- <arg value="-diagnostics" /> -->
+        <!-- <jvmarg value="-verbose" /> -->
+    </java>
+    <!-- ******** Setting properties does not work here. Works in general ********
+      outputproperty="valid.tlantlr.test.output" errorproperty="valid.tlantlr.test.error"
+    -->
+    <!-- <echo>THIS OUTPUT IS EXPECTED - PARSER OUTPUT FOR VALID T LANGUAGE PROGRAMS:</echo> -->
+    <!-- <echo>${valid.tlantlr.test.output}</echo> -->
+    <!-- <echo>${valid.tlantlr.test.error}</echo> -->
+  </target>
+
+
+<!-- ==== target: parser.valid.javaprogram.test
+      Parse valid Java programs NEED TO USE MOD OF JavaParseRun THAT SHOWS GRAPH
+     ================================= -->
+  <fileset id="valid.javaprogram.to.test" dir="${java.examples}">
+    <include name="**/*${example.program}" />
+  </fileset>
+  <target name="parser.valid.javaprogram.test" depends="tlantlr.grammar.compile"
+      description="Parse the valid.javaprogram.to.test files" >
+    <pathconvert property="valid.javaprogram.file" refid="valid.javaprogram.to.test" pathsep=" " />
+    <java classname="JavaRunParse" classpathref="project.classpath"
+        outputproperty="valid.javaprogram.test.output">
+      <arg line="${valid.javaprogram.file}" />
+      <jvmarg value="-Xms256m" /> <jvmarg value="-Xmx2g" />
+    </java>
+      <echo>THIS OUTPUT IS EXPECTED - PARSER OUTPUT FOR VALID JAVA PROGRAMS:</echo>
+      <echo>${valid.javaprogram.test.output}</echo>
+    <!-- ******** FOR TESTING THAT THE PARSER IS RUNNING ********
+    -->
+  </target>
+
+<!-- ==== target: parser.invalid.java.test
+      Parse valid Java programs
+     ================================= -->
+  <fileset id="invalid.java.to.test" dir="${java.error.examples}">
+    <include name="**/*.java" />
+  </fileset>
+  <target name="parser.invalid.java.test" depends="tlantlr.grammar.compile"
+      description="Parse the invalid.java.to.test files" >
+    <pathconvert property="invalid.java.files" refid="invalid.java.to.test" pathsep=" " />
+    <java classname="JavaRunParse" classpathref="project.classpath"
+        outputproperty="invalid.java.test.output">
+      <arg line="${invalid.java.files}" />
+      <!-- <jvmarg value="-Xms256m" /> <jvmarg value="-Xmx2g" /> -->
+    </java>
+      <echo>THIS OUTPUT IS EXPECTED - PARSER OUTPUT FOR VALID JAVA PROGRAMS:</echo>
+      <echo>${invalid.java.test.output}</echo>
+    <!-- ******** FOR TESTING THAT THE PARSER IS RUNNING ********
+    -->
+  </target>
+
+<!-- ==== target: parser.valid.java.test.long
+      Parse valid Java 7 programs
+     ================================= -->
+  <fileset id="valid.java.to.test.long" dir="${java.examples}/SomeTestRuns">
+    <include name="**/*.java" />
+  </fileset>
+  <target name="parser.valid.java.test.long" depends="valid.tlantlr.test"
+      description="Parse the valid.java.to.test files and the valid.java.to.test.long files" >
+    <pathconvert property="valid.java.files.long" refid="valid.java.to.test.long" pathsep=" " />
+    <java classname="JavaRunParse" classpathref="project.classpath"
+        outputproperty="valid.java.test.long.output">
+      <arg line="${valid.java.files.long}" />
+      <!-- <jvmarg value="-Xms2g" /> <jvmarg value="-Xmx4g" /> -->
+    </java>
+      <echo>THIS OUTPUT IS EXPECTED - PARSER OUTPUT FOR VALID JAVA PROGRAMS:</echo>
+      <echo>${valid.java.test.long.output}</echo>
+    <!-- ******** FOR TESTING THAT THE PARSER IS RUNNING ********
+    -->
+  </target>
+
+
+<target name="run.examples" description="Run selected programs compiled with javac"
+          depends="javac.on.examples">
+    <java classname="TestNestedException" failonerror="true"
+        classpath="${build.temp.dir}"
+        outputproperty="run.examples.output">
+      </java>
+    <echo>THIS OUTPUT IS EXPECTED - from run.examples:</echo>
+    <echo>${run.examples.output}</echo>
+  </target>
+
+<target name="javac.on.examples" description="Compile MyTests Java examples with the latest javac"
+          depends="prepare">
+    <javac srcdir="${java.examples}/AllTestRuns/Java5/MyTests/src" destdir="${build.temp.dir}"
+        includes="**/*.java"
+        failonerror="false"
+        deprecation="no"
+        includeAntRuntime="no"
+        verbose="no"
+        >
+      <classpath refid="project.classpath" />
+    </javac>
+    <javac srcdir="${java.examples}/AllTestRuns/Java7/MyTests/src" destdir="${build.temp.dir}"
+        includes="**/*.java"
+        failonerror="false"
+        deprecation="no"
+        includeAntRuntime="no"
+        verbose="no"
+        >
+      <classpath refid="project.classpath" />
+    </javac>
+  </target>
+
+<target name="test.compile" depends="tlantlr.grammar.compile"
+        description="Compile the FitNesse fixture and Cucumber stepdefinition code">
+    <javac srcdir="${fixtures.dir}" destdir="${build.test.dir}" debug="true"
+          includes="**/*.java"
+          deprecation="yes"
+          updatedProperty="fitnesse.updated" 
+          includeAntRuntime="no"
+          verbose="no"
+          includeDestClasses="true"
+        >
+      <classpath refid="project.classpath" />
+    </javac>
+    <javac srcdir="${stepdefinitions.dir}" destdir="${build.test.dir}" debug="true"
+          includes="**/*.java"
+          deprecation="yes"
+          updatedProperty="stepdefinitions.updated" 
+          includeAntRuntime="no"
+          verbose="no"
+          includeDestClasses="true"
+        >
+      <classpath refid="project.classpath" />
+    </javac>  </target>
+
+<target name="tlantlr.grammar.compile" description="Compile the Java for the parsers and lexer"
+          depends="antlr.tlantlr.generate">
+    <javac srcdir="${generated.dir}" destdir="${build.prod.dir}" debug="true"
+        includes="**/*.java"
+        deprecation="no"
+        updatedProperty="tlantlrgrammar.updated"
+        includeAntRuntime="no"
+        verbose="no"
+        includeDestClasses="false"
+        >
+      <classpath refid="project.classpath" />
+    </javac>
+    <javac srcdir="${src.dir}" destdir="${build.prod.dir}" debug="true"
+        includes="**/*.java" excludes="**/*.HOLD"
+        deprecation="no"
+        updatedProperty="tcompiler.updated" 
+        includeAntRuntime="no"
+        verbose="no"
+        includeDestClasses="false"
+        >
+      <classpath refid="project.classpath" />
+    </javac>
+    <condition property="some.java.updated">
+      <or>
+        <isset property="tlantlrgrammar.updated" />
+        <isset property="tcompiler.updated" />
+        <!--  =================================
+              <isset property="tlantlrsuper.updated" />
+              ================================= -->
+      </or>
+    </condition>
+  </target>
+
+<target name="antlr.tlantlr.generate" 
+        description="Generate parser, lexer, visitor, and listener from .g4 grammar"
+        depends="prepare,check.tlantlrparse.generated.java"
+        unless="tlantlrparse.generated.java.ok" >
+    <java fork="true" failonerror="true"
+        output="${antlrsysout.dir}/antlr.out.TLantlrparse.txt"
+        classname="org.antlr.v4.Tool"> 
+      <arg line="-o ${generated.dir}/${t.project} -visitor -no-listener -package tlang ${grammar.dir}/${grammarName}.g4"/>
+      <classpath refid="project.classpath" />
+    </java>
+  </target>
+  <!-- =================================
+   <arg line="-o ${generated.dir} -Xlog ${antlrsysout.dir}/Xlog.${t.project}.txt ${grammar.dir}/${grammarName}.g4"/>
+       ================================= -->
+
+<target name="check.tlantlrparse.generated.java" description="Check that output of ANTLR TLantlr.g is up to date">
+    <uptodate property="tlantlrparse.generated.java.ok">
+      <srcfiles dir="${grammar.dir}" includes="${grammarName}.g4" />
+      <compositemapper>
+        <mergemapper to="${generated.dir}/${t.project}/${grammarName}Parser.java" />
+        <mergemapper to="${generated.dir}/${t.project}/${grammarName}Lexer.java" />
+      </compositemapper>
+    </uptodate>
+  </target>
+
+<target name="antlr.tlprospective.generate" 
+        description="Generate parser, lexer, visitor, and listener from TLprospective.g4 grammar"
+        depends="prepare,check.tlprospectiveparse.generated.java"
+        unless="tlprospectiveparse.generated.java.ok" >
+    <java fork="true" failonerror="true" 
+          output="${antlrsysout.dir}/antlr.out.tlprospectiveparse.txt"
+        classname="org.antlr.v4.Tool">
+      <arg line="-o ${generated.dir}/${t.project} -visitor -no-listener -package tlang ${grammar.dir}/${prospectiveGrammarName}.g4"/>
+      <classpath refid="project.classpath" />
+    </java>
+  </target>
+  <!-- =================================
+   <arg line="-o ${generated.dir} -Xlog ${antlrsysout.dir}/Xlog.${t.project}.txt ${grammar.dir}/${prospectiveGrammarName}.g4"/>
+       ================================= -->
+
+<target name="check.tlprospectiveparse.generated.java" 
+        description="Check that output of ANTLR TLprospective.g is up to date">
+    <uptodate property="tlprospectiveparse.generated.java.ok">
+      <srcfiles dir="${grammar.dir}" includes="${prospectiveGrammarName}.g4" />
+      <compositemapper>
+        <mergemapper to="${generated.dir}/${t.project}/${prospectiveGrammarName}Parser.java" />
+        <mergemapper to="${generated.dir}/${t.project}/${prospectiveGrammarName}Lexer.java"  />
+      </compositemapper>
+    </uptodate>
+  </target>
+
+<!--  === Example of copy =========
+ <target name="copy.git.java" description="Copy git grammar to current grammar" >
+    <copy file="${git.dir}/${grammarName}.g4" tofile="${grammar.dir}/${grammarName}.g4"
+          preservelastmodified="true"/>
+  </target>
+  -->
+
+<!-- === set file lists for grammar comparisons ===
+     ================================= -->
+  <filelist id="AntlrJava.grammar" dir="${grammar.dir}" files="Java.g4" />
+  <filelist id="TJava.grammar" dir="${grammar.dir}" files="TJava.g4" />
+  <filelist id="TCurrent.grammar" dir="${grammar.dir}" files="${grammarName}.g4" />
+  <filelist id="Prospective.grammar" dir="${grammar.dir}" files="${prospectiveGrammarName}.g4" />
+
+<target name="compare.java.grammars"
+        description="Compare T Java grammar to Antlr grammar at GitHub to help keep them consistent">
+    <pathconvert targetos="unix" property="AntlrJava" refid="AntlrJava.grammar" pathsep=" " />
+    <pathconvert targetos="unix" property="TJava" refid="TJava.grammar" pathsep=" " />
+    <exec failonerror="true" executable="TortoiseMerge">
+      <arg line="/base:&quot;${AntlrJava}&quot; /mine:&quot;${TJava}&quot;" />
+    </exec>
+  </target>
+
+<target name="compare.tgrammar.to.java"
+        description="Compare T grammar to T Java grammar to help keep them consistent">
+    <pathconvert targetos="unix" property="TCurrent" refid="TCurrent.grammar" pathsep=" " />
+    <pathconvert targetos="unix" property="TJava" refid="TJava.grammar" pathsep=" " />
+    <exec failonerror="true" executable="TortoiseMerge">
+      <arg line="/base:&quot;${TJava}&quot; /mine:&quot;${TCurrent}&quot;" />
+    </exec>
+  </target>
+
+<target name="compare.tgrammar.to.prospective"
+        description="Compare T grammar to T prospective grammar to help keep them consistent">
+    <pathconvert targetos="unix" property="TCurrent" refid="TCurrent.grammar" pathsep=" " />
+    <pathconvert targetos="unix" property="TLprospective" refid="Prospective.grammar" pathsep=" " />
+    <exec failonerror="true" executable="TortoiseMerge">
+      <arg line="/base:&quot;${TLprospective}&quot; /mine:&quot;${TCurrent}&quot;" />
+    </exec>
+  </target> <!-- DOES NOT ALLOW CHANGES ?DIFF VS MERGE? ?SVN VS GIT? -->
+
+<target name="force.tests" description="Set properties to only rerun tests"
+        depends="prepare">
+    <property name="need.to.test.java" value="true" />
+    <property name="test.requested" value="true" /> 
+    <!-- <property name="valid.test.output" value="" />  -->
+  </target>
+
+<target name="prepare" description="Prepare for runs, ensure file structure in place">
+    <!-- <delete dir="${build.temp.dir}" quiet="true" />
+         <mkdir  dir="${build.temp.dir}"/>  
+      -->
+    <mkdir  dir="${antlrsysout.dir}" />
+    <mkdir dir="${generated.dir}/tlang" />
+  </target>
+
+<target name="clean.all" description="Remove all output files" 
+       depends="delete.antlr.output">
+    <delete quiet="true">
+      <fileset dir="${basedir}" >
+        <include name="**/*.class" />
+      </fileset>
+    </delete>
+  </target>
+
+<target name="clean" 
+        description="Remove all build and test outputs"
+        depends="delete.antlr.output"> 
+    <delete quiet="true">
+      <fileset dir="${build.prod.dir}" >
+        <include name="**/*.*" />
+      </fileset>
+      <fileset dir="${build.test.dir}" >
+        <include name="**/*.*" />
+      </fileset>
+      <fileset dir="${antlrsysout.dir}" >
+        <include name="*.out*txt" />
+        <include name="Xlog*txt" />
+      </fileset>
+      <fileset dir="${generated.dir}" >
+        <include name="**/*.java" />
+        <include name="**/*.tokens" />
+      </fileset>
+     </delete>
+  </target>
+
+<target name="delete.antlr.output" description="Remove all output from antlr">
+    <delete quiet="true">
+      <fileset dir="${antlrsysout.dir}" >
+        <include name="*.out*txt" />
+        <include name="Xlog*txt" />
+      </fileset>
+      <fileset dir="${generated.dir}" >
+        <include name="**/*.java" />
+        <include name="**/*.tokens" />
+      </fileset>
+     </delete>
+  </target>
+
+</project>
+

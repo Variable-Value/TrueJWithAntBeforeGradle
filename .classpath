@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="generated"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" output="build/test" path="test/src">
+		<attributes>
+			<attribute name="test" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="build/test" path="Cucumber/step-definitions">
+		<attributes>
+			<attribute name="test" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/cucumber-junit-current.jar" sourcepath="vendor/lib/cucumber-junit-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/cowan/Documents/Projects/TLantlr/vendor/lib/cucumber-junit-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/cucumber-java-current.jar" sourcepath="vendor/lib/cucumber-java-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/cowan/Documents/Projects/TLantlr/vendor/lib/cucumber-java-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/cucumber-jvm-deps-current.jar" sourcepath="vendor/lib/cucumber-jvm-deps-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/cowan/Documents/Projects/TLantlr/vendor/lib/cucumber-jvm-deps-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/antlr4-current.jar" sourcepath="vendor/lib/antlr4-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/TLantlr/vendor/lib/antlr4-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/antlr4-runtime-current.jar" sourcepath="vendor/lib/antlr4-runtime-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/cowan/Documents/Projects/TLantlr/vendor/lib/antlr4-runtime-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/cucumber-core-current.jar" sourcepath="vendor/lib/cucumber-core-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/cowan/Documents/Projects/TLantlr/vendor/lib/cucumber-core-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/cucumber-html-current.jar" sourcepath="vendor/lib/cucumber-html-current-sources.jar"/>
+	<classpathentry kind="lib" path="vendor/lib/gherkin-current.jar" sourcepath="vendor/lib/gherkin-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/cowan/Documents/Projects/TLantlr/vendor/lib/gherkin-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/hamcrest-core-current.jar" sourcepath="vendor/lib/hamcrest-core-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/cowan/Documents/Projects/TLantlr/vendor/lib/hamcrest-core-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/junit-current.jar" sourcepath="vendor/lib/junit-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/cowan/Documents/Projects/TLantlr/vendor/lib/junit-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/fitnesse-current-standalone.jar" sourcepath="vendor/lib/fitnesse-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/TLantlr/vendor/lib/fitnesse-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/org.eclipse.jdt.annotation-current.jar" sourcepath="vendor/lib/org.eclipse.jdt.annotation-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/TLantlr/vendor/lib/org.eclipse.jdt.annotation-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/fitlibrary-20080812.jar"/>
+	<classpathentry kind="lib" path="vendor/lib/tuprolog-current.jar" sourcepath="vendor/lib/tuprolog-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/TLantlr/vendor/lib/tuprolog-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="build/prod"/>
+</classpath>

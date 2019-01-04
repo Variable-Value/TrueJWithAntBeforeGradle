@@ -1,0 +1,158 @@
+/**
+ *
+ */
+package t_translator;
+
+import org.antlr.runtime.ANTLRStringStream;
+import org.antlr.runtime.RecognitionException;
+import org.antlr.runtime.TokenRewriteStream;
+import org.antlr.runtime.tree.CommonTreeNodeStream;
+import org.antlr.runtime.tree.Tree;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import t_translator.T2TreeParser.ParserRuleReturnScope;
+
+
+/**
+ * @author cowang
+ *
+ */
+public class 
+TestTTree2Java extends TTester {
+
+private ANTLRStringStream input;
+private TokenRewriteStream tokenStream;
+private T2TreeLexer  lexer;
+private T2TreeParser parser;
+private ParserRuleReturnScope parseResults;
+private ErrCheck checker;
+private TTree2Java javaMaker;
+private CommonTreeNodeStream treeStream;
+private Tree tree;
+
+
+@Before
+public void setUp() throws Exception {
+}
+
+@After
+public void tearDown() throws Exception {
+}
+
+@Test
+public void testClassGeneration() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+
+//System.err.println("START testCreatorAsArgument"); System.err.flush();
+  parser = prepare("public class PriorityQueueTester {"
+                  ,"  public static void main(String[] args') {"
+                  ,"    PriorityQueue<Integer> 'pq ="
+                  ,"      new PriorityQueue<Integer>(20,"
+                  ,"        new Comparator<Integer>() {"
+                  ,"          public int compare(Integer i', Integer j') {"
+                  ,"            int 'result = i'%2 - j'%2;"
+                  ,"            if ('result == 0)"
+                  ,"              result' = i'-j';"
+                  ,"            return result';"
+                  ,"          }"
+                  ,"        }"
+                  ,"      );"
+                  ,"  }"
+                  ,"}"
+                  );
+  parseResults = parser.normalClassDeclaration();
+  checkParserASTOK("Parser produces expected tree"
+      ,indentedAST("(class PriorityQueueTester "
+                  ,"  SAVING "
+                  ,"  { public static void main ( String [ ] args' ) "
+                  ,"  ({ PriorityQueue < Integer > 'pq "
+                  ,"      = new PriorityQueue < Integer > "
+                  ,"          ( 20 , new Comparator < Integer > ( ) "
+                  ,"                     { public int compare ( Integer i' , Integer j' ) "
+                  ,"                         ({ int 'result = i' % 2 - j' % 2 ; "
+                  ,"                            if ( 'result == 0 ) (ASSIGNMENT result' = i' - j') ; "
+                  ,"                            return result' ; "
+                  ,"                          }"
+                  ,"                         ) "
+                  ,"                     } "
+                  ,"          ) ; "
+                  ,"   }"
+                  ,"  ) "
+                  ,"  }"
+                  ,")"
+                )
+      , parseResults          
+      );
+  checker = buildSemanticCheckerIfOk(parseResults);
+  checker.normalClassDeclaration();
+//  javaMaker.DEBUGMSGS = true;
+  javaMaker = buildJavaTranslatorIfOk(parseResults);
+  checkJavaOK(expected
+      ("public class PriorityQueueTester {"
+      ,"  public static void main(String[] args/*'*/) {"
+      ,"    PriorityQueue<Integer> /*'*/pq ="
+      ,"      new PriorityQueue<Integer>(20,"
+      ,"        new Comparator<Integer>() {"
+      ,"          public int compare(Integer i/*'*/, Integer j/*'*/) {"
+      ,"            int /*'*/result = i/*'*/%2 - j/*'*/%2;"
+      ,"            if (/*'*/result == 0)"
+      ,"              result/*'*/ = i/*'*/-j/*'*/;"
+      ,"            return result/*'*/;"
+      ,"          }"
+      ,"        }"
+      ,"      );"
+      ,"  }"
+      ,"}"
+      )
+    ,javaMaker.normalClassDeclaration()
+    );
+}
+
+@Test
+public void testForstatement() throws RecognitionException {
+  // checkOK("msg","OK"  ,checkParseResults(prepare(lang,"phrase").rule()).treeRule(),"java");
+  // checkJava("msg","FAIL",checkParseResults(prepare(lang,"phrase").rule()).treeRule(),expected("err1","err2");
+
+//System.err.println("START testCreatorAsArgument"); System.err.flush();
+  parser = prepare("public class StringBuilderTester {"
+                  ,""
+                  ,"  public static String appendItems(List list') {"
+                  ,"    StringBuilder 'b = new StringBuilder();"
+                  ,""
+                  ,"    for (Iterator 'i = list'.iterator(); 'i.hasNext(); ) {"
+                  ,"      'b.append('i.next())"
+                  ,"        .append(\" \");"
+                  ,"    }"
+                  ,""
+                  ,"    return b'.toString();"
+                  ,"  }"
+                  ,"}"
+                  );
+  
+  parseResults = parser.normalClassDeclaration();
+  checker = buildSemanticCheckerIfOk(parseResults);
+  checker.normalClassDeclaration();
+  javaMaker = buildJavaTranslatorIfOk(parseResults);
+  // javaMaker.DEBUGMSGS = true;
+  checkJavaOK(expected("public class StringBuilderTester {"
+            ,""
+            ,"  public static String appendItems(List list/*'*/) {"
+            ,"    StringBuilder /*'*/b = new StringBuilder();"
+            ,""
+            ,"    for (Iterator /*'*/i = list/*'*/.iterator(); /*'*/i.hasNext(); ) {"
+            ,"      /*'*/b.append(/*'*/i.next())"
+            ,"        .append(\" \");"
+            ,"    }"
+            ,""
+            ,"    return b/*'*/.toString();"
+            ,"  }"
+            ,"}"
+            )
+         ,javaMaker.normalClassDeclaration()
+         );
+  
+}
+
+} // end class TestTTree2Java

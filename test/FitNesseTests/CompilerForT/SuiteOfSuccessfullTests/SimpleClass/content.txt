@@ -1,0 +1,23 @@
+!1 Simple tests of empty classes
+!|tlang.StartT|
+----
+|start new T program|
+|program code lines|
+|{{{/* comment1 */     }}}|
+|{{{   class TryOne {} }}}|
+
+|check|result of parse|OK|
+|check|semantic errors|OK|
+|check|java generation|OK|
+
+|Generated Java lines|
+|code lines|
+|{{{/* comment1 */     }}}|
+|{{{   class TryOne {} }}}|
+----
+|start new T program|
+|program code lines|
+|{{{class TryOne ;  }}}|
+
+!|check|result of parse|Parse error in FitNesse test at line 1:13 missing LBRACE at ';'. Parse error in FitNesse test at line 2:0 mismatched input '<EOF>' expecting RBRACE.|
+----

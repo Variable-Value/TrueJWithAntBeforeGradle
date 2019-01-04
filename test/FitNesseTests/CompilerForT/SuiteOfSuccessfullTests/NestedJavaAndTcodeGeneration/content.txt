@@ -1,0 +1,142 @@
+!1 Nested Java and T generate the correct Java code
+Also see NestedJavaAndT
+!|t_translator.StartT|
+----
+!***** !3 Switch to Java from T Generates correct code
+|start new T program|
+|program code lines|
+|{{{class TryFirst {           }}}|
+|{{{··void x() {·}}}|
+|{{{····int 'i;         }}}|
+|{{{····javalanguage (i') {      }}}|
+|{{{······i = 4;         }}}|
+|{{{····} // end java        }}}|
+|{{{····conjecture .9 (i'=4); }}}|
+|{{{··} // end x()             }}}|
+|{{{} // end class TryOne    }}}|
+
+
+|check|result of parse|OK|
+|check|semantic errors|OK|
+|check|java generation|OK|
+#|check|java compile   |OK|
+
+|Generated Java lines with dots|
+|code lines|
+|{{{class·TryFirst·{            }}}|
+|{{{··void·x()·{·             }}}|
+|{{{····int·/*'*/i;         }}}|
+|{{{····/*·javalanguage·*/·/*·(i')·*/·{  }}}|
+|{{{······i·=·4;          }}}|
+|{{{····}·//·end·java         }}}|
+|{{{····/*·conjecture·.9·(i'=4);·*/  }}}|
+|{{{··}·//·end·x()              }}}|
+|{{{}·//·end·class·TryOne     }}}|
+----
+**********!
+!***** !3 Switch to Java from T Generates correct code when on same line
+|start new T program|
+|program code lines|
+|{{{class Try2nd {        }}}|
+|{{{  void X() { int 'i; javalanguage (i') { i = 4; }  conjecture .9 (i'=4); }}}|
+|{{{           } // end X}}}|
+|{{{} // end class TryOne }}}|
+
+
+|check|result of parse|OK|
+|check|semantic errors|OK|
+|check|java generation|OK|
+#|check|java compile   |OK|
+
+|Generated Java lines|
+|code lines|
+|{{{class Try2nd { }}}|
+|{{{  void X() { int /*'*/i; /* javalanguage */ /* (i') */ { i = 4; }  /* conjecture .9 (i'=4); */ }}}|
+|{{{           } // end X}}}|
+|{{{} // end class TryOne }}}|
+----
+**********!
+!***** !3 Cannot switch to T from T
+|start new T program|
+|program code lines|
+|{{{class Try3rd { }}}|
+|{{{  void X() { }}}|
+|{{{    tlanguage{ }}}|
+|{{{      int i' = 4; }}}|
+|{{{    } // end java }}}|
+|{{{    conjecture .9 (i'=4); }}}|
+|{{{  } // end X}}}|
+|{{{} // end class TryOne }}}|
+
+
+!|check|result of parse|Parse error in FitNesse test at line 3:9 rule languageBlock failed predicate: {currentLanguage == Lang.javaLanguage}?.|
+|check|semantic errors|OK|
+----
+**********!
+!***** !3 Switch to T from Java 
+|start new T program|
+|program code lines|
+|{{{package T_Translator;}}}|
+|{{{ }}}|
+|{{{class Try4th { }}}|
+|{{{  void X() throws java.io.IOException { }}}|
+|{{{    int 'i = 2; }}}|
+|{{{    javalanguage (i') { }}}|
+|{{{      i = 4; }}}|
+|{{{      Integer p = new Integer(14); }}}|
+|{{{      tlanguage { }}}|
+|{{{        // a comment should be valid T }}}|
+|{{{      } }}}|
+|{{{    } // end java }}}|
+|{{{    conjecture .9 /* almost surely */ (i'=4); }}}|
+|{{{  } // end X}}}|
+|{{{} // end class TryOne }}}|
+
+
+
+|check|result of parse|OK|
+|check|semantic errors|OK|
+|check|java generation|OK|
+
+
+|check|java compile   |OK|
+
+|Generated Java lines|
+|code lines|
+|{{{package T_Translator;}}}|
+|{{{ }}}|
+|{{{class Try4th { }}}|
+|{{{  void X() throws java.io.IOException { }}}|
+|{{{    int /*'*/i = 2; }}}|
+|{{{    /* javalanguage */ /* (i') */ { }}}|
+|{{{      i = 4; }}}|
+|{{{      Integer p = new Integer(14); }}}|
+|{{{      /* tlanguage */ { }}}|
+|{{{        // a comment should be valid T }}}|
+|{{{      } }}}|
+|{{{    } // end java }}}|
+|{{{    /* conjecture .9 (* almost surely *) (i'=4); */ }}}|
+|{{{  } // end X}}}|
+|{{{} // end class TryOne }}}|
+----
+**********!
+!***** !3 Cannot switch to Java from Java
+|start new T program|
+|program code lines|
+|{{{class Try5th { }}}|
+|{{{  void X() { }}}|
+|{{{    javalanguage { }}}|
+|{{{      int i = 4; }}}|
+|{{{      javalanguage  { }}}|
+|{{{        // a comment should be valid Java }}}|
+|{{{      } }}}|
+|{{{    } // end java }}}|
+|{{{    conjecture .9 (i'=4); }}}|
+|{{{  } // end X}}}|
+|{{{} // end class TryOne }}}|
+
+
+!|check|result of parse|Parse error in FitNesse test at line 5:14 rule languageBlock failed predicate: {currentLanguage != Lang.javaLanguage}?.|
+
+----
+**********!

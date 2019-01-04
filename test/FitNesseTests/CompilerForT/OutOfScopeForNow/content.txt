@@ -1,0 +1,16 @@
+These tests are not currently being worked on. Perhaps they will be included later.
+
+!contents
+
+
+Enter new tests here with a carrot like
+!-TEMP: ^NominalFloat-!
+
+TEMP: ^AliasSuite
+
+^CompilerFailure
+
+
+The path to the fixtures and system code for these test cases:
+!path C:\DailyWorkWithT\TLanguage\fixtures\
+!path C:\DailyWorkWithT\TLanguage\build\prod\

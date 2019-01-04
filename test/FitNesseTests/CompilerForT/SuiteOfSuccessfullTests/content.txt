@@ -1,0 +1,6 @@
+These tests were all successful in the past and are collected here for ease of retesting as a suite.
+
+!path C:\Users\cowang\Documents\Projects\TLantlr\fixtures
+!path C:\FitNesse\**.jar
+
+!contents

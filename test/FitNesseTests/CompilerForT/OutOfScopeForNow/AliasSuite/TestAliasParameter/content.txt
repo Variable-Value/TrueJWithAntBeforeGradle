@@ -1,0 +1,56 @@
+!3 When a value is used as changing actual parameter to a method , we must ensure that all statements about the original value (and all its other aliases) remain valid.
+
+Inside a method, its parameters aliase the actual paramenters that were supplied. When a post-form of a paramenter is used, we must ensure that the pre-form, the pre-form of the actual paramenter, and any other aliases of the pre-form of the actual parameter refer to a stable copy of the value. This can be accomplished by doing a shallow copy of the actual parameter before the call that is used for the pre-form of the actual parameter. Then the method can work with the "true" object. But before it changes any component of the object, it must preserve the original value by cloning the original value - which the pre-form still refers to along with all its aliases - and assigning the clone as the value of the (about to be changed) post-form. 
+
+!|t_translator.StartT|
+----
+!***** !3 OLD CODE TO USE AS TEMPLATE
+|start new T program|
+|program code lines|
+|{{{class OrderedPair {                                                 }}}|
+|{{{  private int first;                                                }}}|
+|{{{  private int second;                                               }}}|
+|{{{                                                                    }}}|
+|{{{  // The constructor for the object                                 }}}|
+|{{{  OrderedPair(int item_1', int item_2') {                           }}}|
+|{{{    first' = item_1';                                               }}}|
+|{{{    second' = item_2';                                              }}}|
+|{{{  }                                                                 }}}|
+|{{{                                                                    }}}|
+|{{{  void swap() {                                                     }}}|
+|{{{    first' = 'second;                                               }}}|
+|{{{    second' = 'first;                                               }}}|
+|{{{  }                                                                 }}}|
+|{{{} // end class OrderedPair                                          }}}|
+
+|check|result of parse|OK|
+|check|semantic errors|OK|
+|check|java generation|OK|
+
+!3 Template for generated code.
+We can translate to a simple form of Java, because the translator must check for the validity of the
+T code anyway.
+
+|Java output|
+|code lines|
+|{{{class OrderedPair {                                         }}}|
+|{{{  private int first;                                        }}}|
+|{{{  private int second;                                       }}}|
+|{{{                                                            }}}|
+|{{{  // The constructor for the object                         }}}|
+|{{{  OrderedPair(int item_1/*post*/, int item_2/*post*/) {     }}}|
+|{{{    first/*post*/ = item_1/*post*/;                         }}}|
+|{{{    second/*post*/ = item_2/*post*/;                        }}}|
+|{{{  }                                                         }}}|
+|{{{                                                            }}}|
+|{{{  void swap(bool keepThis) {                                }}}|
+|{{{    if (keepThis) {                                         }}}|
+|{{{      final OrderedPair t$pre$t_this = clone(this);         }}}|
+|{{{    }                                                       }}}|
+|{{{    final int t$pre$t_first = /*pre*/first;                 }}}|
+|{{{    first/*post*/ = /*pre*/second;                          }}}|
+|{{{    second/*post*/ = t$pre$t_first;                         }}}|
+|{{{  }                                                         }}}|
+|{{{} // end class OrderedPair                                  }}}|
+----
+**********!

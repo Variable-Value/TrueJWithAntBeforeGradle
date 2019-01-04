@@ -1,0 +1,31 @@
+!3 Preserve Decorated Values when they are needed later in the same method
+
+When the value in a variable is overwritten, that value is no longer available. In T, we check to make sure the value is still availble. Here is an error in the use of value names:
+
+!|t_translator.StartT|
+----
+!***** !3 Use of decorated names after write of their post-form
+|start new T program|
+|program code lines|
+|{{{class OrderedPair {                                                 }}}|
+|{{{  private int first;                                                }}}|
+|{{{  private int second;                                               }}}|
+|{{{                                                                    }}}|
+|{{{  // The constructor for the object                                 }}}|
+|{{{  OrderedPair(int item_1', int item_2') {                           }}}|
+|{{{    first' = item_1';                                               }}}|
+|{{{    second' = item_2';                                              }}}|
+|{{{  }                                                                 }}}|
+|{{{                                                                    }}}|
+|{{{  void swap() {                                                     }}}|
+|{{{    first' = 'second;                                               }}}|
+|{{{    second' = 'first;  // we attempt to reuse 'first                }}}|
+|{{{  }                                                                 }}}|
+|{{{} // end class OrderedPair                                          }}}|
+
+
+For the time being, we only recognize that the intermediate holding value is missing. Later we will generate the necessary temporary variables where possible.
+!|check|result of parse|OK|
+|check|semantic errors|Semantic error in FitNesse test at line 13:16 rule primary failed predicate: {vnm.thisValueNameIsStillAvailable()}?.|
+
+**********!

@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="JavaLang" default="test" basedir="..">
+<!-- =================================
+          Run from directory
+		    .../TLanguage/src/
+			therefore, basedir=TLanguage
+
+     Build the Java6 parser from the Java6Lex.g and Java6Parse.g grammars
+     ================================= -->
+	<property name="grammarName" value="Java6" />
+
+    <property name="build.prod.dir" location="build/prod" />
+    <property name="build.test.dir" location="build/test" />
+    <property name="src.dir" location="src" />
+    <property name="test.dir" location="test" />
+    <property name="vendor.lib.dir" location="vendor/lib" />
+    <property name="fixtures.dir" location="fixtures" />
+    <property name="fitnesseSuite" value="FitNesse.ProjectPage.CompilerForT"/>
+	<property name="antlrsysout.dir" location="antlrsysout" />
+	<property name="generated.dir" location="generated" />
+	<property name="examples.dir" location="examples/src.modified" />
+	<property name="examples.java.dir" location="vendor/src/examples/java" />
+	<property name="grammar.dir" location="grammar" />
+
+
+	<path id="project.classpath">
+	    <pathelement location="${build.prod.dir}" />
+	    <pathelement location="${build.test.dir}" />
+	    <pathelement location="${fixtures.dir}" />
+	    <fileset dir="${vendor.lib.dir}">
+	      <include name="*.jar" />
+	    </fileset>
+	</path>
+
+	<!-- =================================
+	  target: force.tests
+	 ================================= -->
+	<target name="force.tests" depends="clean.tests,test"
+		  description="Force tests to run, even if no change to grammar or Java programs">
+	</target>
+
+	<!-- =================================
+	  target: test
+	 ================================= -->
+	<target name="test" depends="test.parser.java.onvalid,test.parser.java.oninvalid"
+		  description="Run grammar generation, compile, and test, as necessary">
+	</target>
+
+	<!-- =================================
+	  target: test.parser.java.onvalid
+	 ================================= -->
+	<target name="test.parser.java.onvalid" depends="test.parser.java.check"
+		  description="Fail if there were any errors"
+		  unless="test.parser.java.ok">
+		<echo>${valid.java.test.output}</echo>
+ 		<fail />
+	</target>
+
+	<!-- =================================
+	  target: test.parser.java.oninvalid
+	 ================================= -->
+	<target name="test.parser.java.oninvalid" depends="test.parser.java.check.invalid"
+		  description="Fail if there were no error messages on invalid Java programs"
+		  if="test.invalid.java.has.problem">
+		<echo>PARSER OUTPUT FOR INVALID PROGRAM WAS NOT GENERATED</echo>
+		<fail />
+	</target>
+
+	<!-- =================================
+	  target: test.parser.java.check.invalid
+	 ================================= -->
+	<target name="test.parser.java.check.invalid" depends="parser.invalid.java.test"
+		  description="Check that parsing of Java errors generates msgs">
+		<condition property="test.invalid.java.has.problem">
+			<and>
+				<isset property="need.to.test.java" />
+				<equals arg1="${invalid.java.test.output}" arg2="" />
+			</and>
+		</condition>
+	</target>
+
+	<!-- =================================
+	  target: test.parser.java.check
+	 ================================= -->
+	<target name="test.parser.java.check" depends="parser.valid.java.test"
+		  description="Check that parsing of Java programs produced no errors">
+		<condition property="test.parser.java.ok">
+			<or>
+				<not>
+					<isset property="some.java.updated" />
+				</not>
+				<equals arg1="${valid.java.test.output}" arg2="" />
+			</or>
+		</condition>
+    <!--
+      <echo>Property some.java.updated = ${some.java.updated}</echo>
+      <echo>Property valid.java.test.output = </echo>
+      <echo>  ${valid.java.test.output}</echo>
+      <echo>Property test.parser.java.ok = ${test.parser.java.ok}</echo>
+		-->
+	</target>
+
+<!-- =================================
+      target: parser.valid.java.test
+      Parse the valid Java 1.5 programs from the book
+      Java 1.5 'Tiger': A Developer's Notebook
+        by Brett McLaughlin and David Flanagan (O'Reilly)
+      Code available at http://shop.oreilly.com/product/9780596007386.do
+     ================================= -->
+	<fileset id="valid.java.to.test" dir="${examples.java.dir}">
+		<include name="**/*.java" />
+    <exclude name="**/*Error*/**/*.java" />
+	</fileset>
+	<target name="parser.valid.java.test" depends="java.grammar.compile,check.test.request"
+		  description="Parse the valid.java.to.test files"
+		  if="need.to.test.java">
+		<pathconvert property="valid.java.files" refid="valid.java.to.test" pathsep=" " />
+		<java classname="Java6SplitRun" classpathref="project.classpath"
+        outputproperty="valid.java.test.output">
+			<arg line="${valid.java.files}" />
+		</java>
+    <!-- ******** FOR TESTING THAT THE PARSER IS RUNNING ********
+		  <echo>THIS OUTPUT IS EXPECTED - PARSER OUTPUT FOR VALID PROGRAM:</echo>
+		  <echo>${valid.java.test.output}</echo>
+		-->
+	</target>
+
+	<!-- =================================
+    target: parser.invalid.java.test
+   ================================= -->
+	<fileset id="invalid.java.to.test" dir="${examples.java.dir}">
+		<include name="**/*Error*/**/*.java" />
+	</fileset>
+	<target name="parser.invalid.java.test" depends="java.grammar.compile,check.test.request"
+		  description="Parse the invalid.java.to.test files"
+		  if="need.to.test.java">
+		<pathconvert property="invalid.java.files" refid="invalid.java.to.test" pathsep=" " />
+		<java classname="Java6SplitRun" classpathref="project.classpath"
+			errorproperty="invalid.java.test.output">
+			<arg line="${invalid.java.files}" />
+		</java>
+		<echo>THIS OUTPUT IS EXPECTED - PARSER OUTPUT FOR INVALID PROGRAM:</echo>
+		<echo>${invalid.java.test.output}</echo>
+	</target>
+
+<!-- =================================
+      target: check.test.request
+        check for either test.requested or recompiles
+     ================================= -->
+	<target name="check.test.request"
+		  description="Check for either test.requested or some.java.updated">
+		<condition property="need.to.test.java">
+			<or>
+				<isset property="test.requested" />
+				<isset property="some.java.updated" /> 
+			</or>
+		</condition>
+  </target>
+
+<!-- =================================
+      target: java.grammar.compile
+     ================================= -->
+	<target name="java.grammar.compile"
+	        depends="antlr.java6lex.generate,antlr.java6parse.generate"
+		  description="Compile the Java for the parsers">
+		<javac srcdir="${src.dir}" destdir="${build.prod.dir}" debug="true"
+		    includes="*Super.java"
+        deprecation="no"
+			  updatedProperty="javasuper.updated" 
+        includeAntRuntime="no"
+			  verbose="no"
+        >
+			<classpath refid="project.classpath" />
+		</javac>
+		<javac srcdir="${generated.dir}" destdir="${build.prod.dir}" debug="true"
+        includes="**/*.java" excludes=".tokens,.txt,.bak" 
+        deprecation="no" 
+        updatedProperty="javagrammar.updated" 
+        includeAntRuntime="no"
+			  verbose="no"
+        >
+			<classpath refid="project.classpath" />
+		</javac>
+		<javac srcdir="${src.dir}" destdir="${build.prod.dir}" debug="true"
+		    includes="**/*.java"
+        deprecation="no"
+			  updatedProperty="javarun.updated" 
+        includeAntRuntime="no"
+			  verbose="no"
+        >
+			<classpath refid="project.classpath" />
+		</javac>
+		<condition property="some.java.updated">
+			<or>
+				<isset property="javasuper.updated" />
+				<isset property="javagrammar.updated" />
+				<isset property="javarun.updated" />
+			</or>
+		</condition>
+	</target>
+
+<!-- =================================
+	  target: antlr.java6lex.generate - Generate Java6 lexer from grammar
+     ================================= -->
+	<target name="antlr.java6lex.generate" depends="prepare,check.java6lex.generated.java"
+		  unless="java6lex.generated.java.ok" description="Generate lexer for Java6 grammar">
+		<java fork="true" failonerror="true" output="${antlrsysout.dir}/antlr.out.java6lex.txt"
+			  classname="org.antlr.Tool">
+			<arg line="-Xconversiontimeout 100000 -report -o ${generated.dir} ${grammar.dir}/${grammarName}Lex.g"/>
+			<classpath refid="project.classpath" />
+		</java>
+	</target>
+
+<!-- =================================
+	  target: check.java6lex.generated.java
+	 ================================= -->
+	<target name="check.java6lex.generated.java" 
+          description="Check that output of ANTLR Java6Lex.g is up to date">
+		<uptodate property="java6lex.generated.java.ok">
+			<srcfiles dir="${grammar.dir}" includes="${grammarName}Lex.g" />
+				<mergemapper to="${generated.dir}/${grammarName}Lex.java" />
+		</uptodate>
+	</target>
+
+<!-- =================================
+	  target: antlr.java6parse.generate - Generate Java6 parser from grammar
+     ================================= -->
+	<target name="antlr.java6parse.generate" depends="prepare,check.java6parse.generated.java"
+		  unless="java6parse.generated.java.ok" description="Generate parser for Java6 grammar">
+		<java fork="true" failonerror="true" output="${antlrsysout.dir}/antlr.out.java6parse.txt"
+			  classname="org.antlr.Tool">
+			<arg line="-Xconversiontimeout 100000 -report -o ${generated.dir} ${grammar.dir}/${grammarName}Parse.g"/>
+			<classpath refid="project.classpath" />
+		</java>
+	</target>
+
+<!-- =================================
+	  target: check.java6parse.generated.java
+	 ================================= -->
+	<target name="check.java6parse.generated.java" 
+          description="Check that output of ANTLR Java6Parse.g is up to date">
+		<uptodate property="java6parse.generated.java.ok">
+			<srcfiles dir="${grammar.dir}" includes="${grammarName}Parse.g" />
+			<compositemapper>
+				<mergemapper to="${generated.dir}/${grammarName}Parse.java" />
+			</compositemapper>
+		</uptodate>
+	</target>
+
+	<!-- =================================
+	  target: prepare
+	 ================================= -->
+	<target name="prepare" description="Ensure file structure in place">
+		<mkdir dir="${build.prod.dir}"/>
+		<mkdir dir="${build.test.dir}"/>
+		<mkdir dir="${antlrsysout.dir}" />
+		<mkdir dir="${generated.dir}" />
+	</target>
+
+  <!-- =================================
+	  target: clean.all
+	 ================================= -->
+  <target name="clean.all" description="remove all output files">
+    <delete quiet="true">
+      <fileset dir="${basedir}" >
+        <include name="**/*.class" />
+      </fileset>
+      <fileset dir="${antlrsysout.dir}" >
+        <include name="*.out*txt" />
+      </fileset>
+      <fileset dir="${generated.dir}" >
+        <include name="**/*.java" />
+        <include name="**/*.tokens" />
+      </fileset>
+    </delete>
+  </target>
+
+  <!-- =================================
+	  target: clean.tests
+	 ================================= -->
+  <target name="clean.tests"
+        description="force tests">
+	  <property name="need.to.test.java" value="true" />
+    <property name="test.requested" value="true" /> 
+	  <!-- <property name="valid.test.output" value="" />  -->
+  </target>
+
+  <!-- =================================
+	  target: clean
+	 ================================= -->
+  <target name="clean"
+        description="remove all grammar, compile, and test outputs, except FitNesse fixtures">
+    <delete quiet="true">
+      <fileset dir="${basedir}" >
+        <include name="**/Java6*.class" />
+        <include name="**/t_translator/*.class" />
+        <include name="**/TCompiler.class" />
+      </fileset>
+      <fileset dir="${antlrsysout.dir}" >
+        <include name="*.out*txt" />
+      </fileset>
+      <fileset dir="${generated.dir}" >
+        <include name="**/*.java" />
+        <include name="**/*.tokens" />
+      </fileset>
+    </delete>
+  </target>
+
+</project>

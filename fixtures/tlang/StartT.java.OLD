@@ -1,0 +1,356 @@
+package tlang;
+
+import CollectingMsgListener;
+
+import java.io.BufferedReader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.runtime.tree.CommonTree;
+import org.antlr.runtime.tree.CommonTreeNodeStream;
+import org.antlr.v4.runtime.TokenStreamRewriter;
+
+import tlang.TLantlrLexer;
+import fit.Fixture;
+import fitlibrary.DoFixture;
+import fitlibrary.SetUpFixture;
+
+
+public class StartT extends DoFixture {
+
+CommonTree parseTree;
+String className;
+TokenStreamRewriter tokenStream;
+CollectingMsgListener errListener = new CollectingMsgListener();
+TLantlrParser.compilationUnit_return compilationUnitResults;
+CommonTreeNodeStream treeNodes;
+Boolean parseSucceeded;
+String javaText;
+// TTree2Java.compilationUnit_return java;
+private CommonTree logictree;
+String logicText;
+String prologCode;
+
+/* an experiment with wrapping the line with angle brackets showed that the
+   FitNesse/Fit/FitLibrary system removes all spaces other than the first in
+   a sequence. Therefore, manipulating each individual blank is required. I
+   haven't tried creating a TypeAdapter, on the theory that the removal of
+   spaces may happen before the TypeAdapter gets control.
+*/
+static final char         middleDot = '\u00B7';
+                                      // 0xB7 or ALT+0183 is "·"
+
+static final String fitNesseTest = "FitNesse test";
+final String testDir = "/Users/cowang/Documents/Projects/TLanguage/test/temp/";
+
+boolean codeForTUsesDots;
+StringBuilder codeString = new StringBuilder();
+
+public Fixture startNewTProgram() {
+  return new SetUpTCode();
+}
+
+public /*nested*/ class SetUpTCode extends SetUpFixture {
+  public SetUpTCode() {
+    codeString.setLength(0);
+    codeForTUsesDots = false; // so far
+  }
+  
+  public void programCode(String programCode) {
+    codeString.append(codeString(programCode));
+  }
+
+  /** Loads each program code line into StringWriter sw as a line */
+  public void programCodeLines(String programCodeLines) {
+    codeString.append(codeString(programCodeLines)+ "\n");
+  }
+
+  private String codeString(String line) {
+    codeForTUsesDots |= lineContainsMiddleDot(programCode);
+    if (codeForTUsesDots) return programCode.replace(middleDot,' ');
+    else                  return programCode;
+  }
+  
+  private boolean lineContainsMiddleDot(String line) {
+    return line.indexOf(middleDot) != -1;
+  }
+} // end nested class setUpTCode
+
+
+public String resultOfParse() {
+  errListener.clear();
+  try {
+    final ANTLRInputStream input = new ANTLRInputStream( codeString.toString() );
+    input.name = fitNesseTest;
+    final TLantlrLexer lexer = new TLantlrLexer(input);
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(errListener);
+
+    tokenStream = new TokenRewriteStream( lexer );
+    TLantlrParser parser = new TLantlrParser(tokenStream);
+    parser.removeErrorListeners();
+    parser.addErrorListener(errListener);
+    compilationUnitResults = parser.compilationUnit();
+    parseSucceeded = (compilationUnitResults != null && errListener.isEmpty());
+
+    if (parseSucceeded) {
+      parseTree = (CommonTree) compilationUnitResults.getTree();
+      treeNodes = new CommonTreeNodeStream(parseTree);
+      treeNodes.setTokenStream(tokenStream);
+      return "OK";
+    } else {
+      return fixDisplay(errListener.toString());
+    }
+  } catch (Exception e) {
+    parseTree = null;
+    System.err.println(tokenStream.toString());
+    return "PARSE EXCEPTION: " + e.getMessage()+"  "+fixDisplay(errListener.toString());
+    // throw e;
+  } catch (Error e) {
+    parseTree = null;
+    System.err.println(tokenStream.toString());
+    return "PARSE ERROR: " + e.getMessage()+"  "+fixDisplay(errListener.toString());
+    // throw e;
+  }
+}
+
+public String semanticErrors() {
+  errListener.clear();
+  try {
+    ErrCheck checker = new ErrCheck(treeNodes);
+    checker.compilationUnit();
+    className = checker.className;
+    tokenStream.deleteProgram();       // revert any ErrCheck changes back to the original input T program
+    return (errListener.isEmpty()) ? "OK" : fixDisplay(errListener.toString());
+  } catch (Exception e) {
+    System.err.println(e.getMessage());
+    e.printStackTrace();
+    final String msg = e.getMessage()==null ? "" : " "+e.getMessage();
+    final String errorList = errListener.isEmpty() ? "" : "\n"+fixDisplay(errListener.toString());
+    return "SEMANTIC CHECKING EXCEPTION"+msg+errorList;
+  } catch (Error e) {
+    System.err.println(e.getMessage());
+    e.printStackTrace();
+    final String msg = e.getMessage()==null ? "" : " "+e.getMessage();
+    final String errorList = errListener.isEmpty() ? "" : "\n"+fixDisplay(errListener.toString());
+    return "SEMANTIC CHECKING ERROR"+msg+errorList;
+  }
+}
+
+public String
+javaCompile() {
+  String compileErrors;
+  if (parseSucceeded) {
+    tokenStream.deleteProgram();       // revert any ErrCheck changes back to the original input T program
+    compileErrors = JavaCompilerUtilities.compileJava("FitNesse.test", testDir, className, javaText);
+    return (compileErrors.length() == 0) ? "OK" : fixDisplay(compileErrors);
+  } else { // parse failed, so skip compiles
+    javaText = "SYNTAX ERRORS IN PARSE";
+    return javaText;
+  }
+}
+
+public String javaGeneration() { // SIDE_EFFECT: sets javaText for use in javaOutput and CodeLine.codeLines
+  if (parseSucceeded) {
+    errListener.clear();
+    try {
+      treeNodes = new CommonTreeNodeStream(parseTree);
+      treeNodes.setTokenStream(tokenStream);
+      TTree2Java javaMaker = new TTree2Java(treeNodes);
+      java = javaMaker.compilationUnit();
+      javaText = tokenStream.toString(); // capture the tokenStream text as modified by javaMaker
+      tokenStream.deleteProgram();       // revert the javaMaker changes back to the original input T program
+      return errListener.isEmpty() ? "" : "\n"+fixDisplay(errListener.toString());
+    } catch (Exception e) {
+      System.err.println(e.getMessage());
+      e.printStackTrace();
+      System.err.println(tokenStream.toString());
+      System.err.println(java==null?"AST java return is null":java.toString());
+      // throw e;
+      final String msg = e.getMessage()==null ? "" : e.getMessage();
+      final String errorList = errListener.isEmpty() ? "" : "\n"+fixDisplay(errListener.toString());
+      return "JAVA GENERATION EXCEPTION : "+msg+errorList;
+    } catch (Error e) {
+      System.err.println(e.getMessage());
+      e.printStackTrace();
+      System.err.println(tokenStream.toString());
+      System.err.println(java==null?"AST java return is null":java.toString());
+      // throw e;
+      final String msg = e.getMessage()==null ? "" : e.getMessage();
+      final String errorList = errListener.isEmpty() ? "" : "\n"+fixDisplay(errListener.toString());
+      return "JAVA GENERATION ERROR : "+msg+errorList;
+    }
+  } else {
+    javaText = "SYNTAX ERRORS IN PARSE";
+    return javaText;
+  }
+}
+
+String fixDisplay(Object s) {
+  return s.toString().replace("\n", ". ").replace("\r", "").trim();
+}
+
+public Collection generatedJavaCode() throws java.io.IOException  {
+  // codeForTUsesDots = true;
+  BufferedReader code = new BufferedReader(new StringReader(javaText));
+  StringBuilder javaLines = new StringBuilder();
+  String javaLinesString = code.readLine();
+  while (javaLinesString != null) {
+    javaLines.append(new CodeLine(javaLinesString));
+    javaLinesString = code.readLine();
+  }
+  ArrayList<CodeLine> result = new ArrayList<CodeLine>();
+  result.add(new CodeLine(javaLines.toString()));
+  return result;
+}
+
+private Collection codeLineWrapper(String s) throws java.io.IOException {
+  // codeForTUsesDots = true;
+  BufferedReader code = new BufferedReader(new StringReader(s));
+  ArrayList<CodeLine> result = new ArrayList<CodeLine>();
+  String line = code.readLine();
+  while (line != null) {
+    result.add(new CodeLine(line));
+    line = code.readLine();
+  }
+  return result;
+}
+
+public Collection generatedJava() {
+  codeForTUsesDots = false;
+  ArrayList<CodeLine> result = new ArrayList<CodeLine>();
+  result.add(new CodeLine(javaText.replace("\r", "")));
+  return result;
+}
+
+public Collection generatedJavaWithDots() {
+  codeForTUsesDots = true;
+  ArrayList<CodeLine> result = new ArrayList<CodeLine>();
+  result.add(new CodeLine(javaText.replace("\r", "")));
+  return result;
+}
+
+public Collection generatedJavaLines() throws java.io.IOException {
+  codeForTUsesDots = false;
+  return codeLineWrapper(javaText);
+//  if (parseTree == null) {
+//    return codeLineWrapper("Previous parse failed");
+//  } else {
+//    return codeLineWrapper(javaText);
+//  }
+} // end javaOutput()
+
+public Collection generatedJavaLinesWithDots() throws java.io.IOException {
+  codeForTUsesDots = true;
+  return codeLineWrapper(javaText);
+//  if (parseTree == null) {
+//    return codeLineWrapper("Previous parse failed");
+//  } else {
+//    return codeLineWrapper(javaText);
+//  }
+} // end javaOutput()
+
+//private Collection codeLineWrapper(String s) throws java.io.IOException {
+//ArrayList result = new ArrayList();
+//if (s != null) {
+//result.add(new CodeLine(s));
+//}
+//return result;
+//}
+
+
+public /*nested*/ class CodeLine {
+  public String codeLines;
+
+  public CodeLine(String s) {
+    if (codeForTUsesDots) {
+      codeLines = s.replace(' ',middleDot).trim();
+    } else {
+      codeLines = s.trim();
+    }
+  }
+
+/*  public CodeLine(String s, int len) {
+    length = len;
+    codeLines = s.replace(' ',middleDot);
+  }
+*/
+
+} // end nested class CodeLine
+
+public String
+conditionGeneration() {
+if (parseSucceeded) {
+  errListener.clear();  
+    try {
+      treeNodes.reset();
+      TTree2LogicAST logicASTMaker = new TTree2LogicAST(treeNodes);
+      final boolean showTransformations = true;
+      final boolean dontShowTransformations = ! showTransformations;
+      logictree = (CommonTree)logicASTMaker.downup(parseTree, showTransformations);
+      return errListener.isEmpty() ? "" : "\n"+fixDisplay(errListener.toString());
+} catch (Exception e) {
+      System.err.println(e.getMessage());
+      e.printStackTrace();
+      System.err.println(tokenStream.toString());
+      System.err.println(logictree==null?"Logic AST return is null":logictree.toStringTree());
+      // throw e;
+      final String msg = e.getMessage()==null ? "" : e.getMessage();
+      final String errorList = errListener.isEmpty() ? "" : "\n"+fixDisplay(errListener.toString());
+      return "JAVA GENERATION EXCEPTION : "+msg+errorList;
+    } catch (Error e) {
+      System.err.println(e.getMessage());
+      e.printStackTrace();
+      System.err.println(tokenStream.toString());
+      System.err.println(logictree==null?"Logic AST return is null":logictree.toStringTree());
+      // throw e;
+      final String msg = e.getMessage()==null ? "" : e.getMessage();
+      final String errorList = errListener.isEmpty() ? "" : "\n"+fixDisplay(errListener.toString());
+      return "LOGIC GENERATION ERROR : "+msg+errorList;
+    }
+} else {
+  logicText = "SYNTAX ERRORS IN PARSE";
+  return logicText;
+}
+} // conditionGeneration()
+
+void main(String[] args) {
+  System.out.println("OK");
+}
+
+
+// maybe later create this as a separate class
+//public /*nested*/ class LineOfCode {
+//  private String line;
+//
+//  public LineOfCode(String line) {
+//    this.line = line;
+//  }
+//
+//  public boolean equals(Object other) {
+//    return other instanceof LineOfCode
+//        && ((LineOfCode)other).line.equals(line);
+//  }
+//
+//  public int hashCode() {
+//    return line.hashCode();
+//  }
+//
+//  public String toString() {
+//    return line;
+//  }
+//
+//  public static LineOfCode parse(String s) {
+//    return new LineOfCode(s);
+//  }
+//
+//  public replace(String oldString,newString) {
+//    line.replace(oldString,newString);
+//  }
+//
+//} // end nested class LineOfCode
+
+
+} // class StartT

@@ -1,0 +1,136 @@
+#!contents -R2 -g -p -f -h
+
+!|t_translator.StartT|
+----
+
+!***** !3 First means statement
+The theorem for the first !style_code(means) statement uses all the preceding code lines as given.
+
+
+!-
+<table border="0" cellspacing="0">
+<tr><td>start new T program</td></tr>
+<tr><td>program code</td></tr>
+                                                         <tr><td><pre>
+public class OrderedPair {                                         
+  private int first;                                        
+  private int second;                                       
+                                                            
+  void swap() {                                             
+    int temp' = 'first;                                     
+    first' = 'second;                                       
+    second' = temp';                                        
+    means  (first' = 'second &amp;&amp; second' = 'first);  
+  }                                                         
+} // end class OrderedPair                               </pre></td></tr>
+
+</table>
+-!
+
+
+|check|result of parse|OK|
+|check|semantic errors|OK|
+|check|java generation|OK|
+|check|java compile|OK|
+
+#|check|condition generation|OK|
+#|check|condition display|OK|
+#|check|proofs|OK|
+
+
+|Generated Java lines|
+|code lines|
+|{{{public class OrderedPair {                                         }}}|
+|{{{  private int first;                                        }}}|
+|{{{  private int second;                                       }}}|
+|{{{                                                            }}}|
+|{{{  void swap() {                                             }}}|
+|{{{    int temp/*'*/ = /*'*/first;                             }}}|
+|{{{    first/*'*/ = /*'*/second;                               }}}|
+|{{{    second/*'*/ = temp/*'*/;                                }}}|
+|{{{    /* means  (first' = 'second && second' = 'first); */    }}}|
+|{{{  }                                                         }}}|
+|{{{} // end class OrderedPair                                  }}}|
+----
+
+
+!3 Simple translation of values to variables.
+
+!-
+<table border="1" cellspacing="0">
+<tr><td>Generated Java lines</td></tr>
+<tr><td>code lines</td></tr>
+                                                                                   <tr><td><pre>
+public class OrderedPair {                                        </pre></td></tr> <tr><td><pre>
+  private int first;                                              </pre></td></tr> <tr><td><pre>
+  private int second;                                             </pre></td></tr> <tr><td><pre>
+                                                                  </pre></td></tr> <tr><td><pre>
+  void swap() {                                                   </pre></td></tr> <tr><td><pre>
+    int temp/*'*/ = /*'*/first;                                   </pre></td></tr> <tr><td><pre>
+    first/*'*/ = /*'*/second;                                     </pre></td></tr> <tr><td><pre>
+    second/*'*/ = temp/*'*/;                                      </pre></td></tr> <tr><td><pre>
+    /* means  (first' = 'second &amp;&amp; second' = 'first); */  </pre></td></tr> <tr><td><pre>
+  }                                                               </pre></td></tr> <tr><td><pre>
+} // end class OrderedPair                                        </pre></td></tr>
+</table>
+-!
+----
+
+!-
+<table border="0" cellspacing="0">
+<tr><td>Generated Java</td></tr>
+<tr><td>code lines</td></tr>
+                                                         <tr><td><pre>
+public class OrderedPair {
+  private int first;
+  private int second;
+
+  void swap() {
+    int temp/*'*/ = /*'*/first;
+    first/*'*/ = /*'*/second;
+    second/*'*/ = temp/*'*/;
+    /* means  (first' = 'second &amp;&amp; second' = 'first); */
+  }
+} // end class OrderedPair                               </pre></td></tr>
+
+</table>
+-!
+
+!-
+<table border="0" cellspacing="0">
+<tr><td>Generated Java with dots</td></tr>
+<tr><td>code lines</td></tr>
+                                                         <tr><td><pre>
+public·class·OrderedPair·{
+··private·int·first;
+··private·int·second;
+
+··void·swap()·{
+····int·temp/*'*/·=·/*'*/first;
+····first/*'*/·=·/*'*/second;
+····second/*'*/·=·temp/*'*/;
+····/*·means··(first'·=·'second·&amp;&amp;·second'·=·'first);·*/
+··}
+}·//·end·class·OrderedPair                               </pre></td></tr>
+
+</table>
+-!
+
+
+|Generated Java lines with dots|
+|code lines|
+|{{{public·class·OrderedPair·{                                         }}}|
+|{{{··private·int·first;                                        }}}|
+|{{{··private·int·second;                                       }}}|
+|{{{                                                            }}}|
+|{{{··void·swap()·{                                             }}}|
+|{{{····int·temp/*'*/·=·/*'*/first;                             }}}|
+|{{{····first/*'*/·=·/*'*/second;                               }}}|
+|{{{····second/*'*/·=·temp/*'*/;                                }}}|
+|{{{····/*·means··(first'·=·'second·&&·second'·=·'first);·*/    }}}|
+|{{{··}                                                         }}}|
+|{{{}·//·end·class·OrderedPair                                  }}}|
+----
+
+
+**********!

@@ -1,0 +1,83 @@
+package T_Translator;
+
+import java.io.*;
+import fit.ColumnFixture;
+
+public class ParseLines extends ColumnFixture {
+  public String start = "";
+  public String codeLine = "";
+  public String action = "";
+
+  private StringWriter code;
+
+  private String message;
+  private boolean startNewCode = true;   /* ready for first code line */
+	
+  public String results() throws Throwable {
+    if (startNewCode) {
+      if (start.trim().equalsIgnoreCase("start")) {
+        code  = new StringWriter(); 
+        code.write(codeLine+"\n");
+        message = null;
+        startNewCode = false;
+      } else {
+        message = "Must start new code section here"; 
+      }
+    } else {
+      if (start.trim().equalsIgnoreCase("start")) {
+        message = "Cannot START unless previous line has an action"; 
+      } else { // add another line
+        code.write(codeLine+"\n");
+        message = null;
+      }
+    } 
+    if (message == null && action.trim().equalsIgnoreCase("parse")) {
+      TParser p = new TParser( new StringReader(code.toString()));
+      p.CompilationUnit(); 
+      message = "OK";
+      startNewCode = true;
+    }
+    
+//    if (startNewCode && start.trim().equalsIgnoreCase("start")) {
+//      code  = new StringWriter(); 
+//      startNewCode = false; // next line cannot be a start
+//    } else { 
+//      if (started && start.trim().equalsIgnoreCase("start")) {
+//        message = "Previous line did not have an action"; 
+//      }
+//    }
+//    if (started) { 
+//     code.write(codeLine+"\n");
+//      if (action.trim().equalsIgnoreCase("parse")) {
+//        TParser p = new TParser( new StringReader(code.toString()));
+//        p.CompilationUnit(); 
+//        message = "OK";
+//        started = false; /* the next set of code lines has not been started */
+//      } else {
+//        message = null;
+//      }
+//    }
+    start = "";
+    codeLine = "";
+    action = "";
+    return message;
+  }
+
+  private static void transformOne(TParser p) throws Throwable {
+    try 
+    { ASTCompilationUnit cu = p.CompilationUnit();
+      /* DUMP THE Compilation Unit's tree */
+      // cu.dump(">");
+
+      TParserVisitor visitor = new AddAcceptVisitor(System.out);
+      cu.jjtAccept(visitor, null);
+      System.err.println("Thank you.");
+    } catch (Exception e) {
+      System.err.println("Oops.");
+      System.err.println(e.getMessage());
+      e.printStackTrace();
+    }
+  }
+
+}
+

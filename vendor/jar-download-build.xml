@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="install-jars" basedir="." default="download-from-maven">
+<description> 
+  This script downloads jars from other projects that are needed for T language development 
+  and running the T language compiler. The download-all task renames the files 
+  so that the version number, like -1.2.3, is replaced with -current, meaning 
+  that you only have to set your Eclipse (Project, Properties, Java-build-path, 
+  Libraries tab) the first time they are downloaded. All version numbers of 
+  required jar files are kept in a single place, the build-version.properties 
+  file in the vendor directory.
+
+  When available, the download-all task also downloads source and javadoc files 
+  in order to allow you to explore the features that you can use in your code. 
+  If significant debugging into one of these products is needed, you may want to 
+  improve Eclipse debugging by finding the project's website, downloading their 
+  full project, recompiling it with debugging options on, and setting Eclipse to 
+  use those class or jar files.
+</description>
+
+<!-- Properties and paths -->
+  <property name="repo" value="https://repo1.maven.org/maven2" />
+  <property file="build-version.properties" /> 
+      <!-- the single place where version numbers are located for jar files needed by TrueJ -->
+<!-- -->
+
+<macrodef name="get-checksum"
+    description="Downloads the jar and checks its sha1">
+  <attribute name="url"  />
+  <attribute name="dest" />
+  <sequential>
+    <local name="destdir" />
+    <local name="filename"/>
+    <dirname  property="destdir"  file="@{dest}"/>
+    <basename property="filename" file="@{dest}"/>
+    <get dest="${destdir}" usetimestamp="true" quiet="true" >
+      <url url="@{url}"     />
+      <url url="@{url}.sha1"/>
+      <firstmatchmapper>
+        <globmapper from="@{url}.sha1" to="${filename}.sha"/>
+        <globmapper from="@{url}"      to="${filename}"    />
+      </firstmatchmapper>
+    </get>
+    <local name="checksum.matches"/>
+    <local name="checksum.matches.fail"/>
+    <checksum file="@{dest}" algorithm="sha" fileext=".sha"
+              verifyproperty="checksum.matches"/>
+    <condition property="checksum.matches.fail">
+      <equals arg1="${checksum.matches}" arg2="false"/>
+    </condition>
+    <fail if="checksum.matches.fail">Checksum error</fail>
+  </sequential>
+</macrodef>
+
+<macrodef name="download_all3" 
+    description="Downloads and checks the sha1 of the jar and source and javadoc jars, and renames versions">
+  <attribute name="url"  /> <!-- full prefix except for version  and .jar -->
+  <attribute name="ver"  />
+  <attribute name="dest" /> <!-- absolute or relative, but without -current or .jar -->
+  <sequential>
+    <local name="destdir" />
+    <local name="filename"/>
+    <dirname  property="destdir"  file="@{dest}"/>
+    <basename property="filename" file="@{dest}"/>
+    <get dest="${destdir}" usetimestamp="true" quiet="true">
+      <url url="@{url}-@{ver}.jar"     />
+      <url url="@{url}-@{ver}.jar.sha1"/>
+      <url url="@{url}-@{ver}-sources.jar"     />
+      <url url="@{url}-@{ver}-sources.jar.sha1"/>
+      <url url="@{url}-@{ver}-javadoc.jar"     />
+      <url url="@{url}-@{ver}-javadoc.jar.sha1"/>
+      <firstmatchmapper>
+        <globmapper from="@{url}-@{ver}.jar.sha1"         to="${filename}-current.jar.sha"/>
+        <globmapper from="@{url}-@{ver}.jar"              to="${filename}-current.jar"    />
+        <globmapper from="@{url}-@{ver}-sources.jar.sha1" to="${filename}-current-sources.jar.sha"/>
+        <globmapper from="@{url}-@{ver}-sources.jar"      to="${filename}-current-sources.jar"    />
+        <globmapper from="@{url}-@{ver}-javadoc.jar.sha1" to="${filename}-current-javadoc.jar.sha"/>
+        <globmapper from="@{url}-@{ver}-javadoc.jar"      to="${filename}-current-javadoc.jar"    />
+      </firstmatchmapper>
+    </get>
+    <local name="checksum.matches"/>
+    <local name="checksum.matches.fail"/>
+    <checksum file="@{dest}-current.jar"         algorithm="sha" fileext=".sha" verifyproperty="jar.checksum.matches"/>
+    <checksum file="@{dest}-current-sources.jar" algorithm="sha" fileext=".sha" verifyproperty="sources.checksum.matches"/>
+    <checksum file="@{dest}-current-javadoc.jar" algorithm="sha" fileext=".sha" verifyproperty="javadoc.checksum.matches"/>
+    <condition property="checksum.matches.fail">
+      <or>
+        <equals arg1="${jar.checksum.matches}" arg2="false"/>
+        <equals arg1="${sources.checksum.matches}" arg2="false"/>
+        <equals arg1="${javadoc.checksum.matches}" arg2="false"/>
+      </or>
+    </condition>
+    <fail if="checksum.matches.fail">Checksum error</fail>
+  </sequential>
+</macrodef>
+
+<target name="download-from-maven"
+    description="Download jar, source, and javadoc files that are on the maven repository" >
+  <!--  note: source is required for debugging -->
+  <!-- dest and url parameters omit the trailing -9.9.9.jar -->
+
+  <download_all3 dest="lib/org.eclipse.jdt.annotation"            ver="${null.annotation.version}"  
+                 url="${repo}/org/eclipse/jdt/org.eclipse.jdt.annotation/${null.annotation.version}/org.eclipse.jdt.annotation" />
+  
+  <download_all3 dest="lib/antlr4"            ver="${antlr.version}"             
+                 url="${repo}/org/antlr/antlr4/${antlr.version}/antlr4" />
+  <download_all3 dest="lib/antlr4-runtime"    ver="${antlr.version}"             
+                 url="${repo}/org/antlr/antlr4-runtime/${antlr.version}/antlr4-runtime" />
+
+  <download_all3 dest="lib/cucumber-core"     ver="${cucumber-jvm.version}"             
+                 url="${repo}/info/cukes/cucumber-core/${cucumber-jvm.version}/cucumber-core" />
+  <download_all3 dest="lib/cucumber-java"     ver="${cucumber-jvm.version}"             
+                 url="${repo}/info/cukes/cucumber-java/${cucumber-jvm.version}/cucumber-java" />
+  <download_all3 dest="lib/cucumber-junit"    ver="${cucumber-jvm.version}"             
+                 url="${repo}/info/cukes/cucumber-junit/${cucumber-jvm.version}/cucumber-junit" />
+  <download_all3 dest="lib/cucumber-jvm-deps" ver="${cucumber-jvm-deps.version}"        
+                 url="${repo}/info/cukes/cucumber-jvm-deps/${cucumber-jvm-deps.version}/cucumber-jvm-deps" />
+  <download_all3 dest="lib/gherkin"           ver="${gherkin.version}"                  
+                 url="${repo}/info/cukes/gherkin/${gherkin.version}/gherkin" />
+  <get-checksum  dest="lib/cucumber-html-current.jar"                                   
+                 url="${repo}/info/cukes/cucumber-html/${cucumber-html.version}/cucumber-html-${cucumber-html.version}.jar" />
+  <get-checksum  dest="lib/cucumber-html-current-sources.jar"                           
+                 url="${repo}/info/cukes/cucumber-html/${cucumber-html.version}/cucumber-html-${cucumber-html.version}-sources.jar" />
+            <!-- url="cucumber-html-0.2.3-javadoc.jar" is not on the repository as of 8/29/2016 -->
+
+  <download_all3 dest="lib/junit"             ver="${junit.version}"                    
+                 url="${repo}/junit/junit/${junit.version}/junit" />
+  <download_all3 dest="lib/hamcrest-core"     ver="${hamcrest-core.version}"            
+                 url="${repo}/org/hamcrest/hamcrest-core/${hamcrest-core.version}/hamcrest-core" />
+  <download_all3 dest="lib/tuprolog"             ver="${tuprolog.version}"                    
+                 url="${repo}/it/unibo/alice/tuprolog/tuprolog/${tuprolog.version}/tuprolog" />
+  
+  <!-- USE fitness-${fitnesse.version}-standalone.jar instead of fitness-${fitnesse.version}.jar
+       because we are not using ivy and the standalone includes all dependencies -->
+  <!-- repo1.maven.org/maven2/org/fitnesse/fitnesse/20181224/fitnesse-20181224-standalone.jar -->
+  <get-checksum  dest="lib/fitnesse-current-standalone.jar"                                   
+                 url="${repo}/org/fitnesse/fitnesse/${fitnesse.version}/fitnesse-${fitnesse.version}-standalone.jar" />
+  <!-- repo1.maven.org/maven2/org/fitnesse/fitnesse/20181224/fitnesse-20181224-javadoc.jar -->
+  <get-checksum  dest="lib/fitnesse-current-javadoc.jar"                                   
+                 url="${repo}/org/fitnesse/fitnesse/${fitnesse.version}/fitnesse-${fitnesse.version}-javadoc.jar" />
+  <!-- repo1.maven.org/maven2/org/fitnesse/fitnesse/20181224/fitnesse-20181224-sources.jar -->
+  <get-checksum  dest="lib/fitnesse-current-sources.jar"                                   
+                 url="${repo}/org/fitnesse/fitnesse/${fitnesse.version}/fitnesse-${fitnesse.version}-sources.jar" />
+  
+  <!-- repo1.maven.org/maven2/org/fitnesse/fitlibrary/20080812/fitlibrary-20080812.jar -->
+  <!-- url=".../fitlibrary-20080812-javadoc.jar" and "...-sources.jar are not on the repository as of 12/30/2018 -->
+  <!-- PROBLEM WITH SHA1 MATCH, so we just do a get until this is resolved.
+  <get-checksum  dest="lib/fitlibrary-${fitlibrary.version}.jar"                                   
+                 url="${repo}/org/fitnesse/fitlibrary/${fitlibrary.version}/fitlibrary-${fitlibrary.version}.jar" />
+  -->
+  <get dest="lib" usetimestamp="true" quiet="false" >
+    <url url="${repo}/org/fitnesse/fitlibrary/${fitlibrary.version}/fitlibrary-${fitlibrary.version}.jar"     />
+    <firstmatchmapper>
+      <globmapper from="${repo}/org/fitnesse/fitlibrary/${fitlibrary.version}/fitlibrary-${fitlibrary.version}.jar"      to="fitlibrary-${fitlibrary.version}.jar"    />
+      </firstmatchmapper>
+    </get>
+
+  </target>
+
+
+
+<target name="download-all" 
+    depends="download-from-maven"
+    description="Download and checksum the required jar, source, and javadoc files." >
+  </target>
+  
+<target name="clean" >
+  <delete dir="lib"/>
+  </target>
+
+</project>

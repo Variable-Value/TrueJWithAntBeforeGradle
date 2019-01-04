@@ -1,0 +1,58 @@
+!1 Compiler Error after syntax error scan
+
+When looking for an object that doesn't exist, either !-FitNesse-! or the Java compiler process freezes on Socket errors.
+
+After running this test, the Try4th.java file can be found in directory ...\TLanguage\test\temp\temp_TLanguage_java
+
+!|t_translator.StartT|
+----
+!***** !3 Switch to T from Java 
+|start new T program|
+|program code lines|
+|{{{package T_Translator;}}}|
+|{{{ }}}|
+|{{{class Try4th { }}}|
+|{{{  void X() throws java.io.IOException { }}}|
+|{{{    int 'i = 2; }}}|
+|{{{    javalanguage (i') { }}}|
+|{{{      i = 4; }}}|
+|{{{      Thingy p = new Thingy(new java.io.FileInputStream(args[0])); }}}|
+|{{{      // Integer p = new Integer(arg[0]); }}}|
+|{{{      tlanguage { }}}|
+|{{{        // a comment should be valid T }}}|
+|{{{      } }}}|
+|{{{    } // end java }}}|
+|{{{    conjecture .9 /* almost surely */ (i'=4); }}}|
+|{{{  } // end X}}}|
+|{{{} // end class TryOne }}}|
+
+
+
+|check|result of parse|OK|
+|check|semantic errors|OK|
+|check|java generation|OK|
+
+!2 ERROR OCCURS HERE
+
+|check|java compile   |OK|
+
+|Java output|
+|code lines|
+|{{{package T_Translator;}}}|
+|{{{ }}}|
+|{{{class Try4th { }}}|
+|{{{  void X() throws java.io.IOException { }}}|
+|{{{    int /*'*/i = 2; }}}|
+|{{{    /* javalanguage */ /* (i') */ { }}}|
+|{{{      i = 4; }}}|
+|{{{      Thingy p = new Thingy(new java.io.FileInputStream(args[0])); }}}|
+|{{{      // Integer p = new Integer(12); }}}|
+|{{{      /* tlanguage */ { }}}|
+|{{{        // a comment should be valid T }}}|
+|{{{      } }}}|
+|{{{    } // end java }}}|
+|{{{    /* conjecture .9 (* almost surely *) (i'=4); */ }}}|
+|{{{  } // end X}}}|
+|{{{} // end class TryOne }}}|
+----
+**********!

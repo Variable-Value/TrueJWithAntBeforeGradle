@@ -1,0 +1,170 @@
+package t_translator;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import org.antlr.runtime.RecognitionException;
+import org.antlr.runtime.tree.CommonTree;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
+public class TestAssign extends TTester {
+
+
+@BeforeClass
+public static void 
+setUpBeforeClass() throws Exception {}
+
+@AfterClass
+public static void 
+tearDownAfterClass() throws Exception {}
+
+@Before
+public void 
+setUp() throws Exception {}
+
+@After
+public void 
+tearDown() throws Exception {}
+
+//////////  TESTS  /////////////////////
+
+@Ignore //TODO test for compilation unit rule
+@Test 
+public final void 
+testCompilationUnit() {
+  assertEquals("a", "b");
+  fail("Not yet implemented");
+}
+
+
+@Ignore // saving for ideas
+@Test
+public final void 
+testAssignAndMeans() throws RecognitionException {
+  prepare( "public class OrderedPair {"
+         , "private int first;"
+         , "private int second;"
+         , ""
+         , "void swap() {"
+         , "  int temp' = 'first;"
+         , "  first' = 'second;"
+         , "  second' = temp';"
+         , "  means  (first' = 'second && second' = 'first);"
+         , "}"
+         , "} // end class OrderedPair"
+         );
+parseResults = parser.normalClassDeclaration();
+checkParserASTOK("Parser produces expected tree"
+                ,indentedAST("(class OrderedPair "
+                            ,"  (SAVING 'first 'second) "
+                            ,"  { private int first ; "
+                            ,"    private int second ; "
+                            ,"    void swap ( ) " 
+                            ,"      ({ (VARDECLARATION int temp') (ASSIGNMENT temp' = 'first) ; " 
+                            ,"         (ASSIGNMENT first' = 'second) ; "
+                            ,"         (ASSIGNMENT second' = temp') ; "
+                            ,"         (means (LOGIC first' = 'second && second' = 'first)) "
+                            ,"      }) "
+                            ,"  }"                                                                   
+                            ,")"                                                                     
+                            )
+                , parseResults          
+                );
+checker = buildSemanticCheckerIfOk(parseResults);
+checker.normalClassDeclaration();
+javaMaker = buildJavaTranslatorIfOk(parseResults);
+checkJavaOK(javaMaker.normalClassDeclaration());    // modifies tokenStream from T to Java
+// tokenStream.deleteProgram(); // Not needed: only the Template was changed by javaMaker
+checkParserASTOK("Tree restored after checking and writing Java."
+    ,indentedAST("(class OrderedPair "
+        ,"  (SAVING 'first 'second) "
+        ,"  { private int first ; "
+        ,"    private int second ; "
+        ,"    void swap ( ) " 
+        ,"      ({ int temp' = 'first ; " 
+        ,"         (ASSIGNMENT first' = 'second) ; "
+        ,"         (ASSIGNMENT second' = temp') ; "
+        ,"         (means (LOGIC first' = 'second && second' = 'first)) "
+        ,"      }) "
+        ,"  }"                                                                   
+        ,")"                                                                     
+        )
+    , parseResults          
+    );
+System.out.println(tree.toStringTree()); // DEBUG
+logicASTMaker = buildLogicExtractorIfOK(parseResults);
+final boolean showTransformations = true;
+final boolean dontShowTransformations = ! showTransformations;
+tree = (CommonTree)logicASTMaker.downup(tree, showTransformations);
+System.out.println(tree.toStringTree()); // DEBUG
+//TODO generate Verification Conditions from AST
+assertLogicASTOK("Correctly transformed from T to logic AST"
+    ,indentedAST("(class OrderedPair "
+        ,"  (SAVING 'first 'second) "
+        ,"  { private int first ; "
+        ,"    private int second ; "
+        ,"    void swap ( ) " 
+        ,"      ({ (PREMISE temp' = 'first) " 
+        ,"         (PREMISE first' = 'second) "
+        ,"         (PREMISE second' = temp') "
+        ,"         (CONCLUSION first' = 'second && second' = 'first) "
+        ,"      }) "
+        ,"  }"                                                                   
+        ,")"                                                                     
+        )
+    , tree
+    );
+}
+
+
+@Test
+public final void
+testBasicTypesAssign() throws RecognitionException {
+  prepare( "class ClassA {                                                      "
+         , "  private int anInt;                                                "
+         , "                                                                    "
+         , "  ClassA(int anIntArg') {                                           "
+         , "      anInt' = anIntArg';                                           "
+         , "  }                                                                 "
+         , "}                                                                   "
+         );
+  parseResults = parser.normalClassDeclaration();
+  checkParserASTOK("Parser produces expected tree"
+                  ,shapedAST("(class ClassA "," "
+                            ,"  (SAVING 'anInt) " ," "
+                            ,"  { private int anInt ;" ," "
+                            ,"    ClassA ( int anIntArg' ) {"," "
+                            ,"         (ASSIGNMENT anInt' = anIntArg')"," "                                                           
+                            ,"    }" ," "
+                            ,"  }"                                                                   
+                            ,")"                                                                     
+                            )
+                  , parseResults          
+                  );
+  checker = buildSemanticCheckerIfOk(parseResults);
+  checker.normalClassDeclaration();
+  javaMaker = buildJavaTranslatorIfOk(parseResults);
+  checkJavaOK(javaMaker.normalClassDeclaration());    // modifies tokenStream from T to Java
+  logicASTMaker = buildLogicExtractorIfOK(parseResults);
+  // declaring names for true/false constants
+      final boolean showTransformations = true;
+      final boolean dontShowTransformations = ! showTransformations;
+  tree = (CommonTree)logicASTMaker.downup(tree, showTransformations);
+  assertLogicASTOK("Correctly transformed from T to logic AST"
+      ,shapedAST("(class ClassA "                                                   , " "
+                ,"  (SAVING 'first) "                                                    , " "
+                ,"  { private int first ;"                                               , " "
+                ,"    ClassA ( int item_1' ) {"                                     , " "
+                ,"    }"                                                                 , " "
+                ,"  }"                                                                   
+                ,")"                                                                     
+                )
+      , tree
+      );
+} // end testBasicTypesAssign()
+
+} // end class TestTTree2LogicAST

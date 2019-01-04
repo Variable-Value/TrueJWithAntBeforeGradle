@@ -1,0 +1,47 @@
+!1 Make sure that we can use an import java.io.*;
+!|t_translator.StartT|
+----
+|start new T program|
+|program code lines|
+|{{{package T_Translator; }}}|
+|{{{ }}}|
+|{{{import java.io.*; }}}|
+|{{{ }}}|
+|{{{public class Main {                                                    }}}|
+|{{{                                                                       }}}|
+|{{{  int 'cnt = 0;                                                        }}}|
+|{{{                                                                       }}}|
+|{{{  public static void main(String args'[])  throws Throwable {          }}}|
+|{{{      System.out.println("Transforming file "+args'[0]);               }}}|
+|{{{      TParser p' = new TParser(new java.io.FileInputStream(args'[0])); }}}|
+|{{{      transformOne( p' );                                              }}}|
+|{{{      cnt'++ ;                                                         }}}|
+|{{{  } // end main                                                        }}}|
+|{{{  }}}|
+|{{{  }}}|
+|{{{} // end class Main }}}|
+
+|check|result of parse|OK|
+|check|semantic errors|OK|
+|check|java generation|OK|
+
+|Generated Java lines|
+|code lines|
+|{{{package T_Translator; }}}|
+|{{{ }}}|
+|{{{import java.io.*; }}}|
+|{{{ }}}|
+|{{{public class Main { }}}|
+|{{{ }}}|
+|{{{  int /*'*/cnt = 0;                                                        }}}|
+|{{{                                                                       }}}|
+|{{{  public static void main(String args/*'*/[])  throws Throwable { }}}|
+|{{{      System.out.println("Transforming file "+args/*'*/[0]); }}}|
+|{{{      TParser p/*'*/ = new TParser(new java.io.FileInputStream(args/*'*/[0])); }}}|
+|{{{      transformOne( p/*'*/ );                                                  }}}|
+|{{{      cnt/*'*/++ ;                                                             }}}|
+|{{{  } // end main              }}}|
+|{{{                             }}}|
+|{{{                             }}}|
+|{{{} // end class Main         }}}|
+----
