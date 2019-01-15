@@ -303,17 +303,16 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
  * <p>{@inheritDoc}
  * @return a null */
 @Override public Void visitT_means(T_meansContext ctx) {
-  String meansStatementAsWritten = expandForall(rewriter.source(ctx.t_enterExprs()));
-    // TODO: add parentheses to meansStatementAsWritten;
-  visitChildren(ctx); // rewrite code into KnowledgeBase language
+  visitChildren(ctx); // rewrite code into the KnowledgeBase language
   String meansStatementForProver = expandForall(rewriter.sourceWithoutComments(ctx.t_enterExprs()));
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
   if (result == ProofResult.unsupported) {
-    String msg = "The code does not support the means statement: "+ meansStatementAsWritten;
+    String msg = "The code does not support the means statement: "
+               + rewriter.originalSource(ctx.t_enterExprs());
     errors.collectError(prover, ctx.start, msg);
   } else if (result == ProofResult.reachedLimit) {
     String msg = "The prover reached an internal limit. Consider adding a lemma to help prove "
-               + "the means statement: \n    "+ meansStatementAsWritten;
+               + "the means statement: \n    "+ rewriter.originalSource(ctx.t_enterExprs());
     errors.collectError(prover, ctx.start, msg);
   }
   return null;
@@ -339,7 +338,8 @@ private String parenthesized(String source) {
 
 /**
  * Get the name of the scope with a following dot separator, ready for prefixing to a prolog
- * variable name. For instance, an object-instance field returns "this."
+ * variable name. For instance, an object-instance field returns "this." and a local variable that
+ * is declared at the top level of a method returns "".
  * @param variableName
  * @return scope name followed by a dot separator
  */

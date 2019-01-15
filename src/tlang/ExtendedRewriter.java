@@ -63,6 +63,17 @@ final String source(String programName, ParserRuleContext ctx) {
   return getText(programName, ctx.getSourceInterval());
 }
 
+/** Get the full source, before any changes were made, of the parse-tree at node
+ * <code>ctx</code>, including whitespace and comments. Use this in preference to the
+ * <code>ctx.getText()</code> defined in <code>RuleContext</code>, which only gets info from the
+ * channel that is visible to the parser, i.e., no whitespace or comments.
+ * @param ctx The root of the parse-tree node for the source code
+ * @return original input source code corresponding to the parse tree at <code>ctx</code>
+ */
+final String originalSource(ParserRuleContext ctx) {
+  return getText("WITHOUT_CHANGES$T$", ctx.getSourceInterval());
+}
+
 public String sourceWithoutComments(ParserRuleContext ctx) {
   String sourceLeft = source(ctx);
   int startOfComment = firstFoundPositon(sourceLeft, endOfLineCommentStart, inLineCommentStart);
