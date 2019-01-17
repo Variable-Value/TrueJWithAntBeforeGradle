@@ -794,7 +794,7 @@ public class TLantlrBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitT_enterExprs(TLantlrParser.T_enterExprsContext ctx) { return visitChildren(ctx); }
+	@Override public T visitT_expression(TLantlrParser.T_expressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

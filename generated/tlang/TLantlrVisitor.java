@@ -700,182 +700,182 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitT_constantExpression(TLantlrParser.T_constantExpressionContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link TLantlrParser#t_enterExprs}.
+	 * Visit a parse tree produced by {@link TLantlrParser#t_expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitT_enterExprs(TLantlrParser.T_enterExprsContext ctx);
+	T visitT_expression(TLantlrParser.T_expressionContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code AndExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitAndExpr(TLantlrParser.AndExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code BitComplementExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitBitComplementExpr(TLantlrParser.BitComplementExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code SignExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSignExpr(TLantlrParser.SignExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code MultiplicativeExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitMultiplicativeExpr(TLantlrParser.MultiplicativeExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code DotSuperExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitDotSuperExpr(TLantlrParser.DotSuperExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code EqualityExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitEqualityExpr(TLantlrParser.EqualityExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code CompareExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitCompareExpr(TLantlrParser.CompareExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code PrimaryExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitPrimaryExpr(TLantlrParser.PrimaryExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code NotExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitNotExpr(TLantlrParser.NotExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code DotThisExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitDotThisExpr(TLantlrParser.DotThisExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ShiftExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitShiftExpr(TLantlrParser.ShiftExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code FuncCallExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitFuncCallExpr(TLantlrParser.FuncCallExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code DotNewExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitDotNewExpr(TLantlrParser.DotNewExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code DotExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitDotExpr(TLantlrParser.DotExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ConditionalExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitConditionalExpr(TLantlrParser.ConditionalExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code DotExplicitGenericExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitDotExplicitGenericExpr(TLantlrParser.DotExplicitGenericExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code InstanceOfExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitInstanceOfExpr(TLantlrParser.InstanceOfExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code OrExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitOrExpr(TLantlrParser.OrExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ConditionalOrExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitConditionalOrExpr(TLantlrParser.ConditionalOrExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ArrayExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitArrayExpr(TLantlrParser.ArrayExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code AdditiveExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitAdditiveExpr(TLantlrParser.AdditiveExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ExclusiveOrExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitExclusiveOrExpr(TLantlrParser.ExclusiveOrExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code NewExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitNewExpr(TLantlrParser.NewExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ConditionalAndExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitConditionalAndExpr(TLantlrParser.ConditionalAndExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code TypeCastExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expression}.
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */

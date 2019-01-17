@@ -68,23 +68,23 @@ public class TLantlrParser extends Parser {
 		RULE_t_switchBlockStatementGroup = 82, RULE_t_switchLabel = 83, RULE_t_forControl = 84, 
 		RULE_t_forInit = 85, RULE_t_enhancedForControl = 86, RULE_t_forUpdate = 87, 
 		RULE_t_parExpression = 88, RULE_t_expressionList = 89, RULE_t_constantExpression = 90, 
-		RULE_t_enterExprs = 91, RULE_t_expression = 92, RULE_t_primary = 93, RULE_t_creator = 94, 
-		RULE_t_createdName = 95, RULE_t_innerCreator = 96, RULE_t_arrayCreatorRest = 97, 
-		RULE_t_classCreatorRest = 98, RULE_t_explicitGenericInvocation = 99, RULE_t_nonWildcardTypeArguments = 100, 
-		RULE_t_typeArgumentsOrDiamond = 101, RULE_t_nonWildcardTypeArgumentsOrDiamond = 102, 
-		RULE_t_superSuffix = 103, RULE_t_explicitGenericInvocationSuffix = 104, 
-		RULE_t_arguments = 105, RULE_t_means = 106, RULE_t_idDeclaration = 107, 
-		RULE_t_identifier = 108, RULE_t_identifierDetail = 109, RULE_t_valueName = 110, 
-		RULE_compilationUnit = 111, RULE_packageDeclaration = 112, RULE_importDeclaration = 113, 
-		RULE_typeDeclaration = 114, RULE_modifier = 115, RULE_classOrInterfaceModifier = 116, 
-		RULE_variableModifier = 117, RULE_classDeclaration = 118, RULE_typeParameters = 119, 
-		RULE_typeParameter = 120, RULE_typeBound = 121, RULE_enumDeclaration = 122, 
-		RULE_enumConstants = 123, RULE_enumConstant = 124, RULE_enumBodyDeclarations = 125, 
-		RULE_interfaceDeclaration = 126, RULE_typeList = 127, RULE_classBody = 128, 
-		RULE_interfaceBody = 129, RULE_classBodyDeclaration = 130, RULE_memberDeclaration = 131, 
-		RULE_methodDeclaration = 132, RULE_genericMethodDeclaration = 133, RULE_constructorDeclaration = 134, 
-		RULE_genericConstructorDeclaration = 135, RULE_fieldDeclaration = 136, 
-		RULE_interfaceBodyDeclaration = 137, RULE_interfaceMemberDeclaration = 138, 
+		RULE_t_expression = 91, RULE_t_expressionDetail = 92, RULE_t_primary = 93, 
+		RULE_t_creator = 94, RULE_t_createdName = 95, RULE_t_innerCreator = 96, 
+		RULE_t_arrayCreatorRest = 97, RULE_t_classCreatorRest = 98, RULE_t_explicitGenericInvocation = 99, 
+		RULE_t_nonWildcardTypeArguments = 100, RULE_t_typeArgumentsOrDiamond = 101, 
+		RULE_t_nonWildcardTypeArgumentsOrDiamond = 102, RULE_t_superSuffix = 103, 
+		RULE_t_explicitGenericInvocationSuffix = 104, RULE_t_arguments = 105, 
+		RULE_t_means = 106, RULE_t_idDeclaration = 107, RULE_t_identifier = 108, 
+		RULE_t_identifierDetail = 109, RULE_t_valueName = 110, RULE_compilationUnit = 111, 
+		RULE_packageDeclaration = 112, RULE_importDeclaration = 113, RULE_typeDeclaration = 114, 
+		RULE_modifier = 115, RULE_classOrInterfaceModifier = 116, RULE_variableModifier = 117, 
+		RULE_classDeclaration = 118, RULE_typeParameters = 119, RULE_typeParameter = 120, 
+		RULE_typeBound = 121, RULE_enumDeclaration = 122, RULE_enumConstants = 123, 
+		RULE_enumConstant = 124, RULE_enumBodyDeclarations = 125, RULE_interfaceDeclaration = 126, 
+		RULE_typeList = 127, RULE_classBody = 128, RULE_interfaceBody = 129, RULE_classBodyDeclaration = 130, 
+		RULE_memberDeclaration = 131, RULE_methodDeclaration = 132, RULE_genericMethodDeclaration = 133, 
+		RULE_constructorDeclaration = 134, RULE_genericConstructorDeclaration = 135, 
+		RULE_fieldDeclaration = 136, RULE_interfaceBodyDeclaration = 137, RULE_interfaceMemberDeclaration = 138, 
 		RULE_constDeclaration = 139, RULE_constantDeclarator = 140, RULE_interfaceMethodDeclaration = 141, 
 		RULE_genericInterfaceMethodDeclaration = 142, RULE_variableDeclarators = 143, 
 		RULE_variableDeclarator = 144, RULE_variableDeclaratorId = 145, RULE_variableInitializer = 146, 
@@ -137,7 +137,7 @@ public class TLantlrParser extends Parser {
 		"t_resourceSpecification", "t_resources", "t_resource", "t_switchBlockStatementGroup", 
 		"t_switchLabel", "t_forControl", "t_forInit", "t_enhancedForControl", 
 		"t_forUpdate", "t_parExpression", "t_expressionList", "t_constantExpression", 
-		"t_enterExprs", "t_expression", "t_primary", "t_creator", "t_createdName", 
+		"t_expression", "t_expressionDetail", "t_primary", "t_creator", "t_createdName", 
 		"t_innerCreator", "t_arrayCreatorRest", "t_classCreatorRest", "t_explicitGenericInvocation", 
 		"t_nonWildcardTypeArguments", "t_typeArgumentsOrDiamond", "t_nonWildcardTypeArgumentsOrDiamond", 
 		"t_superSuffix", "t_explicitGenericInvocationSuffix", "t_arguments", "t_means", 
@@ -2975,8 +2975,8 @@ public class TLantlrParser extends Parser {
 		public T_arrayInitializerContext t_arrayInitializer() {
 			return getRuleContext(T_arrayInitializerContext.class,0);
 		}
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public T_variableInitializerContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -3033,7 +3033,7 @@ public class TLantlrParser extends Parser {
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(802);
-				t_enterExprs();
+				t_expression();
 				}
 				break;
 			default:
@@ -4287,8 +4287,8 @@ public class TLantlrParser extends Parser {
 	}
 
 	public static class T_elementValueContext extends ParserRuleContext {
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public T_annotationContext t_annotation() {
 			return getRuleContext(T_annotationContext.class,0);
@@ -4344,7 +4344,7 @@ public class TLantlrParser extends Parser {
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(966);
-				t_enterExprs();
+				t_expression();
 				}
 				break;
 			case AT:
@@ -5146,8 +5146,8 @@ public class TLantlrParser extends Parser {
 		public T_assignableContext t_assignable() {
 			return getRuleContext(T_assignableContext.class,0);
 		}
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public AssignStmtContext(T_statementContext ctx) { copyFrom(ctx); }
 		@Override
@@ -5191,8 +5191,8 @@ public class TLantlrParser extends Parser {
 		}
 	}
 	public static class CallStmtContext extends T_statementContext {
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public T_expressionListContext t_expressionList() {
 			return getRuleContext(T_expressionListContext.class,0);
@@ -5242,8 +5242,8 @@ public class TLantlrParser extends Parser {
 		}
 	}
 	public static class CreationStmtContext extends T_statementContext {
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public T_innerCreatorContext t_innerCreator() {
 			return getRuleContext(T_innerCreatorContext.class,0);
@@ -5291,11 +5291,11 @@ public class TLantlrParser extends Parser {
 	}
 	public static class AssertStmtContext extends T_statementContext {
 		public TerminalNode ASSERT() { return getToken(TLantlrParser.ASSERT, 0); }
-		public List<T_enterExprsContext> t_enterExprs() {
-			return getRuleContexts(T_enterExprsContext.class);
+		public List<T_expressionContext> t_expression() {
+			return getRuleContexts(T_expressionContext.class);
 		}
-		public T_enterExprsContext t_enterExprs(int i) {
-			return getRuleContext(T_enterExprsContext.class,i);
+		public T_expressionContext t_expression(int i) {
+			return getRuleContext(T_expressionContext.class,i);
 		}
 		public AssertStmtContext(T_statementContext ctx) { copyFrom(ctx); }
 		@Override
@@ -5319,8 +5319,8 @@ public class TLantlrParser extends Parser {
 		}
 	}
 	public static class ReturnStmtContext extends T_statementContext {
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public ReturnStmtContext(T_statementContext ctx) { copyFrom(ctx); }
 		@Override
@@ -5330,8 +5330,8 @@ public class TLantlrParser extends Parser {
 		}
 	}
 	public static class ThrowStmtContext extends T_statementContext {
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public ThrowStmtContext(T_statementContext ctx) { copyFrom(ctx); }
 		@Override
@@ -5379,7 +5379,7 @@ public class TLantlrParser extends Parser {
 				setState(1079);
 				match(ASSERT);
 				setState(1080);
-				t_enterExprs();
+				t_expression();
 				setState(1083);
 				_la = _input.LA(1);
 				if (_la==COLON) {
@@ -5387,7 +5387,7 @@ public class TLantlrParser extends Parser {
 					setState(1081);
 					match(COLON);
 					setState(1082);
-					t_enterExprs();
+					t_expression();
 					}
 				}
 
@@ -5613,7 +5613,7 @@ public class TLantlrParser extends Parser {
 				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << BOOLEAN) | (1L << BYTE) | (1L << CHAR) | (1L << DOUBLE) | (1L << FLOAT) | (1L << INT) | (1L << LONG) | (1L << NEW) | (1L << SHORT) | (1L << SUPER) | (1L << THIS) | (1L << VOID) | (1L << BooleanLiteral) | (1L << UndecoratedIdentifier) | (1L << PreValueName) | (1L << MidValueName) | (1L << PostValueName) | (1L << IntegerLiteral) | (1L << FloatingPointLiteral) | (1L << CharacterLiteral))) != 0) || ((((_la - 64)) & ~0x3f) == 0 && ((1L << (_la - 64)) & ((1L << (StringLiteral - 64)) | (1L << (NullLiteral - 64)) | (1L << (LPAREN - 64)) | (1L << (LT - 64)) | (1L << (BANG - 64)) | (1L << (TILDE - 64)) | (1L << (ADD - 64)) | (1L << (SUB - 64)))) != 0)) {
 					{
 					setState(1157);
-					t_enterExprs();
+					t_expression();
 					}
 				}
 
@@ -5628,7 +5628,7 @@ public class TLantlrParser extends Parser {
 				setState(1161);
 				match(THROW);
 				setState(1162);
-				t_enterExprs();
+				t_expression();
 				setState(1163);
 				match(SEMI);
 				}
@@ -5688,7 +5688,7 @@ public class TLantlrParser extends Parser {
 				setState(1177);
 				match(ASSIGN);
 				setState(1178);
-				t_enterExprs();
+				t_expression();
 				setState(1179);
 				match(SEMI);
 				}
@@ -5698,7 +5698,7 @@ public class TLantlrParser extends Parser {
 				enterOuterAlt(_localctx, 17);
 				{
 				setState(1181);
-				t_enterExprs();
+				t_expression();
 				setState(1182);
 				match(LPAREN);
 				setState(1184);
@@ -5721,7 +5721,7 @@ public class TLantlrParser extends Parser {
 				enterOuterAlt(_localctx, 18);
 				{
 				setState(1189);
-				t_enterExprs();
+				t_expression();
 				setState(1190);
 				match(DOT);
 				setState(1191);
@@ -5804,11 +5804,11 @@ public class TLantlrParser extends Parser {
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(1203);
-				t_expression(0);
+				t_expression();
 				setState(1204);
 				match(LBRACK);
 				setState(1205);
-				t_expression(0);
+				t_expression();
 				setState(1206);
 				match(RBRACK);
 				}
@@ -6113,8 +6113,8 @@ public class TLantlrParser extends Parser {
 		public T_initializedVariableDeclaratorIdContext t_initializedVariableDeclaratorId() {
 			return getRuleContext(T_initializedVariableDeclaratorIdContext.class,0);
 		}
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public T_classOrInterfaceTypeContext t_classOrInterfaceType() {
 			return getRuleContext(T_classOrInterfaceTypeContext.class,0);
@@ -6164,7 +6164,7 @@ public class TLantlrParser extends Parser {
 			setState(1258);
 			match(ASSIGN);
 			setState(1259);
-			t_enterExprs();
+			t_expression();
 			}
 		}
 		catch (RecognitionException re) {
@@ -6326,8 +6326,8 @@ public class TLantlrParser extends Parser {
 		public T_forInitContext t_forInit() {
 			return getRuleContext(T_forInitContext.class,0);
 		}
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public T_forUpdateContext t_forUpdate() {
 			return getRuleContext(T_forUpdateContext.class,0);
@@ -6377,7 +6377,7 @@ public class TLantlrParser extends Parser {
 				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << BOOLEAN) | (1L << BYTE) | (1L << CHAR) | (1L << DOUBLE) | (1L << FLOAT) | (1L << INT) | (1L << LONG) | (1L << NEW) | (1L << SHORT) | (1L << SUPER) | (1L << THIS) | (1L << VOID) | (1L << BooleanLiteral) | (1L << UndecoratedIdentifier) | (1L << PreValueName) | (1L << MidValueName) | (1L << PostValueName) | (1L << IntegerLiteral) | (1L << FloatingPointLiteral) | (1L << CharacterLiteral))) != 0) || ((((_la - 64)) & ~0x3f) == 0 && ((1L << (_la - 64)) & ((1L << (StringLiteral - 64)) | (1L << (NullLiteral - 64)) | (1L << (LPAREN - 64)) | (1L << (LT - 64)) | (1L << (BANG - 64)) | (1L << (TILDE - 64)) | (1L << (ADD - 64)) | (1L << (SUB - 64)))) != 0)) {
 					{
 					setState(1288);
-					t_enterExprs();
+					t_expression();
 					}
 				}
 
@@ -6466,8 +6466,8 @@ public class TLantlrParser extends Parser {
 		public T_identifierContext t_identifier() {
 			return getRuleContext(T_identifierContext.class,0);
 		}
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public List<T_variableModifierContext> t_variableModifier() {
 			return getRuleContexts(T_variableModifierContext.class);
@@ -6514,7 +6514,7 @@ public class TLantlrParser extends Parser {
 			setState(1309);
 			match(COLON);
 			setState(1310);
-			t_enterExprs();
+			t_expression();
 			}
 		}
 		catch (RecognitionException re) {
@@ -6565,8 +6565,8 @@ public class TLantlrParser extends Parser {
 	}
 
 	public static class T_parExpressionContext extends ParserRuleContext {
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public T_parExpressionContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -6588,7 +6588,7 @@ public class TLantlrParser extends Parser {
 			setState(1314);
 			match(LPAREN);
 			setState(1315);
-			t_enterExprs();
+			t_expression();
 			setState(1316);
 			match(RPAREN);
 			}
@@ -6605,11 +6605,11 @@ public class TLantlrParser extends Parser {
 	}
 
 	public static class T_expressionListContext extends ParserRuleContext {
-		public List<T_enterExprsContext> t_enterExprs() {
-			return getRuleContexts(T_enterExprsContext.class);
+		public List<T_expressionContext> t_expression() {
+			return getRuleContexts(T_expressionContext.class);
 		}
-		public T_enterExprsContext t_enterExprs(int i) {
-			return getRuleContext(T_enterExprsContext.class,i);
+		public T_expressionContext t_expression(int i) {
+			return getRuleContext(T_expressionContext.class,i);
 		}
 		public T_expressionListContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -6630,7 +6630,7 @@ public class TLantlrParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(1318);
-			t_enterExprs();
+			t_expression();
 			setState(1323);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -6640,7 +6640,7 @@ public class TLantlrParser extends Parser {
 				setState(1319);
 				match(COMMA);
 				setState(1320);
-				t_enterExprs();
+				t_expression();
 				}
 				}
 				setState(1325);
@@ -6661,8 +6661,8 @@ public class TLantlrParser extends Parser {
 	}
 
 	public static class T_constantExpressionContext extends ParserRuleContext {
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public T_constantExpressionContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -6682,43 +6682,7 @@ public class TLantlrParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(1326);
-			t_enterExprs();
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
-	public static class T_enterExprsContext extends ParserRuleContext {
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
-		}
-		public T_enterExprsContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_t_enterExprs; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitT_enterExprs(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final T_enterExprsContext t_enterExprs() throws RecognitionException {
-		T_enterExprsContext _localctx = new T_enterExprsContext(_ctx, getState());
-		enterRule(_localctx, 182, RULE_t_enterExprs);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(1328);
-			t_expression(0);
+			t_expression();
 			}
 		}
 		catch (RecognitionException re) {
@@ -6733,173 +6697,209 @@ public class TLantlrParser extends Parser {
 	}
 
 	public static class T_expressionContext extends ParserRuleContext {
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
+		}
 		public T_expressionContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_t_expression; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitT_expression(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final T_expressionContext t_expression() throws RecognitionException {
+		T_expressionContext _localctx = new T_expressionContext(_ctx, getState());
+		enterRule(_localctx, 182, RULE_t_expression);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(1328);
+			t_expressionDetail(0);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class T_expressionDetailContext extends ParserRuleContext {
+		public T_expressionDetailContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_t_expressionDetail; }
 	 
-		public T_expressionContext() { }
-		public void copyFrom(T_expressionContext ctx) {
+		public T_expressionDetailContext() { }
+		public void copyFrom(T_expressionDetailContext ctx) {
 			super.copyFrom(ctx);
 		}
 	}
-	public static class AndExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class AndExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public AndExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public AndExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitAndExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class BitComplementExprContext extends T_expressionContext {
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
+	public static class BitComplementExprContext extends T_expressionDetailContext {
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
 		}
-		public BitComplementExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public BitComplementExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitBitComplementExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class SignExprContext extends T_expressionContext {
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
+	public static class SignExprContext extends T_expressionDetailContext {
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
 		}
-		public SignExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public SignExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitSignExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class MultiplicativeExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class MultiplicativeExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public MultiplicativeExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public MultiplicativeExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitMultiplicativeExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class DotSuperExprContext extends T_expressionContext {
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
+	public static class DotSuperExprContext extends T_expressionDetailContext {
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
 		}
 		public T_superSuffixContext t_superSuffix() {
 			return getRuleContext(T_superSuffixContext.class,0);
 		}
-		public DotSuperExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public DotSuperExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitDotSuperExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class EqualityExprContext extends T_expressionContext {
+	public static class EqualityExprContext extends T_expressionDetailContext {
 		public Token op;
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public EqualityExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public EqualityExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitEqualityExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class CompareExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class CompareExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public CompareExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public CompareExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitCompareExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class PrimaryExprContext extends T_expressionContext {
+	public static class PrimaryExprContext extends T_expressionDetailContext {
 		public T_primaryContext t_primary() {
 			return getRuleContext(T_primaryContext.class,0);
 		}
-		public PrimaryExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public PrimaryExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitPrimaryExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class NotExprContext extends T_expressionContext {
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
+	public static class NotExprContext extends T_expressionDetailContext {
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
 		}
-		public NotExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public NotExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitNotExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class DotThisExprContext extends T_expressionContext {
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
+	public static class DotThisExprContext extends T_expressionDetailContext {
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
 		}
-		public DotThisExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public DotThisExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitDotThisExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class ShiftExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class ShiftExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public ShiftExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public ShiftExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitShiftExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class FuncCallExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class FuncCallExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public FuncCallExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public FuncCallExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitFuncCallExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class DotNewExprContext extends T_expressionContext {
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
+	public static class DotNewExprContext extends T_expressionDetailContext {
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
 		}
 		public T_innerCreatorContext t_innerCreator() {
 			return getRuleContext(T_innerCreatorContext.class,0);
@@ -6907,172 +6907,172 @@ public class TLantlrParser extends Parser {
 		public T_nonWildcardTypeArgumentsContext t_nonWildcardTypeArguments() {
 			return getRuleContext(T_nonWildcardTypeArgumentsContext.class,0);
 		}
-		public DotNewExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public DotNewExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitDotNewExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class DotExprContext extends T_expressionContext {
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
+	public static class DotExprContext extends T_expressionDetailContext {
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
 		}
 		public T_identifierContext t_identifier() {
 			return getRuleContext(T_identifierContext.class,0);
 		}
-		public DotExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public DotExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitDotExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class ConditionalExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class ConditionalExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public ConditionalExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public ConditionalExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitConditionalExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class DotExplicitGenericExprContext extends T_expressionContext {
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
+	public static class DotExplicitGenericExprContext extends T_expressionDetailContext {
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
 		}
 		public T_explicitGenericInvocationContext t_explicitGenericInvocation() {
 			return getRuleContext(T_explicitGenericInvocationContext.class,0);
 		}
-		public DotExplicitGenericExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public DotExplicitGenericExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitDotExplicitGenericExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class InstanceOfExprContext extends T_expressionContext {
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
+	public static class InstanceOfExprContext extends T_expressionDetailContext {
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
 		}
 		public T_typeContext t_type() {
 			return getRuleContext(T_typeContext.class,0);
 		}
-		public InstanceOfExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public InstanceOfExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitInstanceOfExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class OrExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class OrExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public OrExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public OrExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitOrExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class ConditionalOrExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class ConditionalOrExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public ConditionalOrExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public ConditionalOrExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitConditionalOrExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class ArrayExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class ArrayExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public ArrayExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public ArrayExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitArrayExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class AdditiveExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class AdditiveExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public AdditiveExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public AdditiveExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitAdditiveExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class ExclusiveOrExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class ExclusiveOrExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public ExclusiveOrExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public ExclusiveOrExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitExclusiveOrExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class NewExprContext extends T_expressionContext {
+	public static class NewExprContext extends T_expressionDetailContext {
 		public T_creatorContext t_creator() {
 			return getRuleContext(T_creatorContext.class,0);
 		}
-		public NewExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public NewExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitNewExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class ConditionalAndExprContext extends T_expressionContext {
-		public List<T_expressionContext> t_expression() {
-			return getRuleContexts(T_expressionContext.class);
+	public static class ConditionalAndExprContext extends T_expressionDetailContext {
+		public List<T_expressionDetailContext> t_expressionDetail() {
+			return getRuleContexts(T_expressionDetailContext.class);
 		}
-		public T_expressionContext t_expression(int i) {
-			return getRuleContext(T_expressionContext.class,i);
+		public T_expressionDetailContext t_expressionDetail(int i) {
+			return getRuleContext(T_expressionDetailContext.class,i);
 		}
-		public ConditionalAndExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public ConditionalAndExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitConditionalAndExpr(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class TypeCastExprContext extends T_expressionContext {
+	public static class TypeCastExprContext extends T_expressionDetailContext {
 		public T_typeContext t_type() {
 			return getRuleContext(T_typeContext.class,0);
 		}
-		public T_expressionContext t_expression() {
-			return getRuleContext(T_expressionContext.class,0);
+		public T_expressionDetailContext t_expressionDetail() {
+			return getRuleContext(T_expressionDetailContext.class,0);
 		}
-		public TypeCastExprContext(T_expressionContext ctx) { copyFrom(ctx); }
+		public TypeCastExprContext(T_expressionDetailContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if ( visitor instanceof TLantlrVisitor ) return ((TLantlrVisitor<? extends T>)visitor).visitTypeCastExpr(this);
@@ -7080,17 +7080,17 @@ public class TLantlrParser extends Parser {
 		}
 	}
 
-	public final T_expressionContext t_expression() throws RecognitionException {
-		return t_expression(0);
+	public final T_expressionDetailContext t_expressionDetail() throws RecognitionException {
+		return t_expressionDetail(0);
 	}
 
-	private T_expressionContext t_expression(int _p) throws RecognitionException {
+	private T_expressionDetailContext t_expressionDetail(int _p) throws RecognitionException {
 		ParserRuleContext _parentctx = _ctx;
 		int _parentState = getState();
-		T_expressionContext _localctx = new T_expressionContext(_ctx, _parentState);
-		T_expressionContext _prevctx = _localctx;
+		T_expressionDetailContext _localctx = new T_expressionDetailContext(_ctx, _parentState);
+		T_expressionDetailContext _prevctx = _localctx;
 		int _startState = 184;
-		enterRecursionRule(_localctx, 184, RULE_t_expression, _p);
+		enterRecursionRule(_localctx, 184, RULE_t_expressionDetail, _p);
 		int _la;
 		try {
 			int _alt;
@@ -7132,7 +7132,7 @@ public class TLantlrParser extends Parser {
 				setState(1336);
 				match(RPAREN);
 				setState(1337);
-				t_expression(16);
+				t_expressionDetail(16);
 				}
 				break;
 			case 4:
@@ -7148,7 +7148,7 @@ public class TLantlrParser extends Parser {
 					consume();
 				}
 				setState(1340);
-				t_expression(15);
+				t_expressionDetail(15);
 				}
 				break;
 			case 5:
@@ -7159,7 +7159,7 @@ public class TLantlrParser extends Parser {
 				setState(1341);
 				match(TILDE);
 				setState(1342);
-				t_expression(14);
+				t_expressionDetail(14);
 				}
 				break;
 			case 6:
@@ -7170,7 +7170,7 @@ public class TLantlrParser extends Parser {
 				setState(1343);
 				match(BANG);
 				setState(1344);
-				t_expression(13);
+				t_expressionDetail(13);
 				}
 				break;
 			}
@@ -7188,8 +7188,8 @@ public class TLantlrParser extends Parser {
 					switch ( getInterpreter().adaptivePredict(_input,134,_ctx) ) {
 					case 1:
 						{
-						_localctx = new MultiplicativeExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new MultiplicativeExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1347);
 						if (!(precpred(_ctx, 12))) throw new FailedPredicateException(this, "precpred(_ctx, 12)");
 						setState(1348);
@@ -7200,13 +7200,13 @@ public class TLantlrParser extends Parser {
 							consume();
 						}
 						setState(1349);
-						t_expression(13);
+						t_expressionDetail(13);
 						}
 						break;
 					case 2:
 						{
-						_localctx = new AdditiveExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new AdditiveExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1350);
 						if (!(precpred(_ctx, 11))) throw new FailedPredicateException(this, "precpred(_ctx, 11)");
 						setState(1351);
@@ -7217,13 +7217,13 @@ public class TLantlrParser extends Parser {
 							consume();
 						}
 						setState(1352);
-						t_expression(12);
+						t_expressionDetail(12);
 						}
 						break;
 					case 3:
 						{
-						_localctx = new ShiftExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new ShiftExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1353);
 						if (!(precpred(_ctx, 10))) throw new FailedPredicateException(this, "precpred(_ctx, 10)");
 						setState(1361);
@@ -7257,13 +7257,13 @@ public class TLantlrParser extends Parser {
 							break;
 						}
 						setState(1363);
-						t_expression(11);
+						t_expressionDetail(11);
 						}
 						break;
 					case 4:
 						{
-						_localctx = new CompareExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new CompareExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1364);
 						if (!(precpred(_ctx, 9))) throw new FailedPredicateException(this, "precpred(_ctx, 9)");
 						setState(1365);
@@ -7274,13 +7274,13 @@ public class TLantlrParser extends Parser {
 							consume();
 						}
 						setState(1366);
-						t_expression(10);
+						t_expressionDetail(10);
 						}
 						break;
 					case 5:
 						{
-						_localctx = new EqualityExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new EqualityExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1367);
 						if (!(precpred(_ctx, 7))) throw new FailedPredicateException(this, "precpred(_ctx, 7)");
 						setState(1370);
@@ -7301,89 +7301,89 @@ public class TLantlrParser extends Parser {
 							throw new NoViableAltException(this);
 						}
 						setState(1372);
-						t_expression(8);
+						t_expressionDetail(8);
 						}
 						break;
 					case 6:
 						{
-						_localctx = new AndExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new AndExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1373);
 						if (!(precpred(_ctx, 6))) throw new FailedPredicateException(this, "precpred(_ctx, 6)");
 						setState(1374);
 						match(BITAND);
 						setState(1375);
-						t_expression(7);
+						t_expressionDetail(7);
 						}
 						break;
 					case 7:
 						{
-						_localctx = new ExclusiveOrExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new ExclusiveOrExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1376);
 						if (!(precpred(_ctx, 5))) throw new FailedPredicateException(this, "precpred(_ctx, 5)");
 						setState(1377);
 						match(CARET);
 						setState(1378);
-						t_expression(6);
+						t_expressionDetail(6);
 						}
 						break;
 					case 8:
 						{
-						_localctx = new OrExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new OrExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1379);
 						if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
 						setState(1380);
 						match(BITOR);
 						setState(1381);
-						t_expression(5);
+						t_expressionDetail(5);
 						}
 						break;
 					case 9:
 						{
-						_localctx = new ConditionalAndExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new ConditionalAndExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1382);
 						if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
 						setState(1383);
 						match(AND);
 						setState(1384);
-						t_expression(4);
+						t_expressionDetail(4);
 						}
 						break;
 					case 10:
 						{
-						_localctx = new ConditionalOrExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new ConditionalOrExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1385);
 						if (!(precpred(_ctx, 2))) throw new FailedPredicateException(this, "precpred(_ctx, 2)");
 						setState(1386);
 						match(OR);
 						setState(1387);
-						t_expression(3);
+						t_expressionDetail(3);
 						}
 						break;
 					case 11:
 						{
-						_localctx = new ConditionalExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new ConditionalExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1388);
 						if (!(precpred(_ctx, 1))) throw new FailedPredicateException(this, "precpred(_ctx, 1)");
 						setState(1389);
 						match(QUESTION);
 						setState(1390);
-						t_expression(0);
+						t_expressionDetail(0);
 						setState(1391);
 						match(COLON);
 						setState(1392);
-						t_expression(2);
+						t_expressionDetail(2);
 						}
 						break;
 					case 12:
 						{
-						_localctx = new DotExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new DotExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1394);
 						if (!(precpred(_ctx, 24))) throw new FailedPredicateException(this, "precpred(_ctx, 24)");
 						setState(1395);
@@ -7394,8 +7394,8 @@ public class TLantlrParser extends Parser {
 						break;
 					case 13:
 						{
-						_localctx = new DotThisExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new DotThisExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1397);
 						if (!(precpred(_ctx, 23))) throw new FailedPredicateException(this, "precpred(_ctx, 23)");
 						setState(1398);
@@ -7406,8 +7406,8 @@ public class TLantlrParser extends Parser {
 						break;
 					case 14:
 						{
-						_localctx = new DotNewExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new DotNewExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1400);
 						if (!(precpred(_ctx, 22))) throw new FailedPredicateException(this, "precpred(_ctx, 22)");
 						setState(1401);
@@ -7429,8 +7429,8 @@ public class TLantlrParser extends Parser {
 						break;
 					case 15:
 						{
-						_localctx = new DotSuperExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new DotSuperExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1407);
 						if (!(precpred(_ctx, 21))) throw new FailedPredicateException(this, "precpred(_ctx, 21)");
 						setState(1408);
@@ -7443,8 +7443,8 @@ public class TLantlrParser extends Parser {
 						break;
 					case 16:
 						{
-						_localctx = new DotExplicitGenericExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new DotExplicitGenericExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1411);
 						if (!(precpred(_ctx, 20))) throw new FailedPredicateException(this, "precpred(_ctx, 20)");
 						setState(1412);
@@ -7455,22 +7455,22 @@ public class TLantlrParser extends Parser {
 						break;
 					case 17:
 						{
-						_localctx = new ArrayExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new ArrayExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1414);
 						if (!(precpred(_ctx, 19))) throw new FailedPredicateException(this, "precpred(_ctx, 19)");
 						setState(1415);
 						match(LBRACK);
 						setState(1416);
-						t_expression(0);
+						t_expressionDetail(0);
 						setState(1417);
 						match(RBRACK);
 						}
 						break;
 					case 18:
 						{
-						_localctx = new FuncCallExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new FuncCallExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1419);
 						if (!(precpred(_ctx, 18))) throw new FailedPredicateException(this, "precpred(_ctx, 18)");
 						setState(1420);
@@ -7480,7 +7480,7 @@ public class TLantlrParser extends Parser {
 						if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << BOOLEAN) | (1L << BYTE) | (1L << CHAR) | (1L << DOUBLE) | (1L << FLOAT) | (1L << INT) | (1L << LONG) | (1L << NEW) | (1L << SHORT) | (1L << SUPER) | (1L << THIS) | (1L << VOID) | (1L << BooleanLiteral) | (1L << UndecoratedIdentifier) | (1L << PreValueName) | (1L << MidValueName) | (1L << PostValueName) | (1L << IntegerLiteral) | (1L << FloatingPointLiteral) | (1L << CharacterLiteral))) != 0) || ((((_la - 64)) & ~0x3f) == 0 && ((1L << (_la - 64)) & ((1L << (StringLiteral - 64)) | (1L << (NullLiteral - 64)) | (1L << (LPAREN - 64)) | (1L << (LT - 64)) | (1L << (BANG - 64)) | (1L << (TILDE - 64)) | (1L << (ADD - 64)) | (1L << (SUB - 64)))) != 0)) {
 							{
 							setState(1421);
-							t_expression(0);
+							t_expressionDetail(0);
 							setState(1426);
 							_errHandler.sync(this);
 							_la = _input.LA(1);
@@ -7490,7 +7490,7 @@ public class TLantlrParser extends Parser {
 								setState(1422);
 								match(COMMA);
 								setState(1423);
-								t_expression(0);
+								t_expressionDetail(0);
 								}
 								}
 								setState(1428);
@@ -7506,8 +7506,8 @@ public class TLantlrParser extends Parser {
 						break;
 					case 19:
 						{
-						_localctx = new InstanceOfExprContext(new T_expressionContext(_parentctx, _parentState));
-						pushNewRecursionContext(_localctx, _startState, RULE_t_expression);
+						_localctx = new InstanceOfExprContext(new T_expressionDetailContext(_parentctx, _parentState));
+						pushNewRecursionContext(_localctx, _startState, RULE_t_expressionDetail);
 						setState(1432);
 						if (!(precpred(_ctx, 8))) throw new FailedPredicateException(this, "precpred(_ctx, 8)");
 						setState(1433);
@@ -7582,7 +7582,7 @@ public class TLantlrParser extends Parser {
 				setState(1440);
 				match(LPAREN);
 				setState(1441);
-				t_expression(0);
+				t_expression();
 				setState(1442);
 				match(RPAREN);
 				}
@@ -8019,7 +8019,7 @@ public class TLantlrParser extends Parser {
 			case SUB:
 				{
 				setState(1507);
-				t_expression(0);
+				t_expression();
 				setState(1508);
 				match(RBRACK);
 				setState(1515);
@@ -8032,7 +8032,7 @@ public class TLantlrParser extends Parser {
 						setState(1509);
 						match(LBRACK);
 						setState(1510);
-						t_expression(0);
+						t_expression();
 						setState(1511);
 						match(RBRACK);
 						}
@@ -8488,8 +8488,8 @@ public class TLantlrParser extends Parser {
 
 	public static class T_meansContext extends ParserRuleContext {
 		public TerminalNode MEANS() { return getToken(TLantlrParser.MEANS, 0); }
-		public T_enterExprsContext t_enterExprs() {
-			return getRuleContext(T_enterExprsContext.class,0);
+		public T_expressionContext t_expression() {
+			return getRuleContext(T_expressionContext.class,0);
 		}
 		public T_meansContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -8513,7 +8513,7 @@ public class TLantlrParser extends Parser {
 			setState(1570);
 			match(LPAREN);
 			setState(1571);
-			t_enterExprs();
+			t_expression();
 			setState(1572);
 			match(RPAREN);
 			setState(1573);
@@ -16098,13 +16098,13 @@ public class TLantlrParser extends Parser {
 	public boolean sempred(RuleContext _localctx, int ruleIndex, int predIndex) {
 		switch (ruleIndex) {
 		case 92:
-			return t_expression_sempred((T_expressionContext)_localctx, predIndex);
+			return t_expressionDetail_sempred((T_expressionDetailContext)_localctx, predIndex);
 		case 200:
 			return expression_sempred((ExpressionContext)_localctx, predIndex);
 		}
 		return true;
 	}
-	private boolean t_expression_sempred(T_expressionContext _localctx, int predIndex) {
+	private boolean t_expressionDetail_sempred(T_expressionDetailContext _localctx, int predIndex) {
 		switch (predIndex) {
 		case 0:
 			return precpred(_ctx, 12);
@@ -16773,8 +16773,8 @@ public class TLantlrParser extends Parser {
 		"\2\2\u04b3\u0486\3\2\2\2\u04b3\u048b\3\2\2\2\u04b3\u048f\3\2\2\2\u04b3"+
 		"\u0494\3\2\2\2\u04b3\u0499\3\2\2\2\u04b3\u049a\3\2\2\2\u04b3\u049f\3\2"+
 		"\2\2\u04b3\u04a7\3\2\2\2\u04b3\u04af\3\2\2\2\u04b3\u04b2\3\2\2\2\u04b4"+
-		"\u0097\3\2\2\2\u04b5\u04b6\5\u00ba^\2\u04b6\u04b7\7H\2\2\u04b7\u04b8\5"+
-		"\u00ba^\2\u04b8\u04b9\7I\2\2\u04b9\u04bc\3\2\2\2\u04ba\u04bc\5\u00dan"+
+		"\u0097\3\2\2\2\u04b5\u04b6\5\u00b8]\2\u04b6\u04b7\7H\2\2\u04b7\u04b8\5"+
+		"\u00b8]\2\u04b8\u04b9\7I\2\2\u04b9\u04bc\3\2\2\2\u04ba\u04bc\5\u00dan"+
 		"\2\u04bb\u04b5\3\2\2\2\u04bb\u04ba\3\2\2\2\u04bc\u0099\3\2\2\2\u04bd\u04be"+
 		"\7\t\2\2\u04be\u04c2\7D\2\2\u04bf\u04c1\5\16\b\2\u04c0\u04bf\3\2\2\2\u04c1"+
 		"\u04c4\3\2\2\2\u04c2\u04c0\3\2\2\2\u04c2\u04c3\3\2\2\2\u04c3\u04c5\3\2"+
@@ -16855,7 +16855,7 @@ public class TLantlrParser extends Parser {
 		"\2\2\u059d\u057a\3\2\2\2\u059d\u0581\3\2\2\2\u059d\u0585\3\2\2\2\u059d"+
 		"\u0588\3\2\2\2\u059d\u058d\3\2\2\2\u059d\u059a\3\2\2\2\u059e\u05a1\3\2"+
 		"\2\2\u059f\u059d\3\2\2\2\u059f\u05a0\3\2\2\2\u05a0\u00bb\3\2\2\2\u05a1"+
-		"\u059f\3\2\2\2\u05a2\u05a3\7D\2\2\u05a3\u05a4\5\u00ba^\2\u05a4\u05a5\7"+
+		"\u059f\3\2\2\2\u05a2\u05a3\7D\2\2\u05a3\u05a4\5\u00b8]\2\u05a4\u05a5\7"+
 		"E\2\2\u05a5\u05b8\3\2\2\2\u05a6\u05b8\7.\2\2\u05a7\u05b8\7+\2\2\u05a8"+
 		"\u05b8\5v<\2\u05a9\u05b8\5\u00dan\2\u05aa\u05ab\5\\/\2\u05ab\u05ac\7L"+
 		"\2\2\u05ac\u05ad\7\13\2\2\u05ad\u05b8\3\2\2\2\u05ae\u05af\7\63\2\2\u05af"+
@@ -16879,8 +16879,8 @@ public class TLantlrParser extends Parser {
 		"\2\u05da\u00c3\3\2\2\2\u05db\u05f7\7H\2\2\u05dc\u05e1\7I\2\2\u05dd\u05de"+
 		"\7H\2\2\u05de\u05e0\7I\2\2\u05df\u05dd\3\2\2\2\u05e0\u05e3\3\2\2\2\u05e1"+
 		"\u05df\3\2\2\2\u05e1\u05e2\3\2\2\2\u05e2\u05e4\3\2\2\2\u05e3\u05e1\3\2"+
-		"\2\2\u05e4\u05f8\5T+\2\u05e5\u05e6\5\u00ba^\2\u05e6\u05ed\7I\2\2\u05e7"+
-		"\u05e8\7H\2\2\u05e8\u05e9\5\u00ba^\2\u05e9\u05ea\7I\2\2\u05ea\u05ec\3"+
+		"\2\2\u05e4\u05f8\5T+\2\u05e5\u05e6\5\u00b8]\2\u05e6\u05ed\7I\2\2\u05e7"+
+		"\u05e8\7H\2\2\u05e8\u05e9\5\u00b8]\2\u05e9\u05ea\7I\2\2\u05ea\u05ec\3"+
 		"\2\2\2\u05eb\u05e7\3\2\2\2\u05ec\u05ef\3\2\2\2\u05ed\u05eb\3\2\2\2\u05ed"+
 		"\u05ee\3\2\2\2\u05ee\u05f4\3\2\2\2\u05ef\u05ed\3\2\2\2\u05f0\u05f1\7H"+
 		"\2\2\u05f1\u05f3\7I\2\2\u05f2\u05f0\3\2\2\2\u05f3\u05f6\3\2\2\2\u05f4"+

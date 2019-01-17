@@ -19,8 +19,6 @@ public class TLantlrRewriteVisitor extends RewriteVisitor {
 
 private static @Nullable TLantlrRewriteVisitor visitor = null;
 
-//TODO: remove tree - I can't see a use for it.
-private ParseTree tree;
 /**
  * Are we creating a new value name? For instance, in the assignment <code>x'[0] = 'x[0] + 1</code>
  * the <code>x'[0]</code> is an assignable expression and the <code>'x[0] + 1</code> is not.
@@ -34,7 +32,6 @@ public TLantlrRewriteVisitor( ParseTree               parseTree
                             , Map<RuleContext, Scope> ctxToScope
                             ) {
   super(tokenStream, ctxToScope);
-  this.tree = parseTree;
 }
 
 private static void ensureVisit(ParseTree parseTree, TokenStream tokenStream, Map<RuleContext, Scope> ctxToScope) {
@@ -50,7 +47,6 @@ private static boolean alreadyVisited( ParseTree               parseTree
                                      )
 {
   return (  visitor != null
-         && visitor.tree == parseTree
          && visitor.scopeMap == ctxToScope
          );
 }
@@ -175,34 +171,28 @@ protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx)
  * This allows assignments like a' = 'a + 1, where the LHS varable occurs on both sides. Note
  * that visiting the RHS expression translates the expression in place without affecting the as-yet
  * untranslated LHS value-name.
- * affecting the
- * <p>{@inheritDoc}
+ * <p>
+ * {@inheritDoc}
  * @return a null to indicate that there are no children to visit.
  */
-@Override public Void
+@Override public Void //@formatter:off
 visitAssignStmt(AssignStmtContext ctx) {
-  // We collect this info before visiting the children in order to make sure
-  // that the info is pre-modification
-  // running example: let text for assignments statement be    a' = 'a + a;
-//  System.out.println("BEFORE visitAssigngStmt: "+ rewriter.getText());
+  // Collect pre-visit (unmodified) info
+  // running example - let text for assignments statement be   a' = 'a + 1;
   Token assignedValueToken = ctx.t_assignable().getStart(); // token for a'
-  String assignedValueName = assignedValueToken.getText();  // "a'"
-  String varName = variableName(assignedValueName);         // "a"
-  Token afterAssignment = ctx.getStop();                   //  the ";" token after the assignment
+  String assignedValueName = assignedValueToken.getText();  // a'
+  String varName = variableName(assignedValueName);         // a
 
-  visit(ctx.t_enterExprs());                                // becomes "/*'*/a + 1"
-  visit(ctx.t_assignable());                                // becomes "a/*'*/"
-                    // (equal sign and ; are unchanged) so we have     "a/*'*/ = /*'*/a + 1;"
-  // we collect this info post-modification
-//  System.out.println("AFTER  visit          : "+ rewriter.getText());
-  VarInfo varInfo = currentScope.getExistingVarInfo(varName);
-  if (originalValueIsReusedLater(assignedValueName, varInfo)) { // assignedValueName.equals("b'temp")) {
-    rewriter.insertAfter(afterAssignment, saveOriginalValue(assignedValueName, varInfo));
-    // saves the value for later reuse by inserting "a$T$ = a/*'*/;" after the assignment
+  visit(ctx.t_expression());                                // becomes /*'*/a + 1
+  visit(ctx.t_assignable());                                // becomes a/*'*/
+           // (equal sign and ; are unchanged) so we have     a/*'*/ = /*'*/a + 1;
+  VarInfo varInfo = currentScope.getExistingVarInfo(varName); // a
+  if (originalValueIsReusedLater(assignedValueName, varInfo)) { // e.g., a' is reused later in code
+    rewriter.insertAfter(ctx.getStop(), saveOriginalValue(assignedValueName, varInfo));
+    // saves the value for later reuse by inserting "int a$T$ = a/*'*/;" after the assignment
   }
-//  System.out.println("AFTER  visitAssigngStmt: "+ rewriter.getText());
   return null;
-}
+} // @formatter:on
 
 private boolean originalValueIsReusedLater(String assignedValueName, VarInfo varInfo) {
   return varInfo != null && varInfo.reusedValueNames.contains(assignedValueName);
@@ -213,11 +203,6 @@ private String saveOriginalValue(String assignedValueName, VarInfo varInfo) {
                       , varInfo.getType(), newID(assignedValueName), dedecorate(assignedValueName)
                       );
   //  return " "+ variableType +" "+ javaValueName +" = "+ dedecorate(assignedValueName) +";";
-  //  return new StringBuilder().append(" ")   .append(variableType)
-  //                            .append(" ")   .append(javaValueName)
-  //                            .append(" = ") .append(dedecorate(assignedValueName))
-  //                            .append(";")
-  //                            .toString();
 }
 
 /**

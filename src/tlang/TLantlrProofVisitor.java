@@ -9,6 +9,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import tlang.KnowledgeBase.ProofResult;
 import tlang.Scope.VarInfo;
 import tlang.TLantlrParser.EqualityExprContext;
+import tlang.TLantlrParser.T_expressionDetailContext;
 import tlang.TLantlrParser.T_identifierContext;
 import tlang.TLantlrParser.T_primaryContext;
 import static tlang.TUtil.*;
@@ -209,7 +210,7 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
 	 */
 	@Override public Void visitEqualityExpr(TLantlrParser.EqualityExprContext ctx) {
 	  String sign = (ctx.op.getText() == "!=") ? "-" : "";
-	  String equalityOp = hasBooleanTerms(ctx.t_expression(0)) ? "===" : "=" ;
+	  String equalityOp = hasBooleanTerms(ctx.t_expressionDetail(0)) ? "===" : "=" ;
 	  rewriter.replace(ctx.op, equalityOp);
 	  visitChildren(ctx);
 	  String newText = sign + parenthesized(rewriter.source(ctx));
@@ -217,25 +218,19 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
 	  return null;
 	}
 
-  private boolean hasBooleanTerms(T_expressionContext ctx) {
+  private boolean hasBooleanTerms(T_expressionDetailContext ctx) {
     if (ctx instanceof AndExprContext)      return true;
     if (ctx instanceof EqualityExprContext) return true;
     if (ctx instanceof CompareExprContext)  return true;
     if (ctx instanceof PrimaryExprContext)  return isBooleanPrimary(ctx);
     if (ctx instanceof NotExprContext)      return true;
-//    if (ctx instanceof DotThisExprContext) {
-//      // TODO: retrun true if this is a descendant of Boolean
-//    }
 //    if (ctx instanceof FuncCallExprContext) {
 //      // TODO: does this function return a boolean?
 //    }
-//    if (ctx instanceof DotNewExprContext) {
-//      // TODO: Can this return a boolean?
-//    }
-    if (ctx instanceof DotExprContext)      return isBooleanDotExpr(ctx);
-    if (ctx instanceof ConditionalExprContext) {
+    if (ctx instanceof DotExprContext)      return isBooleanDotExpr((DotExprContext)ctx);
+    if (ctx instanceof ConditionalExprContext) {  // e(0) ? e(1) : e(2)
       ConditionalExprContext ceCtx = (ConditionalExprContext)ctx;
-      return hasBooleanTerms(ceCtx.t_expression(0)) || hasBooleanTerms(ceCtx.t_expression(0));
+      return hasBooleanTerms(ceCtx.t_expressionDetail(1)); // || hasBooleanTerms(ceCtx.t_expressionDetail(2));
     }
 //    if (ctx instanceof DotExplicitGenericExprContext) { /* TODO: returns boolean? */ }
     if (ctx instanceof InstanceOfExprContext)      return true;
@@ -243,35 +238,37 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
     if (ctx instanceof ConditionalOrExprContext)      return true;
     if (ctx instanceof ArrayExprContext) {
       ArrayExprContext aeCtx = (ArrayExprContext)ctx;
-      if (hasBooleanTerms(aeCtx.t_expression(0))) return true;
+      if (hasBooleanTerms(aeCtx.t_expressionDetail(0))) return true;
     }
     if (ctx instanceof ExclusiveOrExprContext)      return true;
-//    if (ctx instanceof NewExprContext) { /* TODO: check for boolean or descendant of Boolean */ }
+//    if (ctx instanceof NewExprContext) { /* TODO: add this; however, new Boolean(true) is deprecated */ }
     if (ctx instanceof ConditionalAndExprContext)      return true;
-//    if (ctx instanceof TypeCastExprContext)  { /* TODO: check for cast to descendant of Boolean */ }
+//    if (ctx instanceof TypeCastExprContext)  { /* TODO: check for casting boolean to Boolean (deprecated) */ }
     if (ctx instanceof ConditionalAndExprContext)      return true;
     // OTHERWISE
     return false;
   }
 
-  public boolean isBooleanDotExpr(T_expressionContext ctx) {
-    DotExprContext deCtx = (DotExprContext)ctx;
-    if ( rewriter.source(deCtx.t_expression()) == "this"
-      && isBooleanValue(deCtx.t_identifier().getText())
+  public boolean isBooleanDotExpr(DotExprContext ctx) {
+    if ( rewriter.source(ctx.t_expressionDetail()) == "this"
+      && isBooleanValue(ctx.t_identifier().getText())
        )
       return true;
-    // TODO: return true if other object component identifier is boolean
+    // TODO: return true if other (non-this) object component identifier is boolean
     //otherwise
     return false;
   }
 
-  public boolean isBooleanPrimary(T_expressionContext ctx) {
+  public boolean isBooleanPrimary(T_expressionDetailContext ctx) {
     T_primaryContext pCtx = ((PrimaryExprContext)ctx).t_primary();
-    if (pCtx.start.getText() == "(") return hasBooleanTerms(pCtx.t_expression());
-    if (pCtx.getText() == "true") return true;
+    if (pCtx.start.getText() == "(") // i.e., '(' t_expression ')'
+      return hasBooleanTerms(pCtx.t_expression().t_expressionDetail());
+    String text = pCtx.getText();
+    if (text == "true") return true;
+    if (text == "false") return true;
     if (pCtx.t_identifier() != null) return isBooleanValue(pCtx.t_identifier().getText());
-    // TODO: other options for primary
-    // otherwise
+    // This is all the possible booleans in the parse rule t_primary in the TLantlr.g4 grammar
+    // as of 2019 Jan 16
     return false;
   }
 
@@ -304,15 +301,15 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
  * @return a null */
 @Override public Void visitT_means(T_meansContext ctx) {
   visitChildren(ctx); // rewrite code into the KnowledgeBase language
-  String meansStatementForProver = expandForall(rewriter.sourceWithoutComments(ctx.t_enterExprs()));
+  String meansStatementForProver = expandForall(rewriter.sourceWithoutComments(ctx.t_expression()));
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
   if (result == ProofResult.unsupported) {
     String msg = "The code does not support the means statement: "
-               + rewriter.originalSource(ctx.t_enterExprs());
+               + rewriter.originalSource(ctx.t_expression());
     errors.collectError(prover, ctx.start, msg);
   } else if (result == ProofResult.reachedLimit) {
     String msg = "The prover reached an internal limit. Consider adding a lemma to help prove "
-               + "the means statement: \n    "+ rewriter.originalSource(ctx.t_enterExprs());
+               + "the means statement: \n    "+ rewriter.originalSource(ctx.t_expression());
     errors.collectError(prover, ctx.start, msg);
   }
   return null;

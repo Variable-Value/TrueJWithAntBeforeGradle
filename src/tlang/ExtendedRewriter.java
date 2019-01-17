@@ -1,17 +1,10 @@
 package tlang;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.TokenStreamRewriter;
-import org.antlr.v4.runtime.TokenStreamRewriter.RewriteOperation;
 import org.antlr.v4.runtime.misc.Interval;
 import org.eclipse.jdt.annotation.Nullable;
-import tlang.TLantlrParser.T_enterExprsContext;
 
 /**
  * A Superclass for the rewriters that transform and operate on the T language trees, to simplify
