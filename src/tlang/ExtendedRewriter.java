@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.TokenStreamRewriter;
 import org.antlr.v4.runtime.misc.Interval;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
@@ -37,7 +38,7 @@ getText(@Nullable String programName) {
  * @param ctx parse-tree node
  * @return source code corresponding to the parse tree at <code>ctx</code>
  */
-final String source(ParserRuleContext ctx) {
+final String source(ParseTree ctx) {
   return source(DEFAULT_PROGRAM_NAME, ctx);
 //  OR return tokens.getText(ctx.getSourceInterval());
   }
@@ -52,7 +53,7 @@ final String source(ParserRuleContext ctx) {
  * @param ctx The root of the parse-tree node for the source code
  * @return source code corresponding to the parse tree at <code>ctx</code>
  */
-final String source(String programName, ParserRuleContext ctx) {
+final String source(String programName, ParseTree ctx) {
   return getText(programName, ctx.getSourceInterval());
 }
 
@@ -63,11 +64,11 @@ final String source(String programName, ParserRuleContext ctx) {
  * @param ctx The root of the parse-tree node for the source code
  * @return original input source code corresponding to the parse tree at <code>ctx</code>
  */
-final String originalSource(ParserRuleContext ctx) {
+final String originalSource(ParseTree ctx) {
   return getText("WITHOUT_CHANGES$T$", ctx.getSourceInterval());
 }
 
-public String sourceWithoutComments(ParserRuleContext ctx) {
+public String sourceWithoutComments(ParseTree ctx) {
   String sourceLeft = source(ctx);
   int startOfComment = firstFoundPositon(sourceLeft, endOfLineCommentStart, inLineCommentStart);
   if (startOfComment < 0)
