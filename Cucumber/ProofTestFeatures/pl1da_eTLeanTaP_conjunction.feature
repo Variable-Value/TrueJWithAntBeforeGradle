@@ -14,7 +14,7 @@ Background: The theorem prover is loaded into a tuProlog engine
   Given a Prolog engine
   And the eTLeanTap theory is loaded
 #  And Java debugging
-#  And using feature "pl1da_eTLeanTaP_conjunction"
+  And using feature "pl1da_eTLeanTaP_conjunction"
 
 Scenario Outline: Simple Examples
 
@@ -34,6 +34,7 @@ Scenario Outline: Simple Examples
     |non-theorem| p /\ q === p === q          | nonsense ((f/\f)===f) === t    |
     | theorem   | p /\ q === q /\ p           | Symmetry (3.36)                |
     | theorem   | (p/\q) /\ r === p /\ (q/\r) | Associativity (3.37)           |
+    | theorem   | p/\(q/\r) === p/\q/\r       | Parentheses not needed by Assoc|
     | theorem   | p /\ p === p                | Idempotency (3.38)             |
     | theorem   | p /\ true === p          | Identity of /\ (3.39)          |
     | theorem   | p /\ false === false  | Zero of /\ (3.40)              |
@@ -52,8 +53,6 @@ Scenario Outline: Simple Examples
     # Why do the following fail to parse?
     #| theorem   | -(p/\q) === (-q\/-p)        | De MorgaN (3.47)             |
     #| theorem   | -(p\/q) === (-q/\-p)        | De MorgaN (3.47)             |
-
-
 
 
 Scenario: Axiom: Distributivity of \/ over === (3.27)
