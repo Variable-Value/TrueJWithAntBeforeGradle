@@ -122,6 +122,9 @@ import alice.tuprolog.event.WarningListener;
  */
 public class KnowledgeBase {
 
+enum SolverInTestMode {on,off}
+SolverInTestMode testMode = SolverInTestMode.off;
+
 private static String relativeDir = "./";
 private static int limit = 7; // General limit on prover: backtracking, equality chains, etc.
 
@@ -254,10 +257,10 @@ public String getMeaning() {
 }
 
 /** Attempts to show that the KnowledgeBase has facts that support the statement.
- * If, instead, it fails with a result of <code>unsupported</code>, it means that the statement
- * cannot be proven. (If the original statement cannot be proven, it
- * may itself be internally inconsistent. After confirming that it is not internally inconsistent,
- * we can find a conflicting fact using findInconsistentFact, once it is implemented.)
+ * If, instead, it fails with a {@link ProofResult} of <code>unsupported</code> or
+ * <code>reachedLimit</code>, it means that the statement
+ * cannot be proven. (After confirming that the statement to be proven  is not internally inconsistent,
+ * we can find a conflicting fact using findInconsistentFact - not yet implemented.)
  * <p>
  * For technical reasons, the negation of the statement is checked to see if it is
  * <code>inconsistent</code> with some of the facts from the KnowledgeBase. This is equivalent to
@@ -300,13 +303,16 @@ private ProofResult proofResults(ConsistencyResult c) {
  * theorems to the KnowledgeBase.
  *
  * @param newFact
+ * @param modeOfTest <code>SolverInTestMode.on</code> turns on testing
  * @return a {@link ProofResult}
  */
-public ProofResult assumeIfProven(String newFact) {
+public ProofResult assumeIfProven(String newFact, SolverInTestMode... modeOfTest) {
+  if (modeOfTest.length > 0)
+    testMode = modeOfTest[0];
   ProofResult result = prove(newFact);
-  if (result == ProofResult.provenTrue) {
+  if (result == ProofResult.provenTrue)
     assume(newFact);
-  }
+  testMode = SolverInTestMode.off;
   return result;
 }
 
@@ -348,39 +354,59 @@ public ProofResult substituteIfProven(String newFact) {
  * @return a {@link ConsistencyResult}
  */
 public ConsistencyResult checkConsistency(String statement) {
+  System.out.println("Checking consistency of "+ statement);
   String testString = parens(statement) + AND + conjoined(facts);
   SolveInfo solutionInfo = checkForConsistency(testString);
-  String resultState;
-  try { resultState = solutionInfo.getTerm("ConsistencyResult").toString(); }
-  catch (NoSolutionException e) {
-    throw new RuntimeException
-        ("A call to the etleantap.pl prover failed to return any result.", e);
+  return prologConsistencyResult(solutionInfo);
   }
-  catch (UnknownVarException e) {
-    throw new RuntimeException
-        ("Mismatch with prover code in etleantap.pl. Expected variable 'ConsistencyResult'", e);
-  }
+
+private ConsistencyResult prologConsistencyResult(SolveInfo solutionInfo) { // @formatter:off
+  try {
+    String resultState = solutionInfo.getTerm("ConsistencyResult").toString();
   switch (resultState) {
   // Possible values of resultState are listed in the Prolog etleantap.pl file in predicate
   // runProver(+Formula, +TextOfFormula, -Result)
     case "inconsistent": return ConsistencyResult.inconsistent;
     case "consistent"  : return ConsistencyResult.consistent;
     case "limit"       : return ConsistencyResult.reachedLimit;
-    default: throw new RuntimeException
-        ("A call to the etleantap.pl prover gave the invalid result: " + resultState);
+    default: throw new InvalidResultFromProverException(resultState);
+//    default: throw new RuntimeException
+//                      ("A call to the etleantap.pl prover gave the invalid result: " + resultState);
+    }
+  }
+  catch (NoSolutionException e) {
+    throw new RuntimeException("A call to the etleantap.pl prover failed to return any result.", e);
+  }
+  catch (UnknownVarException e) {
+    throw new RuntimeException
+        ("Mismatch with prover code in etleantap.pl. Expected variable 'ConsistencyResult'", e);
+  }
+} // @formatter:on
+
+private class InvalidResultFromProverException extends RuntimeException {
+InvalidResultFromProverException(String resultState) {
+  super("A call to the etleantap.pl prover gave the invalid result: " + resultState);
   }
 }
 
 private SolveInfo checkForConsistency(String testString) {
-  return engine.solve(Term.createTerm(prologCommand(testString), engine.getOperatorManager()));
+  SolveInfo info = engine.solve(Term.createTerm(prologCommand(testString), engine.getOperatorManager()));
+
+  if (testMode == SolverInTestMode.on) {
+    System.out.println("\nIN TEST MODE: Attempting to prove: "+ testString);
+    System.out.println(info.toString().replace('\n', ' ')+"\n");
+  }
+  return info;
 }
 
 //TODO create constant field for the Prolog variable name ConsistencyResult
-//     and replace all occurances in Prolog related Strings
+//     and replace all occurrences in Prolog related Strings
 private String prologCommand(String formula) {
   String displayForm = formula.replace("'", "\\'");
-  String pc = "nnf( ("+ formula +"), NNF ), runProver(NNF, ConsistencyResult)";
-  return pc;
+  String command = "nnf( ("+ formula +"), NNF ), runProver(NNF, ConsistencyResult)";
+  if (testMode == SolverInTestMode.on)
+    command = "db_start_debugging, "+ command;
+  return command;
 }
 
 /** NOT YET IMPLEMENTED.
