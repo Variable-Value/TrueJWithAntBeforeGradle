@@ -3,12 +3,18 @@ package tlang;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
+import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 import tlang.KnowledgeBase.ProofResult;
+import tlang.KnowledgeBase.SolverInTestMode;
 import tlang.Scope.VarInfo;
 import tlang.TLantlrParser.EqualityExprContext;
+import tlang.TLantlrParser.T_expressionContext;
 import tlang.TLantlrParser.T_expressionDetailContext;
 import tlang.TLantlrParser.T_identifierContext;
 import tlang.TLantlrParser.T_primaryContext;
@@ -173,7 +179,8 @@ Void visitT_UndecoratedIdentifier(T_UndecoratedIdentifierContext ctx) {
 @Override public Void visitAssignStmt(AssignStmtContext ctx) {
   boolean needsEquivalence = hasBooleanTarget(ctx);
   visitChildren(ctx);
-  String assignmentCode = removeSemicolonFromCode(ctx);
+  String src  = rewriter.source(ctx);
+  String assignmentCode = withoutSemicolon(src);
   if (needsEquivalence)
     assignmentCode = assignmentCode.replace("=", "===");
   kb.assume(parenthesized(assignmentCode));
@@ -196,10 +203,9 @@ public boolean isBooleanValue(String targetName) {
   return varType.equals("boolean");
 }
 
-private String removeSemicolonFromCode(AssignStmtContext ctx) {
-  String revisedText  = rewriter.source(ctx);
-  final int semicolonPosition = revisedText.lastIndexOf(';');
-  return revisedText.substring(0, semicolonPosition);
+private String withoutSemicolon(String code) {
+  int semicolonPosition = code.lastIndexOf(';');
+  return code.substring(0, semicolonPosition) + code.substring(semicolonPosition + 1);
 }
 
 	/** Replace
@@ -250,7 +256,7 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
   }
 
   public boolean isBooleanDotExpr(DotExprContext ctx) {
-    if ( rewriter.source(ctx.t_expressionDetail()) == "this"
+    if ( "this".equals(rewriter.source(ctx.t_expressionDetail()) )
       && isBooleanValue(ctx.t_identifier().getText())
        )
       return true;
@@ -285,7 +291,6 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
 
 /** Replace the Java conditional AND (&&) with the prover AND (/\).
  * <p>{@inheritDoc}
- *
  */
 @Override public Void visitConditionalAndExpr(ConditionalAndExprContext ctx) {
   visitChildren(ctx);
@@ -300,19 +305,32 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
  * <p>{@inheritDoc}
  * @return a null */
 @Override public Void visitT_means(T_meansContext ctx) {
+  System.out.println("Means statement: "+ rewriter.source(ctx));
+
   visitChildren(ctx); // rewrite code into the KnowledgeBase language
-  String meansStatementForProver = expandForall(rewriter.sourceWithoutComments(ctx.t_expression()));
+
+  ParseTree predicate = ctx.t_expression();
+  String meansStatementForProver = prologCode(predicate);
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
   if (result == ProofResult.unsupported) {
     String msg = "The code does not support the means statement: "
-               + rewriter.originalSource(ctx.t_expression());
+               + rewriter.originalSource(predicate);
     errors.collectError(prover, ctx.start, msg);
   } else if (result == ProofResult.reachedLimit) {
     String msg = "The prover reached an internal limit. Consider adding a lemma to help prove "
-               + "the means statement: \n    "+ rewriter.originalSource(ctx.t_expression());
+               + "the means statement: \n    "+ rewriter.originalSource(predicate);
     errors.collectError(prover, ctx.start, msg);
   }
   return null;
+}
+
+/**
+ *
+ * @param node
+ * @return
+ */
+private String prologCode(ParseTree node) {
+  return expandForall(rewriter.source(node)).replaceAll("//", "%");
 }
 
 /** Search for variables that are bound by a <code>forall</code> statement and add the type
@@ -322,15 +340,15 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
  * @param meansSource the statement to be proven from a <code>means</code> statement
  * @return null
  */
-private String expandForall(String meansSource) {
+private String expandForall(String statement) {
   // TODO Auto-generated method stub
-  return meansSource;
+  return statement;
 }
 
 /* ************************ Helper methods ************************************/
 
-private String parenthesized(String source) {
-  return "("+ source + ")";
+private String parenthesized(String expression) {
+  return "("+ expression + ")";
 }
 
 /**
