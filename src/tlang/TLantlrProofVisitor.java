@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import tlang.KnowledgeBase.ProofResult;
@@ -36,7 +37,8 @@ import static tlang.TLantlrParser.*;
 class TLantlrProofVisitor extends RewriteVisitor {
 
 private static final String prover = "Prover";
-private static final String logicalAndOperator = "/\\\\"; // extra backslashes for regexp
+private static final String logicalAndOperator = "/\\";
+private static final String logicalOrOperator = "\\/";
 
 private ParseTree tree;
 private CollectingMsgListener errors; // for collecting inconsistent and unprovable results
@@ -272,14 +274,35 @@ private String withoutSemicolon(String code) {
     return false;
   }
 
-  /** Replace the Java AND (&) with the prover AND (/\).
+/** Replace the Java OR (|) with the prover OR (\/).
+ * <p>{@inheritDoc}
+ *
+ */
+@Override public Void visitOrExpr(OrExprContext ctx) {
+  visitChildren(ctx);
+
+  rewriter.replace(binaryOperatorToken(ctx), logicalOrOperator);
+  return null;
+}
+
+/** Replace the Java AND (&) with the prover AND (/\).
  * <p>{@inheritDoc}
  *
  */
 @Override public Void visitAndExpr(AndExprContext ctx) {
   visitChildren(ctx);
-  String newText = rewriter.source(ctx).replaceFirst("&", logicalAndOperator);
-  rewriter.substituteText(ctx, parenthesized(newText));
+
+  rewriter.replace(binaryOperatorToken(ctx), logicalAndOperator);
+  return null;
+}
+
+/** Replace the Java conditional OR (||) with the prover OR (\/).
+ * <p>{@inheritDoc}
+ */
+@Override public Void visitConditionalOrExpr(ConditionalOrExprContext ctx) {
+  visitChildren(ctx);
+
+  rewriter.replace(binaryOperatorToken(ctx), logicalOrOperator);
   return null;
 }
 
@@ -288,9 +311,13 @@ private String withoutSemicolon(String code) {
  */
 @Override public Void visitConditionalAndExpr(ConditionalAndExprContext ctx) {
   visitChildren(ctx);
-  String newText = rewriter.source(ctx).replaceFirst("&&", logicalAndOperator);
-  rewriter.substituteText(ctx, parenthesized(newText));
+
+  rewriter.replace(binaryOperatorToken(ctx), logicalAndOperator);
   return null;
+}
+
+private Token binaryOperatorToken(ParseTree pt) {
+  return (Token)pt.getChild(1).getPayload();
 }
 
 /** Submit the means statement to the {@link KnowledgeBase} for proof, and substitute the
