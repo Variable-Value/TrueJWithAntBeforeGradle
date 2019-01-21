@@ -6,12 +6,6 @@ Feature: Value names - end to end details test (T Language 0.1)
   tests that clarify more of the details of the way things will and will not
   work.
 
-#Background: The theorem prover is loaded into a tuProlog engine
-#  Given a Prolog engine
-#  And the eTLeanTap theory is loaded
-#  And Java debugging
-#  And using feature "aa1_valueNamesDetails.feature"
-
 
 Scenario: The string of characters $T$ is not allowed in identifiers
 
@@ -96,41 +90,41 @@ Scenario: The string of characters $T$ is not allowed in identifiers
     """
 
 # TODO: implement the $T$ prohibition in comments
-#
+
 #Scenario: Back translation of comments requires absence of reserved characters
-#
-#  Generation of executable Java from the T language requires translating all
-#  non-command statements to comments. Although we have not implemented a
-#  back-translator from the generated Java to the T language that would generate
-#  it, we hope that these special comments will allow such a translator to be
-#  built, especially for back-translating Java error messages into T language
-#  error messages. In order to mark parts of a generated comment that need to be
-#  uncommented or not, the character string $T$ is used. To avoid confusing any
-#  attempt at back-translation, that string needs to be prohibited within the
-#  original T language comments.
-#
-#  When an invalid run unit is
-#    """
-#    class SwapError5 {
-#
-#    /* no comment may contain $T$, like this one does */
-#
-#    int a, b;
-#
-#    void swap() {
-#      int startingA' = 'a;
-#      a' = 'b;
-#      b' = startingA';
-#    }
-#    means(a' = 'b && b' = 'a);
-#
-#    } // end class
-#    """
-#
-#  Then an error message contains
-#  """
-#  ???
-#  """
+  #
+  #  Generation of executable Java from the T language requires translating all
+  #  non-command statements to comments. Although we have not implemented a
+  #  back-translator from the generated Java to the T language that would generate
+  #  it, we hope that these special comments will allow such a translator to be
+  #  built, especially for back-translating Java error messages into T language
+  #  error messages. In order to mark parts of a generated comment that need to be
+  #  uncommented or not, the character string $T$ is used. To avoid confusing any
+  #  attempt at back-translation, that string needs to be prohibited within the
+  #  original T language comments.
+  #
+  #  When an invalid run unit is
+  #    """
+  #    class SwapError5 {
+  #
+  #    /* no comment may contain $T$, like this one does */
+  #
+  #    int a, b;
+  #
+  #    void swap() {
+  #      int startingA' = 'a;
+  #      a' = 'b;
+  #      b' = startingA';
+  #    }
+  #    means(a' = 'b && b' = 'a);
+  #
+  #    } // end class
+  #    """
+  #
+  #  Then an error message contains
+  #  """
+  #  ???
+  #  """
 
 
 Scenario: A reused intermediate value is saved immediately before reuse
@@ -203,12 +197,12 @@ Scenario: A Type name cannot be decorated when it's class is declared
     """
     mismatched input 'SwapError2'' expecting UndecoratedIdentifier in rule t_classDeclaration
     """
-#  And the error messages are
-#    """
-#    Test Parse
-#    ...
-#
-#    """
+    #  And the error messages are
+    #    """
+    #    Test Parse
+    #    ...
+    #
+    #    """
 
 
 Scenario: Initial and final values of a variable must be correctly decorated
@@ -283,10 +277,10 @@ Scenario: Initial and final values of a variable must be correctly decorated
   } // end class
 
   """
-### TODO: RED/GREEN TEST
-  Then an error message contains
-  """
-  The final value of field b must be b'
+  ### TODO: RED/GREEN TEST
+    Then an error message contains
+    """
+    The final value of field b must be b'
   """
 
 
@@ -526,66 +520,66 @@ Scenario: Insertion of T runtime import relative to other imports and package
   #      class in the @Test run methods
   #      Also, make sure that the compiler specifies class file output locations
   #      for both production and test classes
-#  And the test code is
-#    """
-#    import org.junit.After;
-#    import org.junit.AfterClass;
-#    import org.junit.Before;
-#    import org.junit.BeforeClass;
-#    import org.junit.Test;
-#    import static org.junit.Assert.*;
-#    import static org.hamcrest.CoreMatchers.*;
-#    // import static org.junit.matchers.JUnitMatchers.*;
-#    import static org.junit.experimental.theories.Theories.*;
-#    import org.hamcrest.core.CombinableMatcher;
-#
-#    public class SwapperTest {
-#
-#
-#    int a, b;
-#
-#    void swap() {
-#      int startingA/*'*/ = /*'*/a;
-#      a/*'*/ = /*'*/b;
-#      b/*'*/ = startingA/*'*/;
-#      /*$T$* means(startingA = 'a && a' = 'b && b' = startingA'); *$T$*/
-#    }
-#    /* means(a' = 'b && b' = 'a); */
-#
-#    /*test*/ void swapAandB() throws Exception {
-#      a = 1;
-#      b = 2;
-#      swap();
-#      assertEquals("A has been swapped", 2, a);
-#      assertEquals("B has been swapped", 1, b); // green test
-#    }
-#
-#    @Test
-#    public void $T$test_swapAandB() throws Exception {
-#      (new SwapperTest()).swapAandB();
-#    }
-#
-#    /*test*/ void swapAgain() throws Exception {
-#      a = 1;
-#      b = 2;
-#      swap();
-#      assertEquals("A has been swapped", 2, a);
-#      assertEquals("B has been swapped", 9999, b); // red test
-#    }
-#
-#    @Test
-#    public void $T$test_swapAgain() throws Exception {
-#      (new SwapperTest()).swapAgain();
-#    }
-#
-#    } // end class
-#    """
-#
-#    And the test result is OK
+  #  And the test code is
+  #    """
+  #    import org.junit.After;
+  #    import org.junit.AfterClass;
+  #    import org.junit.Before;
+  #    import org.junit.BeforeClass;
+  #    import org.junit.Test;
+  #    import static org.junit.Assert.*;
+  #    import static org.hamcrest.CoreMatchers.*;
+  #    // import static org.junit.matchers.JUnitMatchers.*;
+  #    import static org.junit.experimental.theories.Theories.*;
+  #    import org.hamcrest.core.CombinableMatcher;
+  #
+  #    public class SwapperTest {
+  #
+  #
+  #    int a, b;
+  #
+  #    void swap() {
+  #      int startingA/*'*/ = /*'*/a;
+  #      a/*'*/ = /*'*/b;
+  #      b/*'*/ = startingA/*'*/;
+  #      /*$T$* means(startingA = 'a && a' = 'b && b' = startingA'); *$T$*/
+  #    }
+  #    /* means(a' = 'b && b' = 'a); */
+  #
+  #    /*test*/ void swapAandB() throws Exception {
+  #      a = 1;
+  #      b = 2;
+  #      swap();
+  #      assertEquals("A has been swapped", 2, a);
+  #      assertEquals("B has been swapped", 1, b); // green test
+  #    }
+  #
+  #    @Test
+  #    public void $T$test_swapAandB() throws Exception {
+  #      (new SwapperTest()).swapAandB();
+  #    }
+  #
+  #    /*test*/ void swapAgain() throws Exception {
+  #      a = 1;
+  #      b = 2;
+  #      swap();
+  #      assertEquals("A has been swapped", 2, a);
+  #      assertEquals("B has been swapped", 9999, b); // red test
+  #    }
+  #
+  #    @Test
+  #    public void $T$test_swapAgain() throws Exception {
+  #      (new SwapperTest()).swapAgain();
+  #    }
+  #
+  #    } // end class
+  #    """
+  #
+  #    And the test result is OK
 
-# The above test code is what would be generated from T code that
-# contains the corresponding tests. Testing will be included in
-# a future version.
+  # The above test code is what would be generated from T code that
+  # contains the corresponding tests. Testing will be included in
+  # a future version.
 
 
 Scenario: Comments inside code that is commented out are adjusted
@@ -681,4 +675,35 @@ Scenario: The prover detects a single invalid literal
   Then an error message contains
     """
     The code does not support the means statement: b' = 'a
+    """
+
+
+Scenario: Nested && and || translate to the Prover correctly
+
+    Make sure that the need for parentheses for conjunctions and disjunctions do not cause any
+    problems when sending code to the prover. Because the prover is written in Prolog and the
+    priorities of the /\ and \/ operators are user defined there, we need to ensure that the
+    semantics of the code remains the same. We must either code the provers operator priority for /\
+    and \/ carefully or insert extra parentheses before sending code to the prover.
+
+  * A valid T Language run unit is
+    """
+    class SwapAgain {
+
+    int a, b;
+
+    void swap() {
+      int startingA' = 'a;
+      a' = 'b;
+      b' = a'; // should be = startingA'; so expect an error
+    }
+    means( true || a' = 'b && b' = 'b );
+      /* In TrueJ, like Java, this is interpreted as
+         ( true || ( a' = 'b && b' = 'b ) ) which is always true
+
+         If the statement is interpreted by the prover as
+         ( ( true || a' = 'b ) && b' = 'b ) it will be false
+      */
+
+    } // end class
     """
