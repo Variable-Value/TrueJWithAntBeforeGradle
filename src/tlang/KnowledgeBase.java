@@ -344,7 +344,6 @@ public ProofResult assumeIfProven(String newFact, SolverInTestMode... modeOfTest
  * KnowledgeBase.
  *
  * @param newFact
- * @return a {@link ProofResult}
  */
 public void substitute(String newFact) {
   assume(newFact); // TODO: eliminate all preceding code in block except types
@@ -590,9 +589,5 @@ private static void setATheory(Theory th, File thFile) throws InvalidTheoryExcep
     throw new InvalidTheoryException(msg);
   }
 }
-
-
-
-//TODO: scanning StepDefinition_eTleanTap.java at line 79.
 
 }

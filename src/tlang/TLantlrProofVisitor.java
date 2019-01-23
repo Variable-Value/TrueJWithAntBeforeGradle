@@ -1,6 +1,5 @@
 package tlang;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -9,7 +8,6 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import tlang.KnowledgeBase.ProofResult;
-import tlang.KnowledgeBase.SolverInTestMode;
 import tlang.Scope.VarInfo;
 import tlang.TLantlrParser.EqualityExprContext;
 import tlang.TLantlrParser.T_expressionDetailContext;
