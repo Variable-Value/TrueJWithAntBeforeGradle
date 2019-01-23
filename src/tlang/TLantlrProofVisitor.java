@@ -3,11 +3,13 @@ package tlang;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import tlang.KnowledgeBase.ProofResult;
+import tlang.KnowledgeBase.SolverInTestMode;
 import tlang.Scope.VarInfo;
 import tlang.TLantlrParser.EqualityExprContext;
 import tlang.TLantlrParser.T_expressionDetailContext;
@@ -40,23 +42,19 @@ private static final String prover = "Prover";
 private static final String logicalAndOperator = "/\\";
 private static final String logicalOrOperator = "\\/";
 
-private ParseTree tree;
 private CollectingMsgListener errors; // for collecting inconsistent and unprovable results
 private static char prologDecoratorChar = '^';
 private static TLantlrProofVisitor latestProofVisitor;
-private Map<String, String> varTypeMap = new HashMap<>();
 
 /** Contains a logical representation of the state of a program */
 private KnowledgeBase kb = new KnowledgeBase();
 
 
-public TLantlrProofVisitor( ParseTree               parseTree
-                          , TokenStream             tokenStream
+public TLantlrProofVisitor( TokenStream             tokenStream
                           , Map<RuleContext, Scope> ctxToScope
                           , CollectingMsgListener   errors
                           ) {
   super(tokenStream, ctxToScope);
-  this.tree = parseTree;
   this.errors = errors;
 }
 
@@ -76,7 +74,7 @@ public static String proveCorrectness( ParseTree               parseTree
                                      , Map<RuleContext, Scope> ctxToScope
                                      , CollectingMsgListener   errors
                                      ) {
-  latestProofVisitor = new TLantlrProofVisitor(parseTree, tokenStream, ctxToScope, errors);
+  latestProofVisitor = new TLantlrProofVisitor(tokenStream, ctxToScope, errors);
   latestProofVisitor.visit(parseTree);
   return getProlog();
 }
@@ -326,23 +324,54 @@ private Token binaryOperatorToken(ParseTree pt) {
  * <p>{@inheritDoc}
  * @return a null */
 @Override public Void visitT_means(T_meansContext ctx) {
-  System.out.println("Means statement: "+ rewriter.source(ctx));
-
   visitChildren(ctx); // rewrite code into the KnowledgeBase language
 
-  ParseTree predicate = ctx.t_expression();
+  T_expressionDetailContext predicate = ctx.t_expression().t_expressionDetail();
   String meansStatementForProver = prologCode(predicate);
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
-  if (result == ProofResult.unsupported) {
-    String msg = "The code does not support the means statement: "
-               + rewriter.originalSource(predicate);
-    errors.collectError(prover, ctx.start, msg);
-  } else if (result == ProofResult.reachedLimit) {
-    String msg = "The prover reached an internal limit. Consider adding a lemma to help prove "
-               + "the means statement: \n    "+ rewriter.originalSource(predicate);
-    errors.collectError(prover, ctx.start, msg);
-  }
+  if ( ! (result == ProofResult.provenTrue))
+    proveEachConjunct(predicate);
   return null;
+}
+
+private ProofResult proveEachConjunct(T_expressionDetailContext conjunction) {
+  if (isSingleConjunct(conjunction)) {
+    ProofResult result = kb.assumeIfProven(prologCode(conjunction));
+    reportAnyError(conjunction, result);
+    return result;
+  }
+
+  for (ParseTree child : conjunction.children) {
+    if (isConjunction(child) || child instanceof T_expressionDetailContext) {
+      ProofResult conjunctResult =  proveEachConjunct((T_expressionDetailContext)child);
+      if (conjunctResult != ProofResult.provenTrue)
+        return conjunctResult;
+    }
+  }
+  return ProofResult.provenTrue;
+}
+
+private boolean isSingleConjunct(T_expressionDetailContext expressionDetail) {
+  return ! isConjunction(expressionDetail);
+}
+
+private boolean isConjunction(ParseTree expressionDetail) {
+  return expressionDetail instanceof ConditionalAndExprContext
+      || expressionDetail instanceof AndExprContext
+      ;
+}
+
+private void reportAnyError(ParserRuleContext ctx, ProofResult result) {
+  if (result == ProofResult.provenTrue)
+    return;
+
+  String msg = null;
+  if (result == ProofResult.unsupported)
+    msg = "The code does not support the proof of the statement: " + rewriter.originalSource(ctx);
+  else if (result == ProofResult.reachedLimit)
+    msg = "The prover reached an internal limit. Consider adding a lemma to help prove "
+        + "the statement: \n    "+ rewriter.originalSource(ctx);
+  errors.collectError(prover, ctx.getStart(), msg);
 }
 
 /**
@@ -354,15 +383,17 @@ private String prologCode(ParseTree node) {
   return expandForall(rewriter.source(node)).replaceAll("//", "%");
 }
 
-/** Search for variables that are bound by a <code>forall</code> statement and add the type
- * information for the variables to the <code>means</code> statement so that it will be available
- * for proof. Conjoin the "useful" type constraints at the point of declaration and the "deep"
- * constraints at the end of the scope of the bound variable.
- * @param meansSource the statement to be proven from a <code>means</code> statement
- * @return null
+/**
+ * Search for variables that are bound by a <code>forall</code> statement and add the expanded type
+ * information for the variables inside the scope of the <code>forall</code>, that is, inside the
+ * quantified statement) so that it will be available for use in the proof. Conjoin the "useful"
+ * type constraints at the beginning of the scope of the bound variable and the "deep" constraints
+ * at the end of the scope of the bound variable.
+ * @param statement the statement to be proven from a <code>means</code> statement
+ * @return the modified statement
  */
 private String expandForall(String statement) {
-  // TODO Auto-generated method stub
+  // TODO Expand forall statements for Prolog by adding type information for each forall variable
   return statement;
 }
 

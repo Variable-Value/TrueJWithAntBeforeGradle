@@ -1,7 +1,5 @@
 package tlang;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -126,13 +124,15 @@ enum SolverInTestMode {on,off}
 SolverInTestMode testMode = SolverInTestMode.off;
 
 private static String relativeDir = "./";
-private static int limit = 7; // General limit on prover: backtracking, equality chains, etc.
 
 private static Prolog engine = createPrologEngine();
 private static String prologStdOut = "";
   // TODO: remove prologStdOut or provide an accessor method
 private static boolean isDebugging = false; // set to true to print Prolog output
 private static Theory theory;
+/** Name of the prolog code field where the result is stored. See
+ * {@link #prologConsistencyResult(SolveInfo)} */
+private static String prologConsistencyResult = "ConsistencyResult";
 
 /** The logical conjunction operator, AND, is written "/\" in the KnowledgeBase first-order predicate
  * language.
@@ -192,12 +192,12 @@ public KnowledgeBase(KnowledgeBase kb) {
 
 
 /** Add information that cannot possibly be inconsistent with prior facts to the
- * <code>KnowledgeBase</code>. This might be <code>given</code> statements or executable code.
+ * <code>KnowledgeBase</code>. No check for consistency with the <code>KnowledgeBase</code> is
+ * performed. This is useful for TrueJ <code>given</code> statements or executable code.
  * Executable code establishes facts about new states, which can not conflict with existing states.
- * No check for consistency with the <code>KnowledgeBase</code> is performed. For efficiency this
- * method could be used to add a fact that is known to be consistent with the existing knowledge
- * base in some other way, but if a mistake is made, the <code>KnowledgeBase</code> would be
- * corrupted.
+ * For efficiency this method could be used to add a fact that is known to be consistent with the
+ * existing knowledge base in some other way, but if a mistake is made, the
+ * <code>KnowledgeBase</code> would be corrupted.
  * @param newText
  */
 public void assume(String newText) {
@@ -273,11 +273,17 @@ public String getMeaning() {
  * TODO: We could use inverse resolution to find the new assumption needed to prove the statement.
  *
  * @param statement The statement to be shown either true or unsupported
- * @return a {@link ProofResult}
+ * @param modeOfTest Optional <code>SolverInTestMode.on</code> to start tracing in the prover
+ * @return {@link ProofResult} for the attempted proof
  */
-//TODO: catch the runtimeExceptions from checkConsistency()
-public ProofResult prove(String statement) {
+public ProofResult prove(String statement, SolverInTestMode... modeOfTest) {
+  SolverInTestMode savedTestMode = testMode;
+  if (modeOfTest.length > 0)
+    testMode = modeOfTest[0];
+
   final ConsistencyResult c = checkConsistency(negation(statement));
+
+  testMode = savedTestMode;
   return proofResults(c);
 }
 
@@ -316,19 +322,18 @@ public ProofResult assumeIfProven(String newFact, SolverInTestMode... modeOfTest
   return result;
 }
 
-/** Substitutes a new fact for the existing facts after confirming that it can be proven from the
- * existing {@link KnowledgeBase} facts. This can be used when the only purpose of facts is to
+/**
+ * Substitutes a new fact for the existing facts - use when the only purpose of facts is to
  * establish the new fact.
  * <p>
- * This can also be used in programming to summarize the code of a block with a single
- * statement, in TrueJ, a <code>means</code> statement, gathering the complexity of the code into
- * that single statement of the salient information. Note that <em>all</em> the code in the block
- * that is above the <code>means</code> statement disappears, even the definition of
- * values of a variable whose scope extends beyond the <code>means</code> statement; therefore, the
- * following code might legally access a value name, but nothing could be proven about it because
- * its definition was eclipsed by a <code>means</code> statement.
- *
- * For now, we implement this by simply adding the fact.
+ * For now, we implement this by simply adding the fact to the KnowledgeBase. But the intent is for
+ * this to be used in TrueJ programming to summarize the preceding code of a block with a
+ * <code>means</code> statement, gathering the complexity of the code into that single
+ * statement of the salient information. Note that variable type information is preserved, but
+ * <em>all</em> the other code above the <code>means</code> statement is removed from the knowledge
+ * base, even the definition of values whose scope extends beyond the  <code>means</code> statement;
+ * therefore, the following TrueJ code is allowed to legally reference a value, but nothing could be
+ * proven with it because its definition was eclipsed by the <code>means</code> statement.
  * <p>
  * TODO: We need to treat type information separately, ?typeFacts map from variable or value names?
  * to the list of value-facts implied by the type of the variable. Then we can
@@ -341,10 +346,14 @@ public ProofResult assumeIfProven(String newFact, SolverInTestMode... modeOfTest
  * @param newFact
  * @return a {@link ProofResult}
  */
+public void substitute(String newFact) {
+  assume(newFact); // TODO: eliminate all preceding code in block except types
+}
+
 public ProofResult substituteIfProven(String newFact) {
   ProofResult result = prove(newFact);
   if (result == ProofResult.provenTrue) {
-    assume(newFact);
+    substitute(newFact);
   }
   return result;
 }
@@ -354,7 +363,6 @@ public ProofResult substituteIfProven(String newFact) {
  * @return a {@link ConsistencyResult}
  */
 public ConsistencyResult checkConsistency(String statement) {
-  System.out.println("Checking consistency of "+ statement);
   String testString = parens(statement) + AND + conjoined(facts);
   SolveInfo solutionInfo = checkForConsistency(testString);
   return prologConsistencyResult(solutionInfo);
@@ -362,7 +370,7 @@ public ConsistencyResult checkConsistency(String statement) {
 
 private ConsistencyResult prologConsistencyResult(SolveInfo solutionInfo) { // @formatter:off
   try {
-    String resultState = solutionInfo.getTerm("ConsistencyResult").toString();
+    String resultState = solutionInfo.getTerm(prologConsistencyResult).toString();
   switch (resultState) {
   // Possible values of resultState are listed in the Prolog etleantap.pl file in predicate
   // runProver(+Formula, +TextOfFormula, -Result)
@@ -379,10 +387,11 @@ private ConsistencyResult prologConsistencyResult(SolveInfo solutionInfo) { // @
   }
   catch (UnknownVarException e) {
     throw new RuntimeException
-        ("Mismatch with prover code in etleantap.pl. Expected variable 'ConsistencyResult'", e);
+        ("Mismatch with prover code in etleantap.pl. Expected variable '"+ prologConsistencyResult +"'", e);
   }
 } // @formatter:on
 
+@SuppressWarnings("serial")
 private class InvalidResultFromProverException extends RuntimeException {
 InvalidResultFromProverException(String resultState) {
   super("A call to the etleantap.pl prover gave the invalid result: " + resultState);
@@ -399,11 +408,8 @@ private SolveInfo checkForConsistency(String testString) {
   return info;
 }
 
-//TODO create constant field for the Prolog variable name ConsistencyResult
-//     and replace all occurrences in Prolog related Strings
 private String prologCommand(String formula) {
-  String displayForm = formula.replace("'", "\\'");
-  String command = "nnf( ("+ formula +"), NNF ), runProver(NNF, ConsistencyResult)";
+  String command = "nnf( ("+ formula +"), NNF ), runProver(NNF, "+ prologConsistencyResult +")";
   if (testMode == SolverInTestMode.on)
     command = "db_start_debugging, "+ command;
   return command;
@@ -500,9 +506,6 @@ static private void ensurePrologEngine() {
   if (engine == null) {
     final String[] libs = {"alice.tuprolog.lib.BasicLibrary"
                           ,"alice.tuprolog.lib.ISOLibrary"
-                          ,"alice.tuprolog.lib.IOLibrary"    //TODO: delete this
-                          ,"alice.tuprolog.lib.ISOIOLibrary" //TODO: delete this
-                             // ISOIOLibrary overrides some IOLibrary predicates
                           ,"alice.tuprolog.lib.OOLibrary"
                           ,"alice.tuprolog.lib.ThreadLibrary"
                           };
