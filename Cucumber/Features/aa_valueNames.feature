@@ -295,7 +295,7 @@ Scenario: Using value names allows proving logical statements
 
   Then an error message contains
     """
-    The code does not support the means statement: b' = 'b
+    The code does not support the proof of the statement: b' = 'b
     """
 
 

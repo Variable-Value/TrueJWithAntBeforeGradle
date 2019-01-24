@@ -1,14 +1,16 @@
 package tlang;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import tlang.KnowledgeBase.ProofResult;
 import tlang.Scope.VarInfo;
 import tlang.TLantlrParser.EqualityExprContext;
+import tlang.TLantlrParser.T_expressionDetailContext;
 import tlang.TLantlrParser.T_identifierContext;
 import tlang.TLantlrParser.T_primaryContext;
 import static tlang.TUtil.*;
@@ -35,25 +37,22 @@ import static tlang.TLantlrParser.*;
 class TLantlrProofVisitor extends RewriteVisitor {
 
 private static final String prover = "Prover";
-private static final String logicalAndOperator = "/\\\\"; // extra backslashes for regexp
+private static final String logicalAndOperator = "/\\";
+private static final String logicalOrOperator = "\\/";
 
-private ParseTree tree;
 private CollectingMsgListener errors; // for collecting inconsistent and unprovable results
 private static char prologDecoratorChar = '^';
 private static TLantlrProofVisitor latestProofVisitor;
-private Map<String, String> varTypeMap = new HashMap<>();
 
 /** Contains a logical representation of the state of a program */
 private KnowledgeBase kb = new KnowledgeBase();
 
 
-public TLantlrProofVisitor( ParseTree               parseTree
-                          , TokenStream             tokenStream
+public TLantlrProofVisitor( TokenStream             tokenStream
                           , Map<RuleContext, Scope> ctxToScope
                           , CollectingMsgListener   errors
                           ) {
   super(tokenStream, ctxToScope);
-  this.tree = parseTree;
   this.errors = errors;
 }
 
@@ -73,7 +72,7 @@ public static String proveCorrectness( ParseTree               parseTree
                                      , Map<RuleContext, Scope> ctxToScope
                                      , CollectingMsgListener   errors
                                      ) {
-  latestProofVisitor = new TLantlrProofVisitor(parseTree, tokenStream, ctxToScope, errors);
+  latestProofVisitor = new TLantlrProofVisitor(tokenStream, ctxToScope, errors);
   latestProofVisitor.visit(parseTree);
   return getProlog();
 }
@@ -172,7 +171,8 @@ Void visitT_UndecoratedIdentifier(T_UndecoratedIdentifierContext ctx) {
 @Override public Void visitAssignStmt(AssignStmtContext ctx) {
   boolean needsEquivalence = hasBooleanTarget(ctx);
   visitChildren(ctx);
-  String assignmentCode = removeSemicolonFromCode(ctx);
+  String src  = rewriter.source(ctx);
+  String assignmentCode = withoutSemicolon(src);
   if (needsEquivalence)
     assignmentCode = assignmentCode.replace("=", "===");
   kb.assume(parenthesized(assignmentCode));
@@ -195,10 +195,9 @@ public boolean isBooleanValue(String targetName) {
   return varType.equals("boolean");
 }
 
-private String removeSemicolonFromCode(AssignStmtContext ctx) {
-  String revisedText  = rewriter.source(ctx);
-  final int semicolonPosition = revisedText.lastIndexOf(';');
-  return revisedText.substring(0, semicolonPosition);
+private String withoutSemicolon(String code) {
+  int semicolonPosition = code.lastIndexOf(';');
+  return code.substring(0, semicolonPosition) + code.substring(semicolonPosition + 1);
 }
 
 	/** Replace
@@ -209,7 +208,7 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
 	 */
 	@Override public Void visitEqualityExpr(TLantlrParser.EqualityExprContext ctx) {
 	  String sign = (ctx.op.getText() == "!=") ? "-" : "";
-	  String equalityOp = hasBooleanTerms(ctx.t_expression(0)) ? "===" : "=" ;
+	  String equalityOp = hasBooleanTerms(ctx.t_expressionDetail(0)) ? "===" : "=" ;
 	  rewriter.replace(ctx.op, equalityOp);
 	  visitChildren(ctx);
 	  String newText = sign + parenthesized(rewriter.source(ctx));
@@ -217,25 +216,19 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
 	  return null;
 	}
 
-  private boolean hasBooleanTerms(T_expressionContext ctx) {
+  private boolean hasBooleanTerms(T_expressionDetailContext ctx) {
     if (ctx instanceof AndExprContext)      return true;
     if (ctx instanceof EqualityExprContext) return true;
     if (ctx instanceof CompareExprContext)  return true;
     if (ctx instanceof PrimaryExprContext)  return isBooleanPrimary(ctx);
     if (ctx instanceof NotExprContext)      return true;
-//    if (ctx instanceof DotThisExprContext) {
-//      // TODO: retrun true if this is a descendant of Boolean
-//    }
 //    if (ctx instanceof FuncCallExprContext) {
 //      // TODO: does this function return a boolean?
 //    }
-//    if (ctx instanceof DotNewExprContext) {
-//      // TODO: Can this return a boolean?
-//    }
-    if (ctx instanceof DotExprContext)      return isBooleanDotExpr(ctx);
-    if (ctx instanceof ConditionalExprContext) {
+    if (ctx instanceof DotExprContext)      return isBooleanDotExpr((DotExprContext)ctx);
+    if (ctx instanceof ConditionalExprContext) {  // e(0) ? e(1) : e(2)
       ConditionalExprContext ceCtx = (ConditionalExprContext)ctx;
-      return hasBooleanTerms(ceCtx.t_expression(0)) || hasBooleanTerms(ceCtx.t_expression(0));
+      return hasBooleanTerms(ceCtx.t_expressionDetail(1)); // || hasBooleanTerms(ceCtx.t_expressionDetail(2));
     }
 //    if (ctx instanceof DotExplicitGenericExprContext) { /* TODO: returns boolean? */ }
     if (ctx instanceof InstanceOfExprContext)      return true;
@@ -243,58 +236,84 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
     if (ctx instanceof ConditionalOrExprContext)      return true;
     if (ctx instanceof ArrayExprContext) {
       ArrayExprContext aeCtx = (ArrayExprContext)ctx;
-      if (hasBooleanTerms(aeCtx.t_expression(0))) return true;
+      if (hasBooleanTerms(aeCtx.t_expressionDetail(0))) return true;
     }
     if (ctx instanceof ExclusiveOrExprContext)      return true;
-//    if (ctx instanceof NewExprContext) { /* TODO: check for boolean or descendant of Boolean */ }
+//    if (ctx instanceof NewExprContext) { /* TODO: add this; however, new Boolean(true) is deprecated */ }
     if (ctx instanceof ConditionalAndExprContext)      return true;
-//    if (ctx instanceof TypeCastExprContext)  { /* TODO: check for cast to descendant of Boolean */ }
+//    if (ctx instanceof TypeCastExprContext)  { /* TODO: check for casting boolean to Boolean (deprecated) */ }
     if (ctx instanceof ConditionalAndExprContext)      return true;
     // OTHERWISE
     return false;
   }
 
-  public boolean isBooleanDotExpr(T_expressionContext ctx) {
-    DotExprContext deCtx = (DotExprContext)ctx;
-    if ( rewriter.source(deCtx.t_expression()) == "this"
-      && isBooleanValue(deCtx.t_identifier().getText())
+  public boolean isBooleanDotExpr(DotExprContext ctx) {
+    if ( "this".equals(rewriter.source(ctx.t_expressionDetail()) )
+      && isBooleanValue(ctx.t_identifier().getText())
        )
       return true;
-    // TODO: return true if other object component identifier is boolean
+    // TODO: return true if other (non-this) object component identifier is boolean
     //otherwise
     return false;
   }
 
-  public boolean isBooleanPrimary(T_expressionContext ctx) {
+  public boolean isBooleanPrimary(T_expressionDetailContext ctx) {
     T_primaryContext pCtx = ((PrimaryExprContext)ctx).t_primary();
-    if (pCtx.start.getText() == "(") return hasBooleanTerms(pCtx.t_expression());
-    if (pCtx.getText() == "true") return true;
+    if (pCtx.start.getText() == "(") // i.e., '(' t_expression ')'
+      return hasBooleanTerms(pCtx.t_expression().t_expressionDetail());
+    String text = pCtx.getText();
+    if (text == "true") return true;
+    if (text == "false") return true;
     if (pCtx.t_identifier() != null) return isBooleanValue(pCtx.t_identifier().getText());
-    // TODO: other options for primary
-    // otherwise
+    // This is all the possible booleans in the parse rule t_primary in the TLantlr.g4 grammar
+    // as of 2019 Jan 16
     return false;
   }
 
-  /** Replace the Java AND (&) with the prover AND (/\).
+/** Replace the Java OR (|) with the prover OR (\/).
+ * <p>{@inheritDoc}
+ *
+ */
+@Override public Void visitOrExpr(OrExprContext ctx) {
+  visitChildren(ctx);
+
+  rewriter.replace(binaryOperatorToken(ctx), logicalOrOperator);
+  return null;
+}
+
+/** Replace the Java AND (&) with the prover AND (/\).
  * <p>{@inheritDoc}
  *
  */
 @Override public Void visitAndExpr(AndExprContext ctx) {
   visitChildren(ctx);
-  String newText = rewriter.source(ctx).replaceFirst("&", logicalAndOperator);
-  rewriter.substituteText(ctx, parenthesized(newText));
+
+  rewriter.replace(binaryOperatorToken(ctx), logicalAndOperator);
+  return null;
+}
+
+/** Replace the Java conditional OR (||) with the prover OR (\/).
+ * <p>{@inheritDoc}
+ */
+@Override public Void visitConditionalOrExpr(ConditionalOrExprContext ctx) {
+  visitChildren(ctx);
+
+  rewriter.replace(binaryOperatorToken(ctx), logicalOrOperator);
   return null;
 }
 
 /** Replace the Java conditional AND (&&) with the prover AND (/\).
  * <p>{@inheritDoc}
- *
  */
 @Override public Void visitConditionalAndExpr(ConditionalAndExprContext ctx) {
   visitChildren(ctx);
-  String newText = rewriter.source(ctx).replaceFirst("&&", logicalAndOperator);
-  rewriter.substituteText(ctx, parenthesized(newText));
+
+  rewriter.replace(binaryOperatorToken(ctx), logicalAndOperator);
   return null;
+}
+
+private Token binaryOperatorToken(ParseTree pt) {
+  return (Token)pt.getChild(1).getPayload();
 }
 
 /** Submit the means statement to the {@link KnowledgeBase} for proof, and substitute the
@@ -303,43 +322,89 @@ private String removeSemicolonFromCode(AssignStmtContext ctx) {
  * <p>{@inheritDoc}
  * @return a null */
 @Override public Void visitT_means(T_meansContext ctx) {
-  String meansStatementAsWritten = expandForall(rewriter.source(ctx.t_enterExprs()));
-    // TODO: add parentheses to meansStatementAsWritten;
-  visitChildren(ctx); // rewrite code into KnowledgeBase language
-  String meansStatementForProver = expandForall(rewriter.sourceWithoutComments(ctx.t_enterExprs()));
+  visitChildren(ctx); // rewrite code into the KnowledgeBase language
+
+  T_expressionDetailContext predicate = ctx.t_expression().t_expressionDetail();
+  String meansStatementForProver = prologCode(predicate);
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
-  if (result == ProofResult.unsupported) {
-    String msg = "The code does not support the means statement: "+ meansStatementAsWritten;
-    errors.collectError(prover, ctx.start, msg);
-  } else if (result == ProofResult.reachedLimit) {
-    String msg = "The prover reached an internal limit. Consider adding a lemma to help prove "
-               + "the means statement: \n    "+ meansStatementAsWritten;
-    errors.collectError(prover, ctx.start, msg);
-  }
+  if ( ! (result == ProofResult.provenTrue))
+    proveEachConjunct(predicate);
   return null;
 }
 
-/** Search for variables that are bound by a <code>forall</code> statement and add the type
- * information for the variables to the <code>means</code> statement so that it will be available
- * for proof. Conjoin the "useful" type constraints at the point of declaration and the "deep"
- * constraints at the end of the scope of the bound variable.
- * @param meansSource the statement to be proven from a <code>means</code> statement
- * @return null
+private ProofResult proveEachConjunct(T_expressionDetailContext conjunction) {
+  if (isSingleConjunct(conjunction)) {
+    ProofResult result = kb.assumeIfProven(prologCode(conjunction));
+    reportAnyError(conjunction, result);
+    return result;
+  }
+
+  for (ParseTree child : conjunction.children) {
+    if (isConjunction(child) || child instanceof T_expressionDetailContext) {
+      ProofResult conjunctResult =  proveEachConjunct((T_expressionDetailContext)child);
+      if (conjunctResult != ProofResult.provenTrue)
+        return conjunctResult;
+    }
+  }
+  return ProofResult.provenTrue;
+}
+
+private boolean isSingleConjunct(T_expressionDetailContext expressionDetail) {
+  return ! isConjunction(expressionDetail);
+}
+
+private boolean isConjunction(ParseTree expressionDetail) {
+  return expressionDetail instanceof ConditionalAndExprContext
+      || expressionDetail instanceof AndExprContext
+      ;
+}
+
+private void reportAnyError(ParserRuleContext ctx, ProofResult result) {
+  if (result == ProofResult.provenTrue)
+    return;
+
+  String msg = null;
+  if (result == ProofResult.unsupported)
+    msg = "The code does not support the proof of the statement: " + rewriter.originalSource(ctx);
+  else if (result == ProofResult.reachedLimit)
+    msg = "The prover reached an internal limit. Consider adding a lemma to help prove "
+        + "the statement: \n    "+ rewriter.originalSource(ctx);
+  errors.collectError(prover, ctx.getStart(), msg);
+}
+
+/**
+ *
+ * @param node
+ * @return
  */
-private String expandForall(String meansSource) {
-  // TODO Auto-generated method stub
-  return meansSource;
+private String prologCode(ParseTree node) {
+  return expandForall(rewriter.source(node)).replaceAll("//", "%");
+}
+
+/**
+ * Search for variables that are bound by a <code>forall</code> statement and add the expanded type
+ * information for the variables inside the scope of the <code>forall</code>, that is, inside the
+ * quantified statement) so that it will be available for use in the proof. Conjoin the "useful"
+ * type constraints at the beginning of the scope of the bound variable and the "deep" constraints
+ * at the end of the scope of the bound variable.
+ * @param statement the statement to be proven from a <code>means</code> statement
+ * @return the modified statement
+ */
+private String expandForall(String statement) {
+  // TODO Expand forall statements for Prolog by adding type information for each forall variable
+  return statement;
 }
 
 /* ************************ Helper methods ************************************/
 
-private String parenthesized(String source) {
-  return "("+ source + ")";
+private String parenthesized(String expression) {
+  return "("+ expression + ")";
 }
 
 /**
  * Get the name of the scope with a following dot separator, ready for prefixing to a prolog
- * variable name. For instance, an object-instance field returns "this."
+ * variable name. For instance, an object-instance field returns "this." and a local variable that
+ * is declared at the top level of a method returns "".
  * @param variableName
  * @return scope name followed by a dot separator
  */

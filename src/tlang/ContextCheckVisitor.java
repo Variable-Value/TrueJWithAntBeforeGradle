@@ -295,7 +295,7 @@ visitAssignStmt(AssignStmtContext ctx) {
   // in order to reflect the idea that the assignment happens after the
   // expression is evaluated. This has concrete effect in the fact that
   // we don't want the current value changed until the end of the assignment.
-  visit(ctx.t_enterExprs());
+  visit(ctx.t_expression());
   visit(ctx.t_assignable());
   return null;
 }
@@ -385,7 +385,7 @@ visitT_means(T_meansContext ctx) {
  * {@inheritDoc}
  */
 @Override public Void
-visitT_enterExprs(T_enterExprsContext ctx) {
+visitT_expression(T_expressionContext ctx) {
   final boolean oldInAssignment = isInAssignment;
   isInAssignment = false;
 

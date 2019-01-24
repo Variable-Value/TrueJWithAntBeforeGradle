@@ -272,7 +272,7 @@ t_annotationVariableDeclaratorId
 
 t_variableInitializer
   : t_arrayInitializer
-  | t_enterExprs
+  | t_expression
   ;
 
 t_arrayInitializer
@@ -379,7 +379,7 @@ t_elementValuePair
   ;
 
 t_elementValue
-  : t_enterExprs
+  : t_expression
   | t_annotation
   | t_elementValueArrayInitializer
   ;
@@ -438,7 +438,7 @@ t_localVariableDeclaration
 
 t_statement
   : t_block                                                                      # BlockStmt
-  | ASSERT t_enterExprs (':' t_enterExprs)? ';'                                  # AssertStmt
+  | ASSERT t_expression (':' t_expression)? ';'                                  # AssertStmt
   | 'if' t_parExpression t_statement ('else' t_statement)?                       # IfStmt
   | 'for' '(' t_forControl ')' t_statement                                       # ForStmt
   | 'while' t_parExpression t_statement                                          # WhileStmt
@@ -447,14 +447,14 @@ t_statement
   | 'try' t_resourceSpecification t_block t_catchClause* t_finallyBlock?         # TryStmt
   | 'switch' t_parExpression '{' t_switchBlockStatementGroup* t_switchLabel* '}' # SwitchStmt
   | 'synchronized' t_parExpression t_block                                       # SyncStmt
-  | 'return' t_enterExprs? ';'                                                   # ReturnStmt
-  | 'throw' t_enterExprs ';'                                                     # ThrowStmt
+  | 'return' t_expression? ';'                                                   # ReturnStmt
+  | 'throw' t_expression ';'                                                     # ThrowStmt
   | 'break' UndecoratedIdentifier? ';'                                           # BreakStmt
   | 'continue' UndecoratedIdentifier? ';'                                        # ContinueStmt
   | ';'                                                                          # EmptyStmt
-	| t_assignable '=' t_enterExprs ';'                                            # AssignStmt
-  | t_enterExprs '(' t_expressionList? ')' ';'                                   # CallStmt
-  | t_enterExprs '.' 'new' t_nonWildcardTypeArguments? t_innerCreator            # CreationStmt
+	| t_assignable '=' t_expression ';'                                            # AssignStmt
+  | t_expression '(' t_expressionList? ')' ';'                                   # CallStmt
+  | t_expression '.' 'new' t_nonWildcardTypeArguments? t_innerCreator            # CreationStmt
   | UndecoratedIdentifier ':' t_statement                                        # LabelStmt
   | t_means                                                                      # MeansStmt
   ;
@@ -486,7 +486,7 @@ t_resources
 
 t_resource
   : t_variableModifier* ty=t_classOrInterfaceType
-    t_initializedVariableDeclaratorId[$ty.text] '=' t_enterExprs
+    t_initializedVariableDeclaratorId[$ty.text] '=' t_expression
   ;
 
 /** Matches cases then statements, both of which are mandatory.
@@ -504,7 +504,7 @@ t_switchLabel
 
 t_forControl
   : t_enhancedForControl
-  | t_forInit? ';' t_enterExprs? ';' t_forUpdate?
+  | t_forInit? ';' t_expression? ';' t_forUpdate?
   ;
 
 t_forInit
@@ -513,7 +513,7 @@ t_forInit
   ;
 
 t_enhancedForControl
-  : t_variableModifier* t_type t_identifier ':' t_enterExprs
+  : t_variableModifier* t_type t_identifier ':' t_expression
   ;
 
 t_forUpdate
@@ -523,48 +523,46 @@ t_forUpdate
 // EXPRESSIONS
 
 t_parExpression
-  : '(' t_enterExprs ')'
+  : '(' t_expression ')'
   ;
 
 t_expressionList
-  : t_enterExprs (',' t_enterExprs)*
+  : t_expression (',' t_expression)*
   ;
 
 t_constantExpression
-  : t_enterExprs
-  ;
-
-t_enterExprs // creates visitor method for setting valueAccessState = reference;
   : t_expression
   ;
 
-t_expression // in order of most sticky to least sticky
-  : t_primary                                                         # PrimaryExpr
-  | t_expression '.' t_identifier                                     # DotExpr
-  | t_expression '.' 'this'                                           # DotThisExpr
-  | t_expression '.' 'new' t_nonWildcardTypeArguments? t_innerCreator # DotNewExpr
-  | t_expression '.' 'super' t_superSuffix                            # DotSuperExpr
-  | t_expression '.' t_explicitGenericInvocation                      # DotExplicitGenericExpr
-  | t_expression '[' t_expression ']'                                 # ArrayExpr
-  | t_expression '(' (t_expression (',' t_expression)*)? ')'          # FuncCallExpr
-  | 'new' t_creator                                                   # NewExpr
-  | '(' t_type ')' t_expression                                       # TypeCastExpr
-  | ('+'|'-') t_expression                                            # SignExpr
-  | '~' t_expression                                                  # BitComplementExpr
-  | '!' t_expression                                                  # NotExpr
-  | t_expression ('*'|'/'|'%') t_expression                           # MultiplicativeExpr
-  | t_expression ('+'|'-') t_expression                               # AdditiveExpr
-  | t_expression ('<' '<' | '>' '>' '>' | '>' '>') t_expression       # ShiftExpr
-  | t_expression ('<=' | '>=' | '>' | '<') t_expression               # CompareExpr
-  | t_expression 'instanceof' t_type                                  # InstanceOfExpr
-  | t_expression (op='!=' | op='=') t_expression                      # EqualityExpr // not assignment
-  | t_expression '&' t_expression                                     # AndExpr
-  | t_expression '^' t_expression                                     # ExclusiveOrExpr
-  | t_expression '|' t_expression                                     # OrExpr
-  | t_expression '&&' t_expression                                    # ConditionalAndExpr
-  | t_expression '||' t_expression                                    # ConditionalOrExpr
-  | t_expression '?' t_expression ':' t_expression                    # ConditionalExpr
-//  | t_expression            // only = assignment allowed
+t_expression : t_expressionDetail; // to give us a t_expression visitor
+t_expressionDetail // in order of most sticky to least sticky
+  : t_primary                                                                  # PrimaryExpr
+  | t_expressionDetail '.' t_identifier                                        # DotExpr
+  | t_expressionDetail '.' 'this'                                              # DotThisExpr
+  | t_expressionDetail '.' 'new' t_nonWildcardTypeArguments? t_innerCreator    # DotNewExpr
+  | t_expressionDetail '.' 'super' t_superSuffix                               # DotSuperExpr
+  | t_expressionDetail '.' t_explicitGenericInvocation                         # DotExplicitGenericExpr
+  | t_expressionDetail '[' t_expressionDetail ']'                              # ArrayExpr
+  | t_expressionDetail '(' (t_expressionDetail (',' t_expressionDetail)*)? ')' # FuncCallExpr
+  | 'new' t_creator                                                            # NewExpr
+  | '(' t_type ')' t_expressionDetail                                          # TypeCastExpr
+  | ('+'|'-') t_expressionDetail                                               # SignExpr
+  | '~' t_expressionDetail                                                     # BitComplementExpr
+  | '!' t_expressionDetail                                                     # NotExpr
+  | t_expressionDetail ('*'|'/'|'%') t_expressionDetail                        # MultiplicativeExpr
+  | t_expressionDetail ('+'|'-') t_expressionDetail                            # AdditiveExpr
+  | t_expressionDetail ('<' '<' | '>' '>' '>' | '>' '>') t_expressionDetail    # ShiftExpr
+  | t_expressionDetail ('<=' | '>=' | '>' | '<') t_expressionDetail            # CompareExpr
+  | t_expressionDetail 'instanceof' t_type                                     # InstanceOfExpr
+  | t_expressionDetail (op='!=' | op='=') t_expressionDetail                   # EqualityExpr
+                                                                                 // not assignment
+  | t_expressionDetail '&' t_expressionDetail                                  # AndExpr
+  | t_expressionDetail '^' t_expressionDetail                                  # ExclusiveOrExpr
+  | t_expressionDetail '|' t_expressionDetail                                  # OrExpr
+  | t_expressionDetail '&&' t_expressionDetail                                 # ConditionalAndExpr
+  | t_expressionDetail '||' t_expressionDetail                                 # ConditionalOrExpr
+  | t_expressionDetail '?' t_expressionDetail ':' t_expressionDetail           # ConditionalExpr
+//  | t_expressionDetail            // only = assignment allowed
 //      (  '='<assoc=right>
 //      | '+='<assoc=right>
 //      | '-='<assoc=right>
@@ -578,10 +576,10 @@ t_expression // in order of most sticky to least sticky
 //      | '<<='<assoc=right>
 //      | '%='<assoc=right>
 //      )
-//      t_expression
+//      t_expressionDetail
   ;
 
-t_primary
+t_primary // any changes must coordinate with TLantlrProofVisitor.isBooleanPrimary()
   : '(' t_expression ')'
   | 'this'
   | 'super'
@@ -650,7 +648,7 @@ t_arguments
   ;
 
 t_means
-  : MEANS '(' t_enterExprs ')' ';'
+  : MEANS '(' t_expression ')' ';'
   ;
 
 t_idDeclaration [String idType]

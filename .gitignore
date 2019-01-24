@@ -4,6 +4,16 @@
 # Compiled class file
 *.class
 
+# Temp files from testing in ant build
+/temp/
+
+# .jar files for project dependencies, along with source and sha
+/vendor/lib/
+
+# Output from Cucumber
+STDOUT
+/target/
+
 # Log file
 *.log
 

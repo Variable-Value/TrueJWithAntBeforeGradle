@@ -32,14 +32,14 @@
 			<attribute name="javadoc_location" value="jar:file:/C:/Users/cowan/Documents/Projects/TLantlr/vendor/lib/cucumber-jvm-deps-current-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="vendor/lib/antlr4-current.jar" sourcepath="vendor/lib/antlr4-current-sources.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="jar:platform:/resource/TLantlr/vendor/lib/antlr4-current-javadoc.jar!/"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="lib" path="vendor/lib/antlr4-runtime-current.jar" sourcepath="vendor/lib/antlr4-runtime-current-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:file:/C:/Users/cowan/Documents/Projects/TLantlr/vendor/lib/antlr4-runtime-current-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="vendor/lib/antlr4-current.jar" sourcepath="vendor/lib/antlr4-current-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/TLantlr/vendor/lib/antlr4-current-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="vendor/lib/cucumber-core-current.jar" sourcepath="vendor/lib/cucumber-core-current-sources.jar">

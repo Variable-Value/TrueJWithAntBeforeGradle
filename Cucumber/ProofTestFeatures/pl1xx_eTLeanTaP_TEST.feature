@@ -7,7 +7,7 @@ Feature: Special Test     (Tests for the eLeanTaP system)
 Background: The theorem prover is loaded into a tuProlog engine
   Given a Prolog engine
   And the eTLeanTap theory is loaded
-#  And debugging on
+  And debugging on
   And using feature "pl1xx_eTLeanTaP_TEST"
 
 
@@ -17,6 +17,7 @@ Background: The theorem prover is loaded into a tuProlog engine
 #
 # This next formula violates the depth limit for using guarded expressions
 #  * Formula "(a=b) /\ (b=c) /\ (c#=d) /\ (d=e) /\ (e=f)  ==> (f=a)" is not a theorem
+
 
 #Scenario: FROM PRED and FNS - Additional unnamed items do not necessarily exist
 #
@@ -39,6 +40,10 @@ Background: The theorem prover is loaded into a tuProlog engine
 #  And formula "ex(Y,a#=Y) ==> ex(X,-(a=X))" is a theorem
 #
 #  * Formula "(a=b) ==> ex(X, (a=X))" is a theorem
+
+
+Scenario: Test of a problem with associativity of /\
+  * Formula "-( ('this.allTrue^' === ('this.^a' /\ 'this.^b' /\ 'this.^c')) )" is not a theorem
 
 Scenario Outline: Tests
 

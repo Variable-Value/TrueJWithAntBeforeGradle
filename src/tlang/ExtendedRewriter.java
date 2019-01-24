@@ -1,17 +1,11 @@
 package tlang;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.TokenStreamRewriter;
-import org.antlr.v4.runtime.TokenStreamRewriter.RewriteOperation;
 import org.antlr.v4.runtime.misc.Interval;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.eclipse.jdt.annotation.Nullable;
-import tlang.TLantlrParser.T_enterExprsContext;
 
 /**
  * A Superclass for the rewriters that transform and operate on the T language trees, to simplify
@@ -19,13 +13,17 @@ import tlang.TLantlrParser.T_enterExprsContext;
  *
  * In order to see the original code before rewriting, use a fake name for the program like
  * getSourceOf("NO_CHANGES", ctx)
+ *
+ * TODO: Extend antlr's TokenStreamRewriter to keep track of insertBefore() vs insertAfter() on a
+ * Token and create another subclass of RewriteOperation, InsertAfterOp, and modify
+ * InsertBeforeOp to track the info. Then in getText(), apply the after-ops after the
+ * before-ops. Hopefully, this will not require actually associating them with
+ * the following Token. Rewrite operations are just added to the end of the List of Rewrite
+ * operations without respect of the token position, so we may need to override the
+ * reduceToSingleOperationPerIndex() to
+ * operate on an interval and properly sort out the before and after operations.
  */
 public class ExtendedRewriter extends TokenStreamRewriter {
-
-private static final String endOfLineCommentStart = "//";
-private static final char endOfLineCommentEnd = '\n';
-private static final String inLineCommentStart = "/\\*";
-private static final String inLineCommentEnd = "*/";
 
 public ExtendedRewriter(TokenStream tokens) {
   super(tokens);
@@ -44,7 +42,7 @@ getText(@Nullable String programName) {
  * @param ctx parse-tree node
  * @return source code corresponding to the parse tree at <code>ctx</code>
  */
-final String source(ParserRuleContext ctx) {
+final String source(ParseTree ctx) {
   return source(DEFAULT_PROGRAM_NAME, ctx);
 //  OR return tokens.getText(ctx.getSourceInterval());
   }
@@ -59,55 +57,19 @@ final String source(ParserRuleContext ctx) {
  * @param ctx The root of the parse-tree node for the source code
  * @return source code corresponding to the parse tree at <code>ctx</code>
  */
-final String source(String programName, ParserRuleContext ctx) {
+final String source(String programName, ParseTree ctx) {
   return getText(programName, ctx.getSourceInterval());
 }
 
-public String sourceWithoutComments(ParserRuleContext ctx) {
-  String sourceLeft = source(ctx);
-  int startOfComment = firstFoundPositon(sourceLeft, endOfLineCommentStart, inLineCommentStart);
-  if (startOfComment < 0)
-    return sourceLeft;
-
-  StringBuilder newString = new StringBuilder(sourceLeft.length() - startOfComment);
-  do {
-    newString.append(sourceLeft.substring(0, startOfComment));
-    if (sourceLeft.substring(startOfComment, startOfComment+2) == inLineCommentStart )
-      sourceLeft = sourceLeft.substring(sourceLeft.indexOf(inLineCommentEnd) + 2);
-    else
-      sourceLeft = afterEndOfLine(sourceLeft);
-    startOfComment = firstFoundPositon(sourceLeft, endOfLineCommentStart, inLineCommentStart);
-  } while (startOfComment > 0);
-  newString.append(sourceLeft);
-  return newString.toString();
-}
-
-/**
- * @param sourceLeft
- * @return
+/** Get the full source, before any changes were made, of the parse-tree at node
+ * <code>ctx</code>, including whitespace and comments. Use this in preference to the
+ * <code>ctx.getText()</code> defined in <code>RuleContext</code>, which only gets info from the
+ * channel that is visible to the parser, i.e., no whitespace or comments.
+ * @param ctx The root of the parse-tree node for the source code
+ * @return original input source code corresponding to the parse tree at <code>ctx</code>
  */
-private String afterEndOfLine(String sourceLeft) {
-  int end = sourceLeft.length();
-  int nextLine = sourceLeft.indexOf(endOfLineCommentEnd) + 1;
-  return sourceLeft.substring((end < nextLine) ? end : nextLine);
-}
-
-/** Return the position of the first substring found in the string. If both are missing, return -1.
- *
- * @param source The string to be searched
- * @param first The first substring to search for
- * @param second The second substring to search for
- * @return The position of the first substring found, or -1 if neither is found
- */
-public int firstFoundPositon(String source, String first, String second) {
-  int startFirst = source.indexOf(first);
-  int startSecond = source.indexOf(second);
-  if (startFirst == -1)
-    return startSecond;
-  if (startSecond == -1)
-    return startFirst;
-
-  return (startFirst < startSecond) ? startFirst : startSecond;
+final String originalSource(ParseTree ctx) {
+  return getText("WITHOUT_CHANGES$T$", ctx.getSourceInterval());
 }
 
 /**
