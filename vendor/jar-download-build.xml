@@ -147,7 +147,7 @@
   <get-checksum  dest="lib/fitlibrary-${fitlibrary.version}.jar"                                   
                  url="${repo}/org/fitnesse/fitlibrary/${fitlibrary.version}/fitlibrary-${fitlibrary.version}.jar" />
   -->
-  <get dest="lib" usetimestamp="true" quiet="false" >
+  <get dest="lib" usetimestamp="true" quiet="true" >
     <url url="${repo}/org/fitnesse/fitlibrary/${fitlibrary.version}/fitlibrary-${fitlibrary.version}.jar"     />
     <firstmatchmapper>
       <globmapper from="${repo}/org/fitnesse/fitlibrary/${fitlibrary.version}/fitlibrary-${fitlibrary.version}.jar"      to="fitlibrary-${fitlibrary.version}.jar"    />
