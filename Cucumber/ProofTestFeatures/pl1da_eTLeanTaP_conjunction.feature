@@ -1,10 +1,10 @@
 Feature: Conjunction     (Tests for the eLeanTaP system)
     Copyright and license information at bottom of file.
 
-    This file contains the tests for the axioms and theorems about conjunction
-    in the propositional calculus, which we represent in the input language with
-    "\/" and in the internal language with Prolog's ",". We rely on
-    (Gries&Schneider, 1993) in testing a complete set of theorems.
+    This file contains the tests for the axioms and theorems about conjunction in the propositional
+    calculus, which we represent in the input language with "\/" and in the internal language with
+    Prolog's ",". We rely on the theorems and axioms of (Gries&Schneider, 1993) as part of creating
+    a complete test of the prover.
 
     Background information on the prover and its language is in the feature file
     pl1aa_eLeanTap_eqivalence_truth.feature.
@@ -22,10 +22,8 @@ Scenario Outline: Simple Examples
   Then it is a "<Result>"
   * Note that "<Note>"
 
-  # In the following, parenthetic numbers are a reference to the the
-  # theorems collected in the final pages of David Gries & Fred B. Schneider, A
-  # Logical Approach to Discrete Math, 1993. For instance, (3.8) refers to their
-  # Axiom, "Definition of false".
+  # In the following, parenthetic numbers are a reference to the theorems collected in the final
+  # pages of (Gries&Schneider, 1993). For instance, (3.8) refers to the Axiom, Definition of false.
 
   Examples:
     | Result    | Statement                   | Note                           |
@@ -46,8 +44,10 @@ Scenario Outline: Simple Examples
     | theorem   | p\/(-p/\q) === p\/q         | Absorbtion (3.44)              |
     | theorem   | p\/(q/\r) === (p\/q)/\(p\/r)| Absorbtion (3.45)              |
     | theorem   | p/\(q\/r) === (p/\q)\/(p/\r)| Absorbtion (3.46)              |
-    | theorem   | -(p/\q) === (-p \/ -q)        | De Morgan (3.47)             |
-    | theorem   | -(p\/q) === (-p /\ -q)        | De Morgan (3.47)             |
+    | theorem   | -(p/\q) === (-p \/ -q)      | De Morgan (3.47)               |
+    | theorem   | -(p\/q) === (-p /\ -q)      | De Morgan (3.47)               |
+    | theorem   | (p\/q)/\(-p\/q) === q       | Resolution                     |
+    | theorem   | (p/\q)\/(-p/\q) === q       | Resolution                     |
     # TODO: WORKING HERE p.52
 
     # Why do the following fail to parse?
@@ -65,6 +65,18 @@ Scenario: Axiom: Distributivity of \/ over \/ (3.31)
   * Formula "p \/ (q \/ r)   ===   (p \/ q) \/ (p \/ r)" is a theorem
 
 
+Scenario: If-then-else equivalence for use in proving program correctness
+
+  The equivalent statement is better for use in some provers because there is only a single
+  disjunction.
+
+  * Formula "(p==>q)  /\ (-p==>r) === (p/\q) \/ (-p/\r)" is a theorem
+
+#Scenario: References
+#
+#  David Gries & Fred B. Schneider, A Logical Approach to Discrete Math, 1993.
+#
+#  * End References
 
 # Copyright (c) George S. Cowan, 2016. Licensed under the BSD 3-clause
 # License which can be found packaged with the eLeanTaP system or at
