@@ -71,11 +71,17 @@ public StepDefinitions() throws IOException {
   javaMgr = new JavaFileHandler(srcPath, options);
 }
 
-@Given("^[Aa] valid T Language run unit is$")
-public void a_valid_T_Language_run_unit_is(String tSourceCode)
+@Given("^[Aa] valid run unit is$")
+public void a_valid_run_unit_is(String tSourceCode)
       throws IOException, InterruptedException {
   runAllSteps(tSourceCode);
   checkForErrors();
+}
+
+@When("^[Aa] valid T Language run unit is$")
+public void a_valid_T_Language_run_unit_is(String arg1)
+      throws IOException, InterruptedException {
+  a_valid_run_unit_is(arg1);
 }
 
 @When("^[Aa]n invalid run unit is$")
