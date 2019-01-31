@@ -34,13 +34,6 @@ public TLantlrRewriteVisitor( ParseTree               parseTree
   super(tokenStream, ctxToScope);
 }
 
-private static void ensureVisit(ParseTree parseTree, TokenStream tokenStream, Map<RuleContext, Scope> ctxToScope) {
-  if ( ! alreadyVisited(parseTree, tokenStream, ctxToScope) ) {
-    visitor = new TLantlrRewriteVisitor(parseTree, tokenStream, ctxToScope);
-    visitor.visit(parseTree);
-  }
-}
-
 private static boolean alreadyVisited( ParseTree               parseTree
                                      , TokenStream             tokenStream
                                      , Map<RuleContext, Scope> ctxToScope
@@ -52,7 +45,8 @@ private static boolean alreadyVisited( ParseTree               parseTree
 }
 
 static public String treeToJava(ParseTree parseTree, TokenStream tokenStream, Map<RuleContext, Scope> ctxToScope) {
-  ensureVisit(parseTree, tokenStream, ctxToScope);
+  visitor = new TLantlrRewriteVisitor(parseTree, tokenStream, ctxToScope);
+  visitor.visit(parseTree);
   return visitor.getJava();
 }
 
