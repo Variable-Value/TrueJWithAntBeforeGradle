@@ -8,10 +8,10 @@
 
     void checkAll() {
       allTrue'reset = true;
-      allTrue'thruA = allTrue'reset && 'a;
+      allTrue'thruA = allTrue'reset && 'a; // assignment is sticker than &&
       allTrue'thruB = allTrue'thruA && 'b;
       allTrue'      = allTrue'thruB && 'c;
     }
-    means(allTrue' = ('a && 'b && 'c)); // equality is stickier than &&
+    means(allTrue' = ('a && 'b && 'c));    // equality is stickier than &&
 
     } // end class

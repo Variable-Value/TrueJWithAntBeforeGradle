@@ -247,11 +247,11 @@ Scenario: Intermediate value names use middle decoration
 
     void checkAll() {
       allTrue'reset = true;
-      allTrue'thruA = allTrue'reset && 'a;
+      allTrue'thruA = allTrue'reset && 'a; // && is stickier than assignment
       allTrue'thruB = allTrue'thruA && 'b;
       allTrue'      = allTrue'thruB && 'c;
     }
-    means(allTrue' = ('a && 'b && 'c)); // equality is stickier than &&
+    means(allTrue' = ('a && 'b && 'c));    // equality is stickier than &&
 
     } // end class
     """
