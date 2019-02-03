@@ -249,10 +249,6 @@ t_annotationVariableDeclarator
   : t_annotationVariableDeclaratorId '=' t_variableInitializer
   ;
 
-t_variableDeclarators [String idType]
-  : t_variableDeclarator[$idType] (',' t_variableDeclarator[$idType])*
-  ;
-
 t_variableDeclarator [String idType]
   : t_initializedVariableDeclaratorId[$idType] '=' t_variableInitializer #InitializedVariable
   | t_uninitializedVariableDeclaratorId[$idType]                         #UninitializedVariable
@@ -433,7 +429,8 @@ t_blockStatement
   ;
 
 t_localVariableDeclaration
-  : t_variableModifier* ty=t_type t_variableDeclarators[$ty.text]
+  : t_variableModifier* ty=t_type
+        t_variableDeclarator[$ty.text] (',' t_variableDeclarator[$ty.text])*
   ;
 
 t_statement
