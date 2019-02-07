@@ -22,8 +22,8 @@ Scenario: The if-statement allows alternative definitions for values
     boolean hasDiscount;
 
     void setRate() {
-      if ('hasDiscount) { rate' = discountRate'; }
-                   else { rate' = standardRate'; }
+      if ('hasDiscount) rate' = discountRate';
+                   else rate' = standardRate';
     // a natural logic for if-then-else statements
     means (   'hasDiscount ==> rate' = discountRate'
           & ! 'hasDiscount ==> rate' = standardRate'
@@ -57,12 +57,11 @@ Scenario: Any value set in one branch of an if-statement must be set in both
 
     void setRate() {
       rate'standard = standardRate';
-      if ('hasDiscount) {
+      if ('hasDiscount)
         rate' = discountRate';
-      }
-      else {
+      else ;
         // attempting to let rate variable defalt to rate'standard previous value
-      } // but the rate' value is not defined
+        // but the rate' value is not defined
       reportRate' = rate'; // the problem is not discovered here
     }
     means ( (   'hasDiscount & reportRate' = discountRate')
@@ -107,7 +106,7 @@ Scenario: An if-then-statement, without the else clause, cannot set values in bo
 
     Then an error message contains
     """
-    a' <= b' is not supported by the preceding statements
+    The code does not support the proof of the statement: a' <= b'
     """
 
 Scenario: The solution is to always include definitions of value names in all branches

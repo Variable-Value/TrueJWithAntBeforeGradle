@@ -131,6 +131,30 @@ protected Void typeVisit(ParserRuleContext ctx) {
   return result;
 }
 
+/** We declare temporary variables at the top of the
+ * executable for any field valueNames that are reused after being
+ * overwritten and initialize the temporary variables where it is an initial value of a field that
+ * is overwritten.
+ * <p>
+ * A valueName
+ * can be reused outside of the block where it is assigned a value as long as its variable is
+ * declared outside that block. This is because ValueNames have the same scope as their associated
+ * variable. Therefore, for valueNames of local variables we declare these temporary variables
+ * when we declare
+ * their variable; for fields however, the temporary
+ * variables for reused value names must be available over the entire executable.
+ * <p>
+ * A field <code>Dollar salary</code> field would have a temporary variable initialized as
+ * <pre><code>
+ * Dollar $T$salary = salary;
+ * </code></pre>
+ * <p>
+ * Implementation: Temp variables are normally assigned values immediately after their
+ * value names are assigned values. Since the initial values of fields are already present at the
+ * beginning of the executable, we assign those values to the temp values there.
+ */
+//TODO: We must declare all such temp variables in the same scope as their overwritten and reused
+//      local variables.
 @Override
 protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx) {
   final Scope oldScope = currentScope;
@@ -169,6 +193,8 @@ protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx)
  * {@inheritDoc}
  * @return a null to indicate that there are no children to visit.
  */
+// TODO: the value inserted should only be like "a$T$ = a/*'*/;" and the "int a$T$;" should be
+//       declared at the declaration of the variable "a" so it will have the scope of "a".
 @Override public Void //@formatter:off
 visitAssignStmt(AssignStmtContext ctx) {
   // Collect pre-visit (unmodified) info
@@ -181,14 +207,14 @@ visitAssignStmt(AssignStmtContext ctx) {
   visit(ctx.t_assignable());                                // becomes a/*'*/
            // (equal sign and ; are unchanged) so we have     a/*'*/ = /*'*/a + 1;
   VarInfo varInfo = currentScope.getExistingVarInfo(varName); // a
-  if (originalValueIsReusedLater(assignedValueName, varInfo)) { // e.g., a' is reused later in code
+  if (originalValueIsReusedAfterOverwrite(assignedValueName, varInfo)) { // e.g., a' is reused later in code
     rewriter.insertAfter(ctx.getStop(), saveOriginalValue(assignedValueName, varInfo));
     // saves the value for later reuse by inserting "int a$T$ = a/*'*/;" after the assignment
   }
   return null;
 } // @formatter:on
 
-private boolean originalValueIsReusedLater(String assignedValueName, VarInfo varInfo) {
+private boolean originalValueIsReusedAfterOverwrite(String assignedValueName, VarInfo varInfo) {
   return varInfo != null && varInfo.reusedValueNames.contains(assignedValueName);
 }
 
@@ -327,7 +353,7 @@ private boolean isReusedValue(String id) {
     return false;
 
   final VarInfo varinfo = currentScope.getExistingVarInfo(variableName(id));
-  return originalValueIsReusedLater(id, varinfo);
+  return originalValueIsReusedAfterOverwrite(id, varinfo);
 }
 
 private String javaName(String valueName) {
