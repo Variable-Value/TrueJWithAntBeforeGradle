@@ -137,6 +137,30 @@ protected Void typeVisit(ParserRuleContext ctx) {
   return result;
 }
 
+/** We declare temporary variables at the top of the
+ * executable for any field valueNames that are reused after being
+ * overwritten and initialize the temporary variables where it is an initial value of a field that
+ * is overwritten.
+ * <p>
+ * A valueName
+ * can be reused outside of the block where it is assigned a value as long as its variable is
+ * declared outside that block. This is because ValueNames have the same scope as their associated
+ * variable. Therefore, for valueNames of local variables we declare these temporary variables
+ * when we declare
+ * their variable; for fields however, the temporary
+ * variables for reused value names must be available over the entire executable.
+ * <p>
+ * A field <code>Dollar salary</code> field would have a temporary variable initialized as
+ * <pre><code>
+ * Dollar $T$salary = salary;
+ * </code></pre>
+ * <p>
+ * Implementation: Temp variables are normally assigned values immediately after their
+ * value names are assigned values. Since the initial values of fields are already present at the
+ * beginning of the executable, we assign those values to the temp values there.
+ */
+//TODO: We must declare all such temp variables in the same scope as their overwritten and reused
+//      local variables.
 @Override
 protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx) {
   final Scope oldScope = currentScope;
