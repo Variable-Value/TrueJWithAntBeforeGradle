@@ -260,28 +260,37 @@ Scenario: Initial and final values of a variable must be correctly decorated
   The value 'a has already been defined on line 3
   """
 
-  When an invalid run unit is
-  """
-  class SwapError4 {
-
-  int a, b;
-
-  void swap() {
-    int startingA' = 'a;
-    a' = 'b;
-    b'last = startingA';
-    means(startingA' = 'a && a' = 'b && b'last = startingA');
-  }
-  means(a' = 'b && b'last = 'a);
-
-  } // end class
-
-  """
-  ### TODO: RED/GREEN TEST
-    Then an error message contains
-    """
-    The final value of field b must be b'
-  """
+### TODO: reactivate this test
+#Scenario: The final value name of all fields must be final-decorated
+#
+#  To ensure that a method's final meaning can be used in calling programs and consistently compared
+#  against requirements imposed in super classes and interfaces, we insist that all field value names
+#  be final-decorated at the end of the method. To be more specific, every field must have a
+#  final-decorated value name by the termination point of every path through the program unless an
+#  Exception is thrown.
+#
+#  When an invalid run unit is
+#  """
+#  class SwapError4 {
+#
+#  int a, b;
+#
+#  void swap() {
+#    int startingA' = 'a;
+#    a' = 'b;
+#    b'last = startingA';
+#    means(startingA' = 'a && a' = 'b && b'last = startingA');
+#  }
+#  means(a' = 'b && b'last = 'a);
+#
+#  } // end class
+#
+#  """
+#  ### TODO: RED/GREEN TEST
+#    Then an error message contains
+#    """
+#    The final value of field b must be b'
+#  """
 
 
 Scenario: Value names may only refer to one value within their scope
