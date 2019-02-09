@@ -200,6 +200,19 @@ private String withoutSemicolon(String code) {
   return code.substring(0, semicolonPosition) + code.substring(semicolonPosition + 1);
 }
 
+/**
+ * {@inheritDoc}
+ *
+ * <p>The default implementation returns the result of calling
+ * {@link #visitChildren} on {@code ctx}.</p>
+ */
+@Override public Void visitNotExpr(NotExprContext ctx) {
+  visitChildren(ctx);
+
+  rewriter.replace(ctx.start, "-");
+  return null;
+}
+
 	/** Replace
 	 * {@inheritDoc}
 	 *
