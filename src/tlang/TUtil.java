@@ -28,7 +28,7 @@ public class TUtil {
 static final char decorator = '\'';
 static final String decoratorString = "'";
 
-@SuppressWarnings("null") // Arrays.asList perfors unchecked conversion
+@SuppressWarnings("null") // Arrays.asList performs unchecked conversion
 final static List<Integer> decoratedTokenTypes
     = Arrays.asList(PreValueName, PostValueName, MidValueName);
 
