@@ -1,23 +1,19 @@
 package tlang;
 
-import static tlang.TUtil.*;
 import java.util.Map;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.eclipse.jdt.annotation.Nullable;
 import tlang.Scope.VarInfo;
+import static tlang.TUtil.*;
 import static tlang.TLantlrParser.*;
 
 /**
  * Translate to Java
  */
 public class TLantlrRewriteVisitor extends RewriteVisitor {
-// TODO Push static methods and values to instance - perhaps rewriter is instance parameter
-
-private static @Nullable TLantlrRewriteVisitor visitor = null;
 
 /**
  * Are we creating a new value name? For instance, in the assignment <code>x'[0] = 'x[0] + 1</code>
@@ -27,25 +23,17 @@ private static @Nullable TLantlrRewriteVisitor visitor = null;
  */
 boolean inAssignableExpression = false;
 
-public TLantlrRewriteVisitor( ParseTree               parseTree
-                            , TokenStream             tokenStream
+public TLantlrRewriteVisitor( TokenStream             tokenStream
                             , Map<RuleContext, Scope> ctxToScope
                             ) {
   super(tokenStream, ctxToScope);
 }
 
-private static boolean alreadyVisited( ParseTree               parseTree
-                                     , TokenStream             tokenStream
-                                     , Map<RuleContext, Scope> ctxToScope
-                                     )
-{
-  return (  visitor != null
-         && visitor.scopeMap == ctxToScope
-         );
-}
-
-static public String treeToJava(ParseTree parseTree, TokenStream tokenStream, Map<RuleContext, Scope> ctxToScope) {
-  visitor = new TLantlrRewriteVisitor(parseTree, tokenStream, ctxToScope);
+static public String treeToJava( ParseTree parseTree
+                               , TokenStream tokenStream
+                               , Map<RuleContext, Scope> ctxToScope
+                               ) {
+  TLantlrRewriteVisitor visitor = new TLantlrRewriteVisitor(tokenStream, ctxToScope);
   visitor.visit(parseTree);
   return visitor.getJava();
 }
@@ -57,13 +45,10 @@ public String getJava() {
 
 // ***** Visit the Nodes that need to be rewritten *******
 
-/* TODO: a post-decorated name for an uninitialized field in visitUninitializedField() should
- * indicate that the field is
- * constant once construction is complete, i.e., a Java final field. And if we are allowing
- * post-decorated fields, we might as well allow pre-decorated ones -- after all, they get default
- * values if no value is provided.
+/* TODO: Include an overriden visitUninitializedField() to enforce the rule that both pre- and
+ * post-decorated fields can be delared without initialization, but then they must be defined in all
+ * constructors.
  */
-
 
 /**
  * If there is an import statement, insert the new import before it,
@@ -98,32 +83,6 @@ visitT_compilationUnit(T_compilationUnitContext ctx) {
   return null;
 }
 
-private boolean successfullInsertBefore( String outName
-                                       , ParserRuleContext ruleCtx
-                                       , String newText
-                                       ) {
-  if (ruleCtx != null) {
-    rewriter.insertBefore(outName, ruleCtx.getStart(), newText);
-    return true;
-  } else {
-    return false;
-  }
-}
-
-private boolean successfullInsertAfter( String outName
-                                      , ParserRuleContext ruleCtx
-                                      , String newText
-                                      ) {
-  if (ruleCtx != null) {
-    rewriter.insertAfter (outName, ruleCtx.getStop(), newText);
-    return true;
-  } else {
-    return false;
-  }
-}
-
-
-
 @Override
 protected Void typeVisit(ParserRuleContext ctx) {
   Void result =  super.typeVisit(ctx);
@@ -154,7 +113,9 @@ protected Void typeVisit(ParserRuleContext ctx) {
  * beginning of the executable, we assign those values to the temp values there.
  */
 //TODO: We must declare all such temp variables in the same scope as their overwritten and reused
-//      local variables.
+//      local variables. The obvious place is immediately after the declaration of their variable.
+//      note that the varible's initialization means that an associated temp variable should also be
+//      assigned.
 @Override
 protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx) {
   final Scope oldScope = currentScope;
@@ -229,6 +190,9 @@ private String saveOriginalValue(String assignedValueName, VarInfo varInfo) {
  * {@inheritDoc}
  * @return a null to indicate that there are no children to visit.
  */
+// TODO: will also need to set inAssignableExpression = true
+//       in visitT_initializedVariableDeclaratorId() once we start testing local variable
+//       declarations
 @Override public Void
 visitT_assignable(T_assignableContext ctx) {
   final boolean holdInAssignableState = inAssignableExpression;
@@ -354,20 +318,6 @@ private boolean isReusedValue(String id) {
 
   final VarInfo varinfo = currentScope.getExistingVarInfo(variableName(id));
   return originalValueIsReusedAfterOverwrite(id, varinfo);
-}
-
-private String javaName(String valueName) {
-  // assumes decorator position >= 0
-  final int primeAt = decoratorPosition(valueName);
-  if (primeAt < 0) {
-    return valueName;
-  } else {
-    if (primeAt == 0) { // is pre-decorated
-      return "/*'*/"+ valueName.substring(1); // e.g., 'id --> /*'*/id
-    } else { // mid- or post-decorated
-      return valueName.substring(0, primeAt) +"/*"+ valueName.substring(primeAt) +"*/";
-    }
-  }
 }
 
 private String dedecorate(String valueName) {
