@@ -490,8 +490,7 @@ private void checkAssignment(T_identifierContext ctx) {
           , varName, varInfo.lineOf(currentValueName)
           );
       errs.collectError( program, valueNameToken, msg);
-    }
-    if (isUndecorated(valueNameToken)) {
+    } else if (isUndecorated(valueNameToken)) {
       errs.collectError( program, valueNameToken
                      , varName +" is not a decorated value name so it cannot receive a value"
                      );
