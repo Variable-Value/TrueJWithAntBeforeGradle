@@ -422,6 +422,11 @@ t_block
   : '{' t_blockStatement* '}'
   ;
 
+t_nestedBlock
+  : t_block
+  | t_statement
+  ;
+
 t_blockStatement
   : t_localVariableDeclaration ';'
   | t_statement
@@ -436,10 +441,10 @@ t_localVariableDeclaration
 t_statement
   : t_block                                                                      # BlockStmt
   | ASSERT t_expression (':' t_expression)? ';'                                  # AssertStmt
-  | 'if' t_parExpression t_statement ('else' t_statement)?                       # IfStmt
-  | 'for' '(' t_forControl ')' t_statement                                       # ForStmt
-  | 'while' t_parExpression t_statement                                          # WhileStmt
-  | 'do' t_statement 'while' t_parExpression ';'                                 # DoStmt
+  | 'if' t_parExpression t_nestedBlock ('else' t_nestedBlock)?                   # IfStmt
+  | 'for' '(' t_forControl ')' t_nestedBlock                                       # ForStmt
+  | 'while' t_parExpression t_nestedBlock                                          # WhileStmt
+  | 'do' t_nestedBlock 'while' t_parExpression ';'                                 # DoStmt
   | 'try' t_block (t_catchClause+ t_finallyBlock? | t_finallyBlock)              # TryStmt
   | 'try' t_resourceSpecification t_block t_catchClause* t_finallyBlock?         # TryStmt
   | 'switch' t_parExpression '{' t_switchBlockStatementGroup* t_switchLabel* '}' # SwitchStmt
