@@ -528,8 +528,8 @@ public class InvalidConsistencyResultException extends Exception {
 //TODO: generalize Deque (? to collection ?) as long as order is kept
 private String conjoined(Deque<String> stack) {
   //TODO: use Collectors.joining
-  String first = /* stack.isEmpty() ? "true" : */ parens(stack.pop()); //TODO stack empty fix
-    // leaving this error to explore why method should ever be used when stack.isEmpty()
+  String first = stack.isEmpty() ? "true" : parens(stack.pop());
+    // TODO: just use else to explore why method should ever be used when stack.isEmpty()
   return stack.stream().reduce(first, (previous, next) -> previous + AND + parens(next)) ;
 }
 
