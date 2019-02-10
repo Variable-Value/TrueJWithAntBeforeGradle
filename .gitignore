@@ -4,8 +4,9 @@
 # Compiled class file
 *.class
 
-# Temp files from testing in ant build
+# Temp files from ant build
 /temp/
+/antlrsysout/
 
 # .jar files for project dependencies, along with source and sha
 /vendor/lib/
