@@ -229,12 +229,6 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitT_annotationVariableDeclarator(TLantlrParser.T_annotationVariableDeclaratorContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link TLantlrParser#t_variableDeclarators}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitT_variableDeclarators(TLantlrParser.T_variableDeclaratorsContext ctx);
-	/**
 	 * Visit a parse tree produced by the {@code InitializedVariable}
 	 * labeled alternative in {@link TLantlrParser#t_variableDeclarator}.
 	 * @param ctx the parse tree
@@ -713,6 +707,13 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAndExpr(TLantlrParser.AndExprContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code ConjRelationExpr}
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConjRelationExpr(TLantlrParser.ConjRelationExprContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code BitComplementExpr}
 	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
 	 * @param ctx the parse tree
@@ -740,20 +741,6 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitDotSuperExpr(TLantlrParser.DotSuperExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code EqualityExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitEqualityExpr(TLantlrParser.EqualityExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code CompareExpr}
-	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitCompareExpr(TLantlrParser.CompareExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code PrimaryExpr}
 	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
@@ -789,6 +776,13 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitFuncCallExpr(TLantlrParser.FuncCallExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ConjunctiveBoolExpr}
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConjunctiveBoolExpr(TLantlrParser.ConjunctiveBoolExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code DotNewExpr}
 	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.

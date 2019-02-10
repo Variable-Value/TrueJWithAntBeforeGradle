@@ -9,7 +9,6 @@ import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import tlang.KnowledgeBase.ProofResult;
 import tlang.Scope.VarInfo;
-import tlang.TLantlrParser.EqualityExprContext;
 import tlang.TLantlrParser.T_expressionDetailContext;
 import tlang.TLantlrParser.T_identifierContext;
 import tlang.TLantlrParser.T_primaryContext;
@@ -169,17 +168,24 @@ Void visitT_UndecoratedIdentifier(T_UndecoratedIdentifierContext ctx) {
  *
  */
 @Override public Void visitAssignStmt(AssignStmtContext ctx) {
-  boolean needsEquivalence = hasBooleanTarget(ctx);
   visitChildren(ctx);
-  String src  = rewriter.source(ctx);
-  String assignmentCode = withoutSemicolon(src);
-  if (needsEquivalence)
-    assignmentCode = assignmentCode.replace("=", "===");
-  kb.assume(parenthesized(assignmentCode));
+
+  String rhs = rewriter.source(ctx.t_assignable());
+  String op = needsEquivalenceForBooleanTarget(ctx) ? "===" : "=";
+//  if (needsEquivalenceForBooleanTarget(ctx)) {
+//    Token op = (Token)ctx.getChild(1).getPayload();
+//    rewriter.replace(op,"===");
+//    assignmentCode = assignmentCode.replaceFirst("=", "===");
+//  }
+  String lhs = parenthesized(rewriter.source(ctx.t_expression()));
+//  String src  = withoutSemicolon(rewriter.source(ctx));
+  String src = rhs + op + lhs;
+  rewriter.substituteText(ctx, src);
+  kb.assume(src);
   return null;
 }
 
-private boolean hasBooleanTarget(AssignStmtContext ctx) {
+private boolean needsEquivalenceForBooleanTarget(AssignStmtContext ctx) {
   boolean result = false;
   T_identifierContext targetCtx = ctx.t_assignable().t_identifier();
   if (targetCtx != null) {
@@ -200,11 +206,8 @@ private String withoutSemicolon(String code) {
   return code.substring(0, semicolonPosition) + code.substring(semicolonPosition + 1);
 }
 
-/**
- * {@inheritDoc}
- *
- * <p>The default implementation returns the result of calling
- * {@link #visitChildren} on {@code ctx}.</p>
+/** Translate <code>!</code> to the provers negation <code>-</code>
+
  */
 @Override public Void visitNotExpr(NotExprContext ctx) {
   visitChildren(ctx);
@@ -213,26 +216,44 @@ private String withoutSemicolon(String code) {
   return null;
 }
 
-	/** Replace
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
+/** Parenthesize the relational expression and translate the operators to appropriate prover
+ * operators.
 	 */
-	@Override public Void visitEqualityExpr(TLantlrParser.EqualityExprContext ctx) {
-	  String sign = (ctx.op.getText() == "!=") ? "-" : "";
-	  String equalityOp = hasBooleanTerms(ctx.t_expressionDetail(0)) ? "===" : "=" ;
-	  rewriter.replace(ctx.op, equalityOp);
+@Override public Void visitConjRelationExpr(TLantlrParser.ConjRelationExprContext ctx) {
 	  visitChildren(ctx);
-	  String newText = sign + parenthesized(rewriter.source(ctx));
-	  rewriter.substituteText(ctx, newText);
+
+  translateOps(ctx);
+  rewriter.substituteText(ctx, parenthesized(rewriter.source(ctx)));
 	  return null;
 	}
 
+/** translate the operators to appropriate prover operators. If the expressions are boolean, use
+ * the provers logical operators.
+ *
+ * <table>
+ * <tr><th>Java  <th>Prover
+ * <tr><td>&lt;  <td>&lt;
+ * <tr><td>&lt;= <td>=&lt;
+ * <tr><td>=     <td>=  (=== for boolean)
+ * <tr><td>!=    <td>#= (=#= for boolean)
+ * <tr><td>&gt;= <td>&gt;=
+ * <tr><td>&gt;  <td>&gt;
+ * </table>
+ * @param ctx
+ */
+private void translateOps(ConjRelationExprContext ctx) {
+  String operator = ctx.op.getText();
+  if ("<=".equals(operator))
+    rewriter.replace(ctx.op, "=<");
+  if ("=".equals(operator))
+    rewriter.replace(ctx.op, hasBooleanTerms(ctx.t_expressionDetail(0)) ? "===" : "=");
+  if ("!=".equals(operator))
+    rewriter.replace(ctx.op, hasBooleanTerms(ctx.t_expressionDetail(0)) ? "=#=" : "#=");
+}
+
   private boolean hasBooleanTerms(T_expressionDetailContext ctx) {
     if (ctx instanceof AndExprContext)      return true;
-    if (ctx instanceof EqualityExprContext) return true;
-    if (ctx instanceof CompareExprContext)  return true;
+    if (ctx instanceof ConjRelationExprContext) return true;
     if (ctx instanceof PrimaryExprContext)  return isBooleanPrimary(ctx);
     if (ctx instanceof NotExprContext)      return true;
 //    if (ctx instanceof FuncCallExprContext) {
@@ -328,6 +349,20 @@ private String withoutSemicolon(String code) {
 private Token binaryOperatorToken(ParseTree pt) {
   return (Token)pt.getChild(1).getPayload();
 }
+
+/** The operators ===, ==>, and <== are the same as those used in the prover, but =!= must be
+ * replaced with =#=.
+ * <p>{@inheritDoc}
+ */
+@Override public Void visitConjunctiveBoolExpr(ConjunctiveBoolExprContext ctx) {
+  visitChildren(ctx);
+
+  if ("=!=".equals(ctx.op)) {
+    rewriter.replace(ctx.op, "=#=");
+  }
+  return null;
+}
+
 
 /** Submit the means statement to the {@link KnowledgeBase} for proof, and substitute the
  * <code>means</code> statement for all the preceding assumptions, preserving the type information
