@@ -1,13 +1,17 @@
 package tlang;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import tlang.Scope.VarInfo;
+import tlang.TLantlrParser.T_nestedBlockContext;
 import static tlang.TLantlrParser.*;
 import static tlang.TUtil.*;
 
@@ -38,6 +42,9 @@ private boolean isInExecutable = false;
  *  but not conjecture
  */
 private boolean isInLogic = false;
+private boolean isInInitialNested = false;
+private boolean isInFinalNested = false;
+private Set<String> initialNestedValueNames = Collections.EMPTY_SET;
 
 /** Is Context in the construction of a name of a variable or value for
  * assignment, i.e., assignable (LHS) or method parameter
@@ -114,7 +121,62 @@ visitAnnotationTypeDeclaration(AnnotationTypeDeclarationContext ctx) {
   return null;
 }
 
-  /**
+/** Check the Condition, then-block, and any-else block for errors as separate executables, and
+ * check that any varNames defined in one of the executable blocks is also defined in the other.
+ */
+@Override public Void visitIfStmt(IfStmtContext ctx) {
+  System.out.println("Before If-visit: ");
+  System.out.println(ctx.getText());
+  System.out.println("-------------------------");
+  visitChildren(ctx.t_parExpression());
+
+  initialNestedValueNames = new HashSet<>();
+  visitThen(ctx);
+
+  visitElse(ctx);
+  initialNestedValueNames = Collections.EMPTY_SET;
+  System.out.println("After If-visit: ");
+  System.out.println(ctx.getText());
+  System.out.println("-------------------------");
+
+  return null;
+}
+
+private void visitThen(IfStmtContext ctx) {
+  T_nestedBlockContext thenNestedBlock = ctx.t_nestedBlock(0);
+  String thenClauseId = idWithLC("then", thenNestedBlock.getStart());
+  initialParallelVisit(thenNestedBlock, thenClauseId);
+}
+
+private void visitElse(IfStmtContext ctx) {
+  T_nestedBlockContext elseNestedBlock = ctx.t_nestedBlock(1);
+  if (elseNestedBlock != null) {
+    String elseClauseId = idWithLC("else", elseNestedBlock.getStart());
+    followingParallelVisit(elseNestedBlock, elseClauseId);
+  }
+}
+
+private void initialParallelVisit(T_nestedBlockContext followingNestedBlock, String id) {
+  boolean oldInFinalNested = isInFinalNested ;
+  isInFinalNested = true;
+
+  executableVisit(id, followingNestedBlock);
+
+  isInFinalNested = oldInFinalNested;
+}
+
+private void followingParallelVisit(T_nestedBlockContext initialNestedBlock, String id) {
+  boolean oldInInitialNested = isInInitialNested;
+  isInInitialNested = true;
+
+  executableVisit(id, initialNestedBlock);
+
+  isInInitialNested = oldInInitialNested;
+  for (String valueName : initialNestedValueNames)
+    errs.collectError("Value Name "+ valueName + " must be set in " + id);
+}
+
+/**
    * Check for incorrectly decorated value name or a field name that has already been used. The
    * variable name, value name, and line number have already been collected into the varInto by the
    * {@link FieldVisitor}.
@@ -246,13 +308,15 @@ private String idWithLC(String prependString, String appendString, Token forToke
 /**
  * All executables have a background scope for a parent in order to hold all
  * the higher scope fields.
- * @param execType a unique name for the executable code of the context
+ * @param id a unique name for the executable code of the context
  * @param executableContext
  */
-private void executableVisit(String execType, ParserRuleContext executableContext) {
+private void executableVisit(String id, ParserRuleContext executableContext) {
   final Scope grandParent = currentScope;
-  BackgroundScope background = new BackgroundScope(program, "background-"+ execType, grandParent);
-  currentScope  = new Scope(program, execType, background);
+  //TODO: only create background for parent at top level, i.e., for fields;
+  //      Otherwise, use incoming currentScope for parent
+  BackgroundScope background = new BackgroundScope(program, "background-"+ id, grandParent);
+  currentScope  = new Scope(program, id, background);
   scopeMap.put(executableContext, currentScope);
   final boolean oldInExecutable = isInExecutable;
   isInExecutable = true;
@@ -306,6 +370,7 @@ visitAssignStmt(AssignStmtContext ctx) {
  */
 @Override public Void
 visitT_assignable(T_assignableContext ctx) {
+  System.out.println("Assignable: "+ ctx.getText());
   final boolean oldInAssignment = isInAssignment;
   isInAssignment = true;
 
@@ -402,6 +467,8 @@ visitT_expression(T_expressionContext ctx) {
 visitT_identifier(T_identifierContext ctx) {
   if (currentScope != null) { // i.e., we are inside a type definition
     if (isInExecutable) {
+      System.out.println("Identiifier: "+ ctx.getText());
+      System.out.println("isInAssignment: "+ isInAssignment);
       if ( isInAssignment) { checkAssignment(ctx); }
                       else { checkReference(ctx);  }
     }

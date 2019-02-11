@@ -9,8 +9,11 @@ import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import tlang.KnowledgeBase.ProofResult;
 import tlang.Scope.VarInfo;
+import tlang.TLantlrParser.T_expressionContext;
 import tlang.TLantlrParser.T_expressionDetailContext;
 import tlang.TLantlrParser.T_identifierContext;
+import tlang.TLantlrParser.T_nestedBlockContext;
+import tlang.TLantlrParser.T_parExpressionContext;
 import tlang.TLantlrParser.T_primaryContext;
 import static tlang.TUtil.*;
 import static tlang.TLantlrParser.*;
@@ -36,8 +39,12 @@ import static tlang.TLantlrParser.*;
 class TLantlrProofVisitor extends RewriteVisitor {
 
 private static final String prover = "Prover";
-private static final String logicalAndOperator = "/\\";
-private static final String logicalOrOperator = "\\/";
+/** The logical and-operator for the prover */
+private static final String and = "/\\";
+/** The logical or-operator for the prover */
+private static final String or = "\\/";
+/** The logical not-operator for the prover */
+private static final String not = "-";
 
 private CollectingMsgListener errors; // for collecting inconsistent and unprovable results
 private static char prologDecoratorChar = '^';
@@ -177,7 +184,7 @@ Void visitT_UndecoratedIdentifier(T_UndecoratedIdentifierContext ctx) {
 //    rewriter.replace(op,"===");
 //    assignmentCode = assignmentCode.replaceFirst("=", "===");
 //  }
-  String lhs = parenthesized(rewriter.source(ctx.t_expression()));
+  String lhs = par(rewriter.source(ctx.t_expression()));
 //  String src  = withoutSemicolon(rewriter.source(ctx));
   String src = rhs + op + lhs;
   rewriter.substituteText(ctx, src);
@@ -206,9 +213,24 @@ private String withoutSemicolon(String code) {
   return code.substring(0, semicolonPosition) + code.substring(semicolonPosition + 1);
 }
 
-/** Translate <code>!</code> to the provers negation <code>-</code>
+/** Translate if-statement to logic. */
+@Override public Void visitIfStmt(IfStmtContext ctx) {
+  visitChildren(ctx);
 
- */
+  String condition = rewriter.source(ctx.t_parExpression());
+  String thenMeaning = par( rewriter.source(ctx.t_nestedBlock(0)) );
+  T_nestedBlockContext elseContext = ctx.t_nestedBlock(1);
+  if (elseContext == null)
+    rewriter.substituteText(ctx, condition +"==>"+ thenMeaning);
+  else {
+    String elseMeaning = par(rewriter.source(elseContext));
+    rewriter.substituteText(ctx,             condition + and + thenMeaning
+                                + or + not + condition + and + elseMeaning);
+  }
+  return null;
+}
+
+/** Translate <code>!</code> to the provers negation <code>-</code> */
 @Override public Void visitNotExpr(NotExprContext ctx) {
   visitChildren(ctx);
 
@@ -223,7 +245,7 @@ private String withoutSemicolon(String code) {
 	  visitChildren(ctx);
 
   translateOps(ctx);
-  rewriter.substituteText(ctx, parenthesized(rewriter.source(ctx)));
+  rewriter.substituteText(ctx, par(rewriter.source(ctx)));
 	  return null;
 	}
 
@@ -311,7 +333,7 @@ private void translateOps(ConjRelationExprContext ctx) {
 @Override public Void visitOrExpr(OrExprContext ctx) {
   visitChildren(ctx);
 
-  rewriter.replace(binaryOperatorToken(ctx), logicalOrOperator);
+  rewriter.replace(binaryOperatorToken(ctx), or);
   return null;
 }
 
@@ -322,7 +344,7 @@ private void translateOps(ConjRelationExprContext ctx) {
 @Override public Void visitAndExpr(AndExprContext ctx) {
   visitChildren(ctx);
 
-  rewriter.replace(binaryOperatorToken(ctx), logicalAndOperator);
+  rewriter.replace(binaryOperatorToken(ctx), and);
   return null;
 }
 
@@ -332,7 +354,7 @@ private void translateOps(ConjRelationExprContext ctx) {
 @Override public Void visitConditionalOrExpr(ConditionalOrExprContext ctx) {
   visitChildren(ctx);
 
-  rewriter.replace(binaryOperatorToken(ctx), logicalOrOperator);
+  rewriter.replace(binaryOperatorToken(ctx), or);
   return null;
 }
 
@@ -342,7 +364,7 @@ private void translateOps(ConjRelationExprContext ctx) {
 @Override public Void visitConditionalAndExpr(ConditionalAndExprContext ctx) {
   visitChildren(ctx);
 
-  rewriter.replace(binaryOperatorToken(ctx), logicalAndOperator);
+  rewriter.replace(binaryOperatorToken(ctx), and);
   return null;
 }
 
@@ -445,7 +467,8 @@ private String expandForall(String statement) {
 
 /* ************************ Helper methods ************************************/
 
-private String parenthesized(String expression) {
+/** Parenthesize the string */
+private String par(String expression) {
   return "("+ expression + ")";
 }
 
