@@ -250,31 +250,32 @@ class VarInfo {
         currentValueName = newCurrentValueName;
         }
 
-      /** Maps a valueName of this variable to the line where it was given a value. */
-      private Map<String,Integer> valueToLineMap = new HashMap<>();
+  /** Maps a valueName of this variable to the line where it was given a value. */
+  private Map<String,Integer> valueToLineMap = new HashMap<>();
 
-      public boolean hasDefinedValue(String valueName) {
-        return valueToLineMap.containsKey(valueName);
-      }
+  public boolean hasDefinedValue(String valueName) {
+    return valueToLineMap.containsKey(valueName);
+  }
 
-      public Set<String> definedValues() {
-        return valueToLineMap.keySet();
-      }
+  public Set<String> definedValues() {
+    return valueToLineMap.keySet();
+  }
 
-    /**
+  /**
      * Define a new name for a value and make it the current value name that is being considered.
      * @param valueName
      * @param definitionLine
      */
-    public void defineNewValue(String valueName, int definitionLine) {
-      setCurrentValueName(valueName);
-      valueToLineMap.put(valueName, definitionLine);
-    }
-    /**
-     * @param valueName
-     * @return The line where the valueName was given a value.
-     */
-    public Integer lineOf(String valueName) { return valueToLineMap.get(valueName); }
+  public void defineNewValue(String valueName, int definitionLine) {
+    setCurrentValueName(valueName);
+    valueToLineMap.put(valueName, definitionLine);
+  }
+
+  /**
+   * @param valueName
+   * @return The line where the valueName was given a value.
+   */
+  public Integer lineOf(String valueName) { return valueToLineMap.get(valueName); }
 
   /**
    * The code generator needs to know which values are needed after they have been
