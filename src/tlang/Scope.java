@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import static tlang.TUtil.*;
@@ -80,7 +81,7 @@ public void addParamName(@SuppressWarnings("unused") Token valueNameToken) {
 
 
 public @Nullable VarInfo declareFieldName(Token varOrValueName, String type) {
-  final String nameText = knownToBeNonNull(varOrValueName.getText());
+  final String nameText = varOrValueName.getText();
   final String varName = variableName(nameText);
   VarInfo existingVarInfo = varToInfoMap.get(varName);
   final boolean varIsNew = (existingVarInfo == null);
@@ -106,8 +107,8 @@ public @Nullable VarInfo declareFieldName(Token varOrValueName, String type) {
  * @return new VarInfo for the variable or null to signal an error (a pre-existing
  *         declaration for that variable cannot be shadowed)
  */
-public @Nullable VarInfo declareVarName(Token varOrValueName, String type) {
-  final String nameText = knownToBeNonNull(varOrValueName.getText());
+public @Nullable VarInfo declareVarName(@NonNull Token varOrValueName, String type) {
+  final String nameText = varOrValueName.getText();
   final String varName = variableName(nameText);
   @Nullable VarInfo existingVarInfo = getConflictingVarDeclarationInfo(varName);
   final boolean varIsNew = (existingVarInfo == null);
@@ -210,7 +211,8 @@ Scope getReferenceScope(String varName) { // overriden in BackgroundScope
   }
 }
 
-void clearForCodeGen() {
+/** Keep scope variable info for code generation */
+void clearForCodeGeneration() {
   for (VarInfo v : varToInfoMap.values()) {
     v.clearForCodeGen();
   }
