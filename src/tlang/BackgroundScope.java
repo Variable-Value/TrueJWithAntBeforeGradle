@@ -69,7 +69,7 @@ public VarInfo getExistingVarInfo(String varName) {
     if (varUndefined) {
       return null;
     } else {
-      VarInfo shadowingInfo = new VarInfo(this, originalInfo);
+      VarInfo shadowingInfo = new VarInfo(originalInfo);
       if (shadowingInfo.getCurrentValueName() == null) {
         final String valueName = "'"+ varName;
         shadowingInfo.setCurrentValueName(valueName);
@@ -90,7 +90,7 @@ public Optional<VarInfo> getOptionalExistingVarInfo(String varName) {
   } else { // background always has a parent
     Optional<VarInfo> originalInfo = parent.getOptionalExistingVarInfo(varName);
     if ((originalInfo.isPresent())) {
-      VarInfo shadowingInfo = new VarInfo(this, originalInfo.get());
+      VarInfo shadowingInfo = new VarInfo(originalInfo.get());
       if (shadowingInfo.getCurrentValueName() == null) {
         final String valueName = "'"+ varName;
         shadowingInfo.setCurrentValueName(valueName);
@@ -134,7 +134,7 @@ Scope getReferenceScope(String varName) {
       return null;
     } else {
       VarInfo originalInfo = originalScope.varToInfoMap.get(varName);
-      VarInfo shadowingInfo = new VarInfo(this, originalInfo);
+      VarInfo shadowingInfo = new VarInfo(originalInfo);
       varToInfoMap.put(varName, shadowingInfo);
       return this;
     }

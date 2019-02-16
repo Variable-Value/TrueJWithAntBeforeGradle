@@ -2,15 +2,10 @@ package tlang;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.List;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import static tlang.TUtil.*;
@@ -103,11 +98,12 @@ public @Nullable VarInfo declareFieldName(Token varOrValueName, String type) {
  *  returned, a previously existing varInfo exists and an error msg needs to
  *  be issued.
  *
- * @param varOrValueName
+ * @param varOrValueName A variable name or value name Token
+ * @param type The declared type of the new variable
  * @return new VarInfo for the variable or null to signal an error (a pre-existing
  *         declaration for that variable cannot be shadowed)
  */
-public @Nullable VarInfo declareVarName(@NonNull Token varOrValueName, String type) {
+public @Nullable VarInfo declareVarName(Token varOrValueName, String type) {
   final String nameText = varOrValueName.getText();
   final String varName = variableName(nameText);
   @Nullable VarInfo existingVarInfo = getConflictingVarDeclarationInfo(varName);
@@ -296,12 +292,12 @@ class VarInfo {
     }
   }
 
-  public VarInfo(Scope scopeWhereDeclared, VarInfo shadowedInfo) {
+  public VarInfo(VarInfo shadowedInfo) {
     this.scopeWhereDeclared = shadowedInfo.scopeWhereDeclared;
     this.lineWhereDeclared = shadowedInfo.lineWhereDeclared;
     this.type = shadowedInfo.type;
     currentValueName = shadowedInfo.getCurrentValueName();
-    // Can't just use pointers to the map and set instead of copying because each method will have
+    // Can't just use pointers to the map and set instead of copying because each method will define
     // its own values and will reuse different values. The original VarInfo that is being shadowed
     // must be kept clean.
     valueToLineMap.putAll(shadowedInfo.valueToLineMap);
