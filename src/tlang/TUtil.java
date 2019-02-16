@@ -170,27 +170,18 @@ compileSource(String packageName, String typeName, String javaCodeFromT
   return wasSuccessful;
 }
 
+ final static String variableName(final Token valueNameToken) {
+   return variableName(valueNameToken.getText());
+ }
 
 final public static String
 variableName(String valueName) {
   final int pos = decoratorPosition(valueName);
-  if      (pos == -1) { return valueName; }                      // return abc for abc
-  else if (pos ==  0) { return knownToBeNonNull(valueName.substring(1)); }     // return abc for 'abc
-  else                { return knownToBeNonNull(valueName.substring(0,pos)); } // return abc for abc' or abc'de
+  if      (pos == -1) { return valueName; }                  // return abc for abc
+  else if (pos ==  0) { return valueName.substring(1); }     // return abc for 'abc
+  else                { return valueName.substring(0,pos); } // return abc for abc' or abc'de
 }
 
-
-/**
- * Returns the argument without change, but with appropriate annotations to pass non-null checking.
- * DANGER: The calling code must guarantee that the input parameter is NOT NULL.
- *
- * @param nonNull a string guaranteed to be nonnull by the calling code
- * @return the string nonNull with appropriate annotation
- */
-@SuppressWarnings("null")
-public static String knownToBeNonNull(@Nullable String nonNull) {
-  return nonNull;
-}
 
 final public static int decoratorPosition(String valueName) {
   return valueName.indexOf(decorator);
@@ -375,6 +366,5 @@ TCompilerCounts {
   }
 
 } // end nested class TCompilerCounts
-
 
 } // end class TUtil
