@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import tlang.KnowledgeBase.ProofResult;
 import tlang.Scope.VarInfo;
 import tlang.TLantlrParser.T_expressionContext;
@@ -18,24 +19,30 @@ import tlang.TLantlrParser.T_primaryContext;
 import static tlang.TUtil.*;
 import static tlang.TLantlrParser.*;
 
-/**
- * Check all constraints for consistency and check that all deductions are supported.
+/** Check all constraints for consistency and check that all deductions are supported. This is the
+ * final pass before the compiler generates Java code. Eventually, the proof pass will be rather
+ * complicated, including correctness of initialization of the static object, correctness of the
+ * static methods, correctness of instance initialization, including all constructors, and
+ * correctness of all methods.
  *
  * There are 4 passes:
- *  <ol> <li>Collect all field types and static field values, which was done in the FieldVisitor
- *           class
- *       <li>Check static validity, including static initialization blocks, passing the static
- *           object KnowledgeBase to the following proof step.
- *       <li>Collect instance field initializers and initialization blocks, passing the instance
- *           initialization KnowledgeBase, for constructors, and the instance object KnowledgeBase,
- *           for methods, to the following proof step.
- *       <li>Check instance validity, including both methods and constructors.
- *  </ol>
- * This is the 4th pass, check instance validity.
+ * <ol>
+ * <li>Collect all field types and static field values, which was done in the FieldVisitor class
+ * <li>Check static validity, including static initialization blocks, passing the static object
+ * KnowledgeBase to the following proof step.
+ * <li>Collect instance field initializers and initialization blocks, passing the instance
+ * initialization KnowledgeBase, for constructors, and the instance object KnowledgeBase, for
+ * methods, to the following proof step.
+ * <li>Prove instance validity, including both methods and constructors.
+ * </ol>
+ * <p>
+ * References like (Deransart, et al., p.236) refer to
+ * <p>
+ * <cite>Prolog: The Standard:Reference Manual</cite>, P. Deransart, A. Ed-Dbali, L. Cervoni,
+ * Springer-Verlog, 1996.
  * <p>
  * TODO: All class fields must be non-null by the end of a constructor unless they were declared
- * with the <code>optional</code> modifier.
- */
+ * with the <code>optional</code> modifier. */
 class TLantlrProofVisitor extends RewriteVisitor {
 
 private static final String prover = "Prover";
@@ -157,6 +164,26 @@ Void visitT_UndecoratedIdentifier(T_UndecoratedIdentifierContext ctx) {
   final String valueName = rewriter.source(valueNameCtx);
   final String variableName = valueName.substring(0, valueName.length()-1);
   rewriter.substituteText(valueNameCtx, "'"+ getScopePrefix(variableName) + variableName +"^'");
+  return null;
+}
+
+/** Translate a Java literal into the corresponding prover literal.
+ * <p>
+ * For the <code>FloatingPointLiteral</code>, change something like .25 to 0.25, with a leading
+ * zero. (Deransart, et al., p.236)
+ * @return null required by implementation */
+@Override
+public Void visitT_literal(T_literalContext literalCtx) {
+  visitChildren(literalCtx);
+
+  TerminalNode terminalNode = literalCtx.FloatingPointLiteral();
+  if (terminalNode != null) {
+    String numericText = terminalNode.getText();
+    if (numericText.startsWith("."))
+      rewriter.substituteText(literalCtx, "0" + numericText);
+  }
+  //TODO: change 123E-4 to 0.0123 and .2E12 to 200000000000
+
   return null;
 }
 

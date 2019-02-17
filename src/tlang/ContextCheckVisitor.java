@@ -21,10 +21,6 @@ import static tlang.TUtil.*;
  *
  * All the work is done in the constructor. ContextCheckVisitor performs an initial pass using
  * FieldVisitor.
- *
- *
- *
- * @author George S. Cowan
  */
 @SuppressWarnings("javadoc")
 public class ContextCheckVisitor extends TLantlrBaseVisitor<Void> {
@@ -42,9 +38,20 @@ private boolean isInExecutable = false;
  *  but not conjecture
  */
 private boolean isInLogic = false;
-private boolean isInInitialNested = false;
-private boolean isInFinalNested = false;
-private Set<String> initialNestedValueNames = Collections.EMPTY_SET;
+
+/** Are we in executable code nested within a conditional statement and in the first conditional
+ * branch, e.g., then-block of an if-then-else? */
+private boolean isInInitialBranch = false;
+
+/** Are we in executable code nested within a conditional statement and in a conditional
+ * branch that follows another branch, e.g., else- or else-if-block of an if-then-else? */
+private boolean isInFollowingBranch = false;
+
+/** Are we in conditional branch, as opposed to open code */
+private boolean isInConditionalBranch() { return isInInitialBranch || isInFollowingBranch; }
+
+private static final HashSet<String> EMPTY_HASH_SET = new HashSet<>(0);
+private HashSet<String> nestedValueNames = EMPTY_HASH_SET;
 
 /** Is Context in the construction of a name of a variable or value for
  * assignment, i.e., assignable (LHS) or method parameter
@@ -58,6 +65,7 @@ public Map<RuleContext, tlang.Scope> getScopeMap() { return scopeMap; }
 CollectingMsgListener errs;
 Scope currentScope = null;
 
+//@formatter:off
 private String packageName = ""; // in case there is no package
   public String getPackageName() { return packageName; }
 
@@ -65,16 +73,17 @@ private String topTypeName = ""; // "" means thisIsTheTopLevelType()
   public String getTopTypeName() { return topTypeName; }
   private boolean thisIsTheTopLevelType() { return topTypeName.equals(""); }
 
+//@formatter:on
 
-public ContextCheckVisitor( ParseTree tree
-                          , CollectingMsgListener msgListener
-                          , Map<RuleContext, Scope> scopeMap
-                          ) {
+public ContextCheckVisitor(
+  ParseTree tree,
+  CollectingMsgListener msgListener,
+  Map<RuleContext, Scope> scopeMap)
+{
   this.errs = msgListener;
   this.scopeMap = scopeMap;
   new FieldVisitor(program, errs, scopeMap).visit(tree);
 }
-
 
 
 public String getCompoundTypeName() {
@@ -85,56 +94,96 @@ public String getCompoundTypeName() {
   }
 }
 
-@Override public Void
-visitT_packageDeclaration(T_packageDeclarationContext ctx) {
+@Override
+public Void visitT_packageDeclaration(T_packageDeclarationContext ctx) {
   packageName = ctx.t_qualifiedName().getText();
   // return visitChildren(ctx); // no changes to package, no need to visit
   return null;
 }
 
-@Override public Void
-visitT_classDeclaration(T_classDeclarationContext ctx) {
+@Override
+public Void visitT_classDeclaration(T_classDeclarationContext ctx) {
   String className = checkedText(ctx.UndecoratedIdentifier());
   typeDeclarationVisit(className, ctx);
   return null;
 }
 
-@Override public Void
-visitEnumDeclaration(EnumDeclarationContext ctx) {
+@Override
+public Void visitEnumDeclaration(EnumDeclarationContext ctx) {
   String enumName = ctx.Identifier().toString();
   typeDeclarationVisit(enumName, ctx);
   return null;
 }
 
-@Override public Void
-visitT_interfaceDeclaration(T_interfaceDeclarationContext ctx) {
+@Override
+public Void visitT_interfaceDeclaration(T_interfaceDeclarationContext ctx) {
   String interfaceName = checkedText(ctx.UndecoratedIdentifier());
   typeDeclarationVisit(interfaceName, ctx);
   return null;
 }
 
-@Override public Void
-visitAnnotationTypeDeclaration(AnnotationTypeDeclarationContext ctx) {
+@Override
+public Void visitAnnotationTypeDeclaration(AnnotationTypeDeclarationContext ctx) {
   String annotationName = ctx.Identifier().toString();
-  if (thisIsTheTopLevelType()) { topTypeName = annotationName; }
+  if (thisIsTheTopLevelType())
+    topTypeName = annotationName;
+
   // Do not visitChildren(ctx); We make no changes to an AnnotationType
   return null;
 }
 
-/** Check the Condition, then-block, and any-else block for errors as separate executables, and
+/** Check the Condition, then-block, and any else block for errors as separate executables, and
  * check that any varNames defined in one of the executable blocks is also defined in the other.
- */
-@Override public Void visitIfStmt(IfStmtContext ctx) {
+ * <p>
+ * A then block at the top level code statements needs to record the new value names assigned. Any
+ * else block then needs a fresh copy of that list to make sure it assigns exactly the same value
+ * names. The reason it needs a fresh copy is because it checks off the value names assigned by
+ * deleting them from the list. Note that an else if clause also needs a fresh copy of the list. */
+@Override
+public Void visitIfStmt(IfStmtContext ctx) {
   System.out.println("Before If-visit: ");
   System.out.println(ctx.getText());
   System.out.println("-------------------------");
   visitChildren(ctx.t_parExpression());
 
-  initialNestedValueNames = new HashSet<>();
-  visitThen(ctx);
+  HashSet<String> parentInStack;
 
-  visitElse(ctx);
-  initialNestedValueNames = Collections.EMPTY_SET;
+  if (isInInitialBranch) { // if-statement is nested in initial branch
+
+    // continue to add new valueNames to the nestedValueNames Set
+    parentInStack = cloneOf(nestedValueNames);
+    //TODO: complete if nested in InitialBranch
+    visitNestedBlock(ctx.t_nestedBlock(0)); // adds assigned value names to stack as it processes rhs of assigns
+
+  } else if (isInFollowingBranch) { // if-statement is nested in following branch
+
+    // start with a fresh copy of the nestedValueNames Set so we can
+    // see if new valueNames are in the set (and remove them)
+    // then make sure none are left in the set
+
+  } else { // if-statement is in top level code
+
+    nestedValueNames = new HashSet<>();
+    isInInitialBranch = true;
+    visitNestedBlock(ctx.t_nestedBlock(0));
+    isInInitialBranch = false;
+
+//    isInFollowingBranch = true;
+//    T_nestedBlockContext elseNestedBlockCtx = ctx.t_nestedBlock(1);
+//    if (elseNestedBlockCtx != null)
+//      visitNestedBlock(elseNestedBlockCtx);
+//    isInFollowingBranch = false;
+    nestedValueNames = EMPTY_HASH_SET;
+  }
+
+  // TODO but what if we are in the then branch of an if-then-else that is in a loop block under an else branch ???
+  //      then we need a stack of sets of obligations recieved and a set of delegations given by the inital branch
+  //      to ALL following branches. We need to copy all the enclosing conditionals for each following branch.
+  //      We need to only track a valueName back to the level it was defined.
+  //      Create the tests for this and implemetn one simple step at a time (Uncle Bob's transformations).
+
+
+
   System.out.println("After If-visit: ");
   System.out.println(ctx.getText());
   System.out.println("-------------------------");
@@ -142,50 +191,52 @@ visitAnnotationTypeDeclaration(AnnotationTypeDeclarationContext ctx) {
   return null;
 }
 
-private void visitThen(IfStmtContext ctx) {
-  T_nestedBlockContext thenNestedBlock = ctx.t_nestedBlock(0);
-  String thenClauseId = idWithLC("then", thenNestedBlock.getStart());
-  initialParallelVisit(thenNestedBlock, thenClauseId);
+private HashSet<String> cloneOf(HashSet<String> hashSet) {
+  return (HashSet<String>)hashSet.clone();
 }
 
-private void visitElse(IfStmtContext ctx) {
-  T_nestedBlockContext elseNestedBlock = ctx.t_nestedBlock(1);
-  if (elseNestedBlock != null) {
-    String elseClauseId = idWithLC("else", elseNestedBlock.getStart());
-    followingParallelVisit(elseNestedBlock, elseClauseId);
+
+private void visitNestedBlock(T_nestedBlockContext thenNestedBlockCtx) {
+  String thenClauseId = idWithLC("then", thenNestedBlockCtx.getStart());
+  initialParallelVisit(thenNestedBlockCtx, thenClauseId);
+}
+
+private void followingParallelVisit(T_nestedBlockContext followingNestedBlockCtx, String id) {
+  boolean oldInFinalNested = isInFollowingBranch;
+  isInFollowingBranch = true;
+
+  visitCodeScope(id, followingNestedBlockCtx, currentScope);
+
+  isInFollowingBranch = oldInFinalNested;
+  for (String valueName : nestedValueNames)
+    errs.collectError("Value Name " + valueName + " must be set in " + id);
+}
+
+private void initialParallelVisit(T_nestedBlockContext initialNestedBlockCtx, String id) {
+  boolean oldInInitialNested = isInInitialBranch;
+  isInInitialBranch = true;
+
+  visitCodeScope(id, initialNestedBlockCtx, currentScope);
+
+  isInInitialBranch = oldInInitialNested;
+}
+
+@Override public Void visitT_nestedBlock(TLantlrParser.T_nestedBlockContext ctx) {
+
+  visitChildren(ctx);
+
+  return null;
   }
-}
 
-private void initialParallelVisit(T_nestedBlockContext followingNestedBlock, String id) {
-  boolean oldInFinalNested = isInFinalNested ;
-  isInFinalNested = true;
-
-  executableVisit(id, followingNestedBlock);
-
-  isInFinalNested = oldInFinalNested;
-}
-
-private void followingParallelVisit(T_nestedBlockContext initialNestedBlock, String id) {
-  boolean oldInInitialNested = isInInitialNested;
-  isInInitialNested = true;
-
-  executableVisit(id, initialNestedBlock);
-
-  isInInitialNested = oldInInitialNested;
-  for (String valueName : initialNestedValueNames)
-    errs.collectError("Value Name "+ valueName + " must be set in " + id);
-}
-
-/**
-   * Check for incorrectly decorated value name or a field name that has already been used. The
-   * variable name, value name, and line number have already been collected into the varInto by the
-   * {@link FieldVisitor}.
-   * <p>{@inheritDoc}
-   */
-@Override public Void
-visitInitializedField(InitializedFieldContext ctx) {
+/** Check for incorrectly decorated value name or a field name that has already been used. The
+ * variable name, value name, and line number have already been collected into the varInto by the
+ * {@link FieldVisitor}.
+ * <p>
+ * {@inheritDoc} */
+@Override
+public Void visitInitializedField(InitializedFieldContext ctx) {
   final Token varOrValueNameToken = ctx.t_idDeclaration().getStart();
-  final String varName = variableName(varOrValueNameToken.getText());
+  final String varName = TUtil.variableName(varOrValueNameToken);
   VarInfo varInfo = currentScope.varToInfoMap.get(varName);
   checkForDecorationErrors(varOrValueNameToken);
   checkForAlreadyDeclared(varOrValueNameToken, varName, varInfo);
@@ -208,128 +259,135 @@ visitInitializedField(InitializedFieldContext ctx) {
     errs.collectError(program, varOrValueNameToken, msg);
   }
 
-  private void collectMsgForUndecoratedField(final Token varOrValueNameToken) {
-    final String msg = String.format
-          ("Must use a decorated value name if the field %s is initialized"
-          , varOrValueNameToken.getText()
-          );
-    errs.collectError(program, varOrValueNameToken, msg);
-  }
+private void collectMsgForUndecoratedField(final Token varOrValueNameToken) {
+  final String msg = String.format("Must use a decorated value name if the field %s is initialized",
+                                   varOrValueNameToken.getText());
+  errs.collectError(program, varOrValueNameToken, msg);
+}
 
   private void defineValueToMakeFollowingMessagesMoreUseful(final Token varOrValueNameToken) {
     String varOrValueName = varOrValueNameToken.getText();
     final String varName = variableName(varOrValueName);
     VarInfo varInfo = currentScope.varToInfoMap.get(varName);
-    varInfo.defineNewValue("'"+ varName, varOrValueNameToken.getLine());
-  }
+  varInfo.defineNewValue("'" + varName, varOrValueNameToken.getLine());
+}
 
 /**
  * Check for an already declared variable with the same name. The variable name, value name, and
- * line number have already been collected into the varInto by the {@link FieldVisitor}.
+ * line number have already been collected into the varInfo by the {@link FieldVisitor}.
  * <p>{@inheritDoc}
  */
-@Override public Void
-visitUninitializedField(UninitializedFieldContext ctx) {
+@Override public Void visitUninitializedField(UninitializedFieldContext ctx) {
   final Token varOrValueNameToken = ctx.t_idDeclaration().getStart();
-  final String varName = variableName(varOrValueNameToken.getText());
+  final String varName = TUtil.variableName(varOrValueNameToken);
   VarInfo varInfo = currentScope.varToInfoMap.get(varName);
   checkForAlreadyDeclared(varOrValueNameToken, varName, varInfo);
   return visitChildren(ctx);
 }
 
-private void
-checkForAlreadyDeclared(Token varOrValueNameToken, String varName, VarInfo varInfo) {
+private void checkForAlreadyDeclared(Token varOrValueNameToken, String varName, VarInfo varInfo) {
   final int lineOfExistingVar = varInfo.getLineWhereDeclared();
   if (lineOfExistingVar != varOrValueNameToken.getLine()) {
-    final String msg = String.format
-        ("The field %s was already declared at line %d", varName, lineOfExistingVar);
+    String template = "The field %s was already declared at line %d";
+    String msg = String.format(template, varName, lineOfExistingVar);
     errs.collectError(program, varOrValueNameToken, msg);
   }
 }
 
-/**
- * {@inheritDoc}
- */
-@Override public Void
-visitT_methodDeclaration(T_methodDeclarationContext ctx) {
+@Override
+public Void visitT_methodDeclaration(T_methodDeclarationContext ctx) {
   final Token methodNameToken = ctx.UndecoratedIdentifier().getSymbol();
   final String methodId = idWithLC("method", methodNameToken.getText(), methodNameToken);
   executableVisit(methodId, ctx);
   return null;
 }
 
-/**
- * {@inheritDoc}
- */
-@Override public Void
-visitT_initializer(T_initializerContext ctx) {
+@Override
+public Void visitT_initializer(T_initializerContext ctx) {
   final String initializerId = idWithLC("initializer", ctx.getStart());
   executableVisit(initializerId, ctx);
   return null;
 }
 
-/**
- * {@inheritDoc}
- * <p/>
- * The default implementation returns the result of calling
- * {@link #visitChildren} on {@code ctx}.
- */
-@Override public Void
-visitT_constructorDeclaration(T_constructorDeclarationContext ctx) {
+@Override
+public Void visitT_constructorDeclaration(T_constructorDeclarationContext ctx) {
   final String constructorId = idWithLC("constructor", ctx.UndecoratedIdentifier().getSymbol());
   executableVisit(constructorId, ctx);
   return null;
 }
 
-/**
- * An identifier for a token constructed from the prependString, the line that the forToken is on,
+/** An identifier for a token constructed from the prependString, the line that the forToken is on,
  * and the position in the line for the first character of the forToken. For implementation reasons
  * the line number starts counting with one, but the character position in the line starts counting
  * with zero. Example: the identifier for the starting token of a block might be
- * <code>block-L24C4</code>.
- */
-private String idWithLC(String prependString,Token forToken) {
+ * <code>block-L24C4</code>. */
+private String idWithLC(String prependString, Token forToken) {
   return idWithLC(prependString, "", forToken);
 }
 
-/**
- * An identifier for a token constructed from the prependString, the line that the forToken is on,
+/** An identifier for a token constructed from the prependString, the line that the forToken is on,
  * the position in the line for the first character of the forToken, and an appendString. For
  * implementation reasons the line number starts counting with one, but the character position in
  * the line starts counting with zero. Example: the identifier for a method might be
- * <code>method-L24C12-toString</code>.
- */
+ * <code>method-L24C12-toString</code>. */
 private String idWithLC(String prependString, String appendString, Token forToken) {
   int line = forToken.getLine();
   int charPosition = forToken.getCharPositionInLine();
-  return prependString +"-L"+ line +"C"+ charPosition +"-"+  appendString;
+  return prependString + "-L" + line + "C" + charPosition + "-" + appendString;
 }
 
-/**
- * All executables have a background scope for a parent in order to hold all
- * the higher scope fields.
- * @param id a unique name for the executable code of the context
+/** Visit the code contained in an executable, that is, a method, constructor, or the object's
+ * initializer blocks.
+ * <p>
+ * The complication is that we have to make a fresh copy of the field-level scope information for
+ * each executable. This is because in a scope, its variable information is the place that we need
+ * to keep the value information for that variable, even if the value is assigned in an enclosed
+ * scope; values that are assigned to a variable in
+ * an enclosed scope continue to exist after the enclosed scope ends, so the name of the value
+ * continues to exist in the variables scope object. But for the object's fields, this creates a
+ * problem.
+ * <p>
+ * In order to make status statements in an executable independent of other executables, the
+ * executable must assume only the information about fields that is in the object level constraints,
+ * which means that that the executable has no knowledge of the exact values assigned to the fields
+ * by other executables. Therefore, to keep the field values and names assigned in executables
+ * separate, each executable starts with a fresh copy of the field scope as its enclosing scope,
+ * which we call the background scope, and it holds only the starting value names for each field.
+ *
+ * @param id
+ *                          a unique name for the executable, for use in error messages
  * @param executableContext
  */
 private void executableVisit(String id, ParserRuleContext executableContext) {
-  final Scope grandParent = currentScope;
-  //TODO: only create background for parent at top level, i.e., for fields;
-  //      Otherwise, use incoming currentScope for parent
-  BackgroundScope background = new BackgroundScope(program, "background-"+ id, grandParent);
-  currentScope  = new Scope(program, id, background);
-  scopeMap.put(executableContext, currentScope);
-  final boolean oldInExecutable = isInExecutable;
-  isInExecutable = true;
+  final Scope grandParent = currentScope; // push
 
-  visitChildren(executableContext);
+  BackgroundScope backgroundParent = new BackgroundScope(program, "background-" + id, grandParent);
+  visitCodeScope(id, executableContext, backgroundParent);
+  backgroundParent.clearForCodeGeneration();
 
-  isInExecutable = oldInExecutable;
-  //keep scope variable info for code generation
-  currentScope.clearForCodeGen();
-  background.clearForCodeGen(); // clean the background
-  currentScope = grandParent; //pop
+  currentScope = grandParent; // pop
 }
 
+
+/** Perform tasks common to all new executable scopes.
+ * @param id          A unique ID for this scope
+ * @param ctx         The parse context for the executable scope that is visited
+ * @param parentScope The enclosing scope, normally the global <code>currentScope</code> */
+private void visitCodeScope(String id, ParserRuleContext ctx, Scope parentScope) {
+  currentScope = new Scope(program, id, parentScope);
+  scopeMap.put(ctx, currentScope);
+  final boolean enclosingIsInExecutable = isInExecutable;
+  isInExecutable = true;
+
+  visitChildren(ctx);
+
+  isInExecutable = enclosingIsInExecutable;
+  currentScope.clearForCodeGeneration();
+  currentScope = parentScope; // restore global currentScope
+}
+
+//@formatter:off
+// The rest of the program has not been checked for preserving readability
 
 /**
  * {@inheritDoc}
@@ -345,7 +403,7 @@ visitT_block(T_blockContext ctx) {
 
   visitChildren(ctx);
 
-  currentScope.clearForCodeGen();
+  currentScope.clearForCodeGeneration();
   currentScope = parent;
   return null;
 }
@@ -528,57 +586,77 @@ public void typeDeclarationVisit(String typeName, ParserRuleContext ctx) {
 
   visitChildren(ctx);
 
-  currentScope.clearForCodeGen();
+  currentScope.clearForCodeGeneration();
   currentScope = parent; //pop
 }
+
 private void setParentIfInnerClass(Scope possibleInnerClass, Scope parent) {
   if (possibleInnerClass.parent == null) { // yes, it's an inner class
     possibleInnerClass.setParent(currentScope);
   }
 }
+
 private void checkAssignment(T_identifierContext ctx) {
-  final Token valueNameToken = ctx.start;
-  String valueName = valueNameToken.getText();
-  final String varName = variableName(valueName);
+  Token valueNameToken = ctx.start;
+  String varName = variableName(valueNameToken);
   Optional<VarInfo> OptVar = currentScope.getOptionalExistingVarInfo(varName);
-  if ( ! OptVar.isPresent()) { // variable not in scope
-    final String msg =
-        String.format("Variable %s has not been defined in this scope", varName);
-    errs.collectError( program, valueNameToken, msg);
-    // in hopes of generating better error msgs for the following code:
-    currentScope.declareVarName(valueNameToken, "NoTypeForUndeclaredVariableAssignment$t$");
-  } else { // we have valid variable information
-    final VarInfo varInfo = OptVar.get();
-    final String currentValueName = varInfo.getCurrentValueName();
-    final boolean hasCurrentValue = (currentValueName != null);
-    if (hasCurrentValue && isFinalDecorated(currentValueName)) {
-      final String msg = String.format
-          ("%s was final decorated at line %d so it cannot receive a new value"
-          , varName, varInfo.lineOf(currentValueName)
-          );
-      errs.collectError( program, valueNameToken, msg);
-    } else if (isUndecorated(valueNameToken)) {
-      errs.collectError( program, valueNameToken
-                     , varName +" is not a decorated value name so it cannot receive a value"
-                     );
-      // in hopes of generating better error msgs for following code we pretend
-      // to start over with an initial value
-      valueName = "'"+ varName;
-    } else { // decorated value name
-      Integer existingValueLineNum = varInfo.lineOf(valueName);
-      final boolean valueAlreadyExists = (existingValueLineNum != null);
-      if (valueAlreadyExists) {
-        final String msg = String.format
-          ("The value %s has already been defined on line %d"
-          , valueName, existingValueLineNum
-          );
-        errs.collectError( program, valueNameToken, msg);
-      }
-    }
-    // even if there were errors, we proceed
-    // in hopes of generating better error msgs for the following code
-    varInfo.defineNewValue(valueName, valueNameToken.getLine());
+  if ( variableNotInScope(OptVar)) {
+    reportMissingVariable(valueNameToken);
+    recoverMissingVariable(valueNameToken);
+    OptVar = currentScope.getOptionalExistingVarInfo(varName);
   }
+
+  String valueName = valueNameToken.getText();
+  final VarInfo varInfo = OptVar.get();
+  final String currentValueName = varInfo.getCurrentValueName();
+  final boolean hasCurrentValue = (currentValueName != null);
+  if (hasCurrentValue && isFinalDecorated(currentValueName)) {
+    final String msg = String.format
+        ("%s was final decorated at line %d so it cannot receive a new value"
+        , varName, varInfo.lineOf(currentValueName)
+        );
+    errs.collectError( program, valueNameToken, msg);
+  } else if (isUndecorated(valueNameToken)) {
+    errs.collectError( program, valueNameToken
+                   , varName +" is not a decorated value name so it cannot receive a value"
+                   );
+    //KLUDGE: Start over with initial value to generate better error msgs for following code
+    valueName = "'"+ varName;
+  } else { // decorated value name
+    Integer existingValueLineNum = varInfo.lineOf(valueName);
+    final boolean valueAlreadyExists = (existingValueLineNum != null);
+    if (valueAlreadyExists) {
+      final String msg = String.format
+        ("The value %s has already been defined on line %d"
+        , valueName, existingValueLineNum
+        );
+      errs.collectError( program, valueNameToken, msg);
+    }
+  }
+  //KLUDGE: Proceed with valueName definition, even if there were errors,
+  //        in hopes of generating better error msgs for the following code
+  varInfo.defineNewValue(valueName, valueNameToken.getLine());
+}
+/**
+ * @param OptVar
+ * @return
+ */
+private boolean variableNotInScope(Optional<VarInfo> OptVar) {
+  return ! OptVar.isPresent();
+}
+/**
+ * @param valueNameToken
+ */
+private void recoverMissingVariable(Token valueNameToken) {
+  // KLUDGE: Create missing variable in hopes of generating better error msgs for following code
+  currentScope.declareVarName(valueNameToken, "UnknownType_UndeclaredVariable$T$");
+}
+/**
+ * @param valueNameToken
+ */
+private void reportMissingVariable(Token valueNameToken) {
+  final String msg = String.format("Variable %s has not been defined in this scope", variableName(valueNameToken));
+  errs.collectError( program, valueNameToken, msg);
 }
 
 private void checkReference(T_identifierContext ctx) {
