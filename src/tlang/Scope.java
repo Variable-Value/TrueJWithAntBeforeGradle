@@ -259,11 +259,8 @@ class VarInfo {
     return valueToLineMap.keySet();
   }
 
-  /**
-     * Define a new name for a value and make it the current value name that is being considered.
-     * @param valueName
-     * @param definitionLine
-     */
+/** Accept a new value name and make it the current value name that is being considered. This should
+ * happen during assignment. */
   public void defineNewValue(String valueName, int definitionLine) {
     setCurrentValueName(valueName);
     valueToLineMap.put(valueName, definitionLine);
