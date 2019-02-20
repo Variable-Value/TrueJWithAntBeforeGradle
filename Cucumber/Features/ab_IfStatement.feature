@@ -78,38 +78,38 @@ Scenario: Any value set in one branch of an if-statement must be set in both
     rate' was not defined in the else-clause
     """
 
+Scenario: An if-then-statement, without the else clause, cannot set values in both conditions
+
+  The then-only version of the if-statement becomes much less useful because value names must be
+  defined under all cases. (However, a single branch of an if statement may be used if no value
+  names are defined. Perhaps writing to a log file would be a good example, but even that would not
+  apply if you wanted the accuracy of the log file to be part of the specification.)
+
+  When an invalid run unit is
+    """
+    class Pair_1X {
+
+    int a;
+    int b;
+
+    void invalidTwoSort() {
+      if ('b < 'a) {
+        a' = 'b;
+        b' = 'a;
+        means (a' <= b');
+      } // else they are already in order
+    }
+    means (a' <= b');
+
+    } // end class
+    """
+
+    Then an error message contains
+    """
+    error at line 11:2 for <}>: b' was not defined in the else-clause
+    """
+
 #  @Ignore -------------------
-#Scenario: An if-then-statement, without the else clause, cannot set values in both conditions
-#
-#  The then-only version of the if-statement becomes much less useful because value names must be
-#  defined under all cases. (However, a single branch of an if statement may be used if no value
-#  names are defined, or if the new value names are never relied upon for status statements; perhaps
-#  writing to a log file would be a good example, but even that would not apply if you wanted the
-#  accuracy of the log file to be part of the specification.)
-#
-#  When an invalid run unit is
-#    """
-#    class Pair_1X {
-#
-#    int a;
-#    int b;
-#
-#    void invalidTwoSort() {
-#      if ('b < 'a) {
-#        a' = 'b;
-#        b' = 'a;
-#      } // else they are already in order
-#    }
-#    means (a' <= b');
-#
-#    } // end class
-#    """
-#
-#    Then an error message contains
-#    """
-#    The code does not support the proof of the statement: a' <= b'
-#    """
-#
 #Scenario: The solution is to always include definitions of value names in all branches
 #
 #  The definitions in the else branch are often trivial, and the compiler omits them in the generated
