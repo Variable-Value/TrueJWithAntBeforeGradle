@@ -279,9 +279,11 @@ public Void visitConjRelationExpr(TLantlrParser.ConjRelationExprContext ctx) {
   return null;
 }
 
-/** translate the operators to appropriate prover operators. If the expressions are boolean, use the provers logical operators.
+//@formatter:off
+/**
+ * Translate the operators to appropriate prover operators. If the expressions are boolean, use the
+ * provers logical operators.
  *
- * @formatter:off
  * <table>
  *   <tr><th>Java  <th>Prover
  *   <tr><td>&lt;  <td>&lt;
@@ -291,8 +293,10 @@ public Void visitConjRelationExpr(TLantlrParser.ConjRelationExprContext ctx) {
  *   <tr><td>&gt;= <td>&gt;=
  *   <tr><td>&gt;  <td>&gt;
  * </table>
- * @formatter:on
- * @param ctx */
+ *
+ * @param ctx
+ */
+//@formatter:on
 private void translateOps(ConjRelationExprContext ctx) {
   String operator = ctx.op.getText();
   if ("<=".equals(operator))
