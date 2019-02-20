@@ -47,35 +47,10 @@ public Scope( String invokingProgram
 
 //TODO cleanup from here down ********************************
 
-
-@Deprecated
-public void addParamName(@SuppressWarnings("unused") Token valueNameToken) {
-//  // return, is added as declareVarName("return").
-//  final String valueName = valueNameToken.getText();
-//  final boolean correctDecoration
-//                = isInitialDecorated(valueName) || isFinalDecorated(valueName);
-//  if ( ! correctDecoration) {
-//    errs.collectMsg( program, valueNameToken
-//                   , "Parameters must be initial or final values, "
-//                    +"i.e., pre- or post-decorated"
-//                   );
-//  }
-//  final String varName = variableName(valueName);
-//  VarInfo oldVarInfo = varToInfoMap.get(varName);
-//  final boolean duplicateParamVar = oldVarInfo != null;
-//  if (duplicateParamVar) {
-//    errs.collectMsg( program, valueNameToken
-//                    ,   "Attempted to declare parameter "+ valueName
-//                      + ", but parameter "+ oldVarInfo.getCurrentValueName()
-//                      + "has the same base variable name"
-//                    );
-//  } else {
-//    varToInfoMap.put(varName, new VarInfo(valueNameToken.getLine(), valueName));
-//  }
-}
-
-
-public @Nullable VarInfo declareFieldName(Token varOrValueName, String type) {
+/** Track the information for a field.
+ * @return an Optional with the new field information. An empty Optional means that the field
+ *         variable name already exists. */
+public Optional<VarInfo> declareFieldName(Token varOrValueName, String type) {
   final String nameText = varOrValueName.getText();
   final String varName = variableName(nameText);
   VarInfo existingVarInfo = varToInfoMap.get(varName);
@@ -84,12 +59,9 @@ public @Nullable VarInfo declareFieldName(Token varOrValueName, String type) {
     final int declarationLine = varOrValueName.getLine();
     VarInfo newVarInfo = new VarInfo(this, declarationLine, type, nameText);
     varToInfoMap.put(varName, newVarInfo);
-    return newVarInfo;
+    return Optional.of(newVarInfo);
   } else {
-    // During semantic check, we detect this pre-existing field declaration by
-    // comparing its line number with the line number at this new invalid
-    // declaration
-    return null;
+    return Optional.empty();
   }
 }
 
@@ -100,10 +72,10 @@ public @Nullable VarInfo declareFieldName(Token varOrValueName, String type) {
  *
  * @param varOrValueName A variable name or value name Token
  * @param type The declared type of the new variable
- * @return new VarInfo for the variable or null to signal an error (a pre-existing
- *         declaration for that variable cannot be shadowed)
+ * @return optional new VarInfo for the variable. If not present, a declaration for that variable
+ *         already exists.
  */
-public @Nullable VarInfo declareVarName(Token varOrValueName, String type) {
+public Optional<VarInfo> declareVarName(Token varOrValueName, String type) {
   final String nameText = varOrValueName.getText();
   final String varName = variableName(nameText);
   @Nullable VarInfo existingVarInfo = getConflictingVarDeclarationInfo(varName);
@@ -112,10 +84,14 @@ public @Nullable VarInfo declareVarName(Token varOrValueName, String type) {
     final int declarationLine = varOrValueName.getLine();
     final VarInfo newVarInfo = new VarInfo(this, declarationLine, type, nameText);
     varToInfoMap.put(varName, newVarInfo);
-    return newVarInfo;
+    return Optional.of(newVarInfo);
   } else { // error: variable already declared
-    return null;
+    return Optional.empty();
   }
+}
+
+private boolean isMissing(Optional<?> optional) {
+  return ! optional.isPresent();
 }
 
 /* Notes on getConflictingVarDeclarationInfo and getVarReferenceInfo
@@ -136,7 +112,7 @@ public @Nullable VarInfo declareVarName(Token varOrValueName, String type) {
  * @return conflicting information for the variable, else null
  */
 public @Nullable VarInfo getConflictingVarDeclarationInfo(String varName) {
-  if (this.label == "this" || isTopLevelScope()) // field level scope, no conflict exists
+  if (isTopLevelScope()) // field level scope, no conflict exists
     return null;
 
   @Nullable VarInfo varInfo = varToInfoMap.get(varName);
@@ -266,6 +242,10 @@ class VarInfo {
     valueToLineMap.put(valueName, definitionLine);
   }
 
+  public void defineNewValue(Token valueNameToken) {
+    defineNewValue(valueNameToken.getText(), valueNameToken.getLine());
+  }
+
   /**
    * @param valueName
    * @return The line where the valueName was given a value.
@@ -287,6 +267,13 @@ class VarInfo {
       this.currentValueName = varOrValueName;
       valueToLineMap.put(varOrValueName, lineWhereDeclared);
     }
+/*   TODO: Why isn't this next needed? Why does it screw things up?
+           The 'varName must be inserted as a current value at the beginning of executables in a
+           different way */
+//    else {
+//      this.currentValueName = "'"+ varOrValueName;
+//      valueToLineMap.put(varOrValueName, lineWhereDeclared);
+//    }
   }
 
   public VarInfo(VarInfo shadowedInfo) {
@@ -327,6 +314,10 @@ class VarInfo {
     scopeWhereDeclared = null;
     reusedValueNames.clear();
     reusedValueNames = null;
+  }
+
+  public String varName() {
+    return variableName(currentValueName);
   }
 
 } // end inner class

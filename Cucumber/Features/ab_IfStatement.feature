@@ -37,48 +37,48 @@ Scenario: The if-statement allows alternative definitions for values
     } // end class
     """
 
+Scenario: Any value set in one branch of an if-statement must be set in both
+
+    For a value name to be available to an operation or logic statement later in its scope, it must
+    be defined along all paths to that statement. For an if-statement, this means that it must be
+    defined in both branches.
+
+  When an invalid run unit is
+    """
+    class Rates_1X {
+
+    double rate;
+    double reportRate;
+
+    double standardRate' = 0.05;
+    double discountRate' = 0.15;
+
+    boolean hasDiscount;
+
+    void setRate() {
+      rate'standard = standardRate';
+      if ('hasDiscount)
+        rate' = discountRate';
+      else ;
+        // attempting to let rate variable defalt to rate'standard previous value
+        // but the rate' value is not defined
+      reportRate' = rate'; // the problem is not discovered here
+    }
+    means ( (   'hasDiscount & reportRate' = discountRate')
+          | ( ! 'hasDiscount & reportRate' = standardRate')
+              // no proof that reportRate' = standardRate' can be constructed without the missing
+              // definition of rate' in the else-clause when 'hasDiscount = false
+          );
+
+    } // end class
+    """
+
+    Then an error message contains
+    """
+    rate' was not defined in the else-clause
+    """
+
 #  @Ignore -------------------
-#Scenario: Any value set in one branch of an if-statement must be set in both
-#
-#    For a value name to be available to an operation or logic statement later in its scope, it must
-#    be defined along all paths to that statement. For an if-statement, this means that it must be
-#    defined in both branches.
-#
-#  When an invalid run unit is
-#    """
-#    class Rates_1X {
-#
-#    double rate;
-#    double reportRate;
-#
-#    double standardRate' = 0.05;
-#    double discountRate' = 0.15;
-#
-#    boolean hasDiscount;
-#
-#    void setRate() {
-#      rate'standard = standardRate';
-#      if ('hasDiscount)
-#        rate' = discountRate';
-#      else ;
-#        // attempting to let rate variable defalt to rate'standard previous value
-#        // but the rate' value is not defined
-#      reportRate' = rate'; // the problem is not discovered here
-#    }
-#    means ( (   'hasDiscount & reportRate' = discountRate')
-#          | ( ! 'hasDiscount & reportRate' = standardRate')
-#              // no proof that reportRate' = standardRate' can be constructed without the missing
-#              // definition of rate' in the else-clause when 'hasDiscount = false
-#          );
-#
-#    } // end class
-#    """
-#
-#    Then an error message contains
-#    """
-#    value name rate' is not defined for the else-branch of the if statement
-#    """
-#
 #Scenario: An if-then-statement, without the else clause, cannot set values in both conditions
 #
 #  The then-only version of the if-statement becomes much less useful because value names must be

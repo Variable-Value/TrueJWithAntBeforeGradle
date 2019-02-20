@@ -1,13 +1,15 @@
 package tlang;
 
 import java.util.Map;
+import java.util.Optional;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 import org.eclipse.jdt.annotation.Nullable;
 import tlang.Scope;
-
+import tlang.Scope.VarInfo;
 import static tlang.TLantlrParser.*;
+import static tlang.TUtil.variableName;
 import static tlang.Scope.*;
 
 /**
@@ -112,7 +114,11 @@ public Void visitUninitializedField(UninitializedFieldContext uninitializedCtx) 
 
 private void declareANewField(final T_idDeclarationContext idDeclarationCtx) {
   final Token fieldId = idDeclarationCtx.getStart();
-  currentScope.declareFieldName(fieldId, idDeclarationCtx.idType);
+  Optional<VarInfo> newFieldInfo = currentScope.declareFieldName(fieldId, idDeclarationCtx.idType);
+  if ( ! newFieldInfo.isPresent() ) {
+    VarInfo otherField = currentScope.getConflictingVarDeclarationInfo(variableName(fieldId));
+    errs.collectError(program, fieldId, "The field "+ otherField.varName() +" has already been declared at line "+ otherField.getLineWhereDeclared());;
+  }
 }
 
 
