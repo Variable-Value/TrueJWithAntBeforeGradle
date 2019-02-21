@@ -435,3 +435,44 @@ Scenario: Intermediate value names use middle decoration
     Context Check error at line 12:2 for <allTrue'temp>: The value allTrue'temp has already been defined on line 11
 
     """
+
+
+Scenario: Assignments with no operational effect are commented out in Java
+
+  If the current value of a variable is assigned to an new value name of the same variable, the assignment is translated to a Java comment. This does not affect the reusability of value names or the use of the value names in logic.
+
+  When a valid T Language run unit is
+    """
+    class Assignment1 {
+    int 'a = 1;
+    int 'b = 2;
+
+    void assign() {
+      a'temp = 4;
+      a'another = a'temp;
+
+      b'temp = 'b;
+      b' = a'another;
+      a' = b'temp;
+    }
+    means(a' = 'b & b' = 4);
+
+    }
+    """
+
+  Then the Java operational run unit is
+    """
+    import tlang.runtime.*; @TType class Assignment1 {
+    int /*'*/a = 1;
+    int /*'*/b = 2;
+
+    void assign() {
+      a/*'*/temp = 4;
+      /*$T$* a'another = a'temp; *$T$*/
+
+      /*$T$* b'temp = 'b; *$T$*/ b$T$temp = /*'*/b
+      b/*'*/ = a/*'another*/;
+      a/*'*/ = b$T$temp;
+    }
+    /*$T$* means(a' = 5 & b' = 4); *$T$*/
+    """
