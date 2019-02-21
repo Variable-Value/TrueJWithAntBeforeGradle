@@ -87,61 +87,63 @@ Scenario: An if-then-statement, without the else clause, cannot set values in bo
 
   When an invalid run unit is
     """
-    class Pair_1X {
+    class Swapper_1 {
 
     int a;
     int b;
 
-    void invalidTwoSort() {
-      if ('b < 'a) {
+    /** We (invalidly) attempt to avoid swapping the two values when they are equal. */
+    void invalidSwap() {
+      if ('a != 'b) {
         a' = 'b;
         b' = 'a;
-        means (a' <= b');
-      } // else they are already in order
+      }
     }
-    means (a' <= b');
+    means(a' = 'b && b' = 'a);
 
     } // end class
     """
 
     Then an error message contains
     """
-    error at line 11:2 for <}>: b' was not defined in the else-clause
+    a' was not defined in the else-clause
+    """
+    And an error message contains
+    """
+    b' was not defined in the else-clause
     """
 
-#  @Ignore -------------------
-#Scenario: The solution is to always include definitions of value names in all branches
-#
-#  The definitions in the else branch are often trivial, and the compiler omits them in the generated
-#  code. This may be simplified in future versions if a suitable symbol or keyword can be found,
-#  perhaps "default", or as a pseudo-function like "default(a', b')", or even as a default-clause
-#  that is an alternative to the else-clause.
-#
-#  But a valid run unit is
-#    """
-#    class Pair_2 {
-#
-#    int a;
-#    int b;
-#
-#    void invalidTwoSort() {
-#      if ('b < 'a) {
-#        a' = 'b;
-#        b' = 'a;
-#      } else {
-#        // When we include the definition of both a' and b' in both branches
-#        // the prover has no problem
-#
-#        a' = 'a; // implemented as a no-op
-#        b' = 'b; // implemented as a no-op
-#      }
-#    }
-#    means (a' <= b');
-#
-#    } // end class
-#    """
-#
-#
+
+Scenario: Always include definitions of value names in all branches
+
+  The definitions in the else branch are often trivial, and the compiler omits them in the generated
+  code. This may be simplified in future versions if a suitable symbol or keyword can be found,
+  perhaps "default", or as a pseudo-function like "default(a', b')", or even as a default-clause
+  that is an alternative to the else-clause.
+
+  But a valid run unit is
+    """
+    class Swapper_2 {
+
+    int a;
+    int b;
+
+    void validSwap() {
+      if ('a = 'b) {
+        a' = 'a; // the Java compiler generates a null operation a = a and b = b
+        b' = 'b; // for a = a and b = b
+      } else {
+        a' = 'b;
+        b' = 'a;
+      }
+    }
+    means(a' = 'b && b' = 'a);
+
+    } // end class
+    """
+
+
+#  @Ignore # save this for after we have established proving for less-than relations
 #  Scenario: A more complex example - ThreeSort
 #
 #    This version of sorting three items minimizes copying in each case.
