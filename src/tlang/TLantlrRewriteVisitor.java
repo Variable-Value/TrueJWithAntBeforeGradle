@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import tlang.Scope.VarInfo;
+import tlang.TLantlrParser.T_expressionContext;
 import static tlang.TUtil.*;
 import static tlang.TLantlrParser.*;
 
@@ -159,23 +160,34 @@ protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx)
 @Override public Void //@formatter:off
 visitAssignStmt(AssignStmtContext ctx) {
   // Collect pre-visit (unmodified) info
-  // running example - let text for assignments statement be   a' = 'a + 1;
-  Token assignedValueToken = ctx.t_assignable().getStart(); // token for a'
-  String assignedValueName = assignedValueToken.getText();  // a'
-  String varName = variableName(assignedValueName);         // a
+  // running example - let text for assignments statement be         a' = 'a + 1;
+  Token assignedValueToken = ctx.t_assignable().getStart();          // token for a'
+  String assignedValueName = assignedValueToken.getText();           // a'
+  String varName = variableName(assignedValueName);                  // a
 
-  visit(ctx.t_expression());                                // becomes /*'*/a + 1
-  visit(ctx.t_assignable());                                // becomes a/*'*/
-           // (equal sign and ; are unchanged) so we have     a/*'*/ = /*'*/a + 1;
-  VarInfo varInfo = currentScope.getExistingVarInfo(varName); // a
-  if (originalValueIsReusedAfterOverwrite(assignedValueName, varInfo)) { // e.g., a' is reused later in code
+  if (sameVariable(varName, ctx.t_expression())) {
+    commentTheCode(ctx);                  // whole command becomes   /*$T$* a' = 'a + 1; *$T$*/
+  } else {
+    visit(ctx.t_expression());                                       // becomes /*'*/a + 1
+    visit(ctx.t_assignable());                                       // becomes a/*'*/
+      // (equal sign and ; are unchanged) so whole command becomes   a/*'*/ = /*'*/a + 1;
+  }
+  VarInfo varInfo = currentScope.getExistingVarInfo(varName);        // a
+  if (isReusedAfterOverwrite(assignedValueName, varInfo)) {          // a' is reused later in code
     rewriter.insertAfter(ctx.getStop(), saveOriginalValue(assignedValueName, varInfo));
     // saves the value for later reuse by inserting "int a$T$ = a/*'*/;" after the assignment
   }
   return null;
 } // @formatter:on
 
-private boolean originalValueIsReusedAfterOverwrite(String assignedValueName, VarInfo varInfo) {
+private boolean sameVariable(String varName, T_expressionContext t_expression) {
+  if (t_expression.getStart() == t_expression.getStop())
+    return variableName(t_expression.getText()).equals(varName);
+  else
+    return false;
+}
+
+private boolean isReusedAfterOverwrite(String assignedValueName, VarInfo varInfo) {
   return varInfo != null && varInfo.reusedValueNames.contains(assignedValueName);
 }
 
@@ -317,7 +329,7 @@ private boolean isReusedValue(String id) {
     return false;
 
   final VarInfo varinfo = currentScope.getExistingVarInfo(variableName(id));
-  return originalValueIsReusedAfterOverwrite(id, varinfo);
+  return isReusedAfterOverwrite(id, varinfo);
 }
 
 private String dedecorate(String valueName) {
@@ -338,7 +350,7 @@ private String dedecorate(String valueName, final int primeAt) {
 }
 
 private void commentTheCode(ParserRuleContext ctx) {
-  String code = rewriter.source(ctx);
+  String code = rewriter.originalSource(ctx);
   rewriter.replace(ctx.getStart(), ctx.getStop(), commentTheCode(code));
 }
 

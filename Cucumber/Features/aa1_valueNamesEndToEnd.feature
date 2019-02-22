@@ -467,12 +467,14 @@ Scenario: Assignments with no operational effect are commented out in Java
     int /*'*/b = 2;
 
     void assign() {
-      a/*'*/temp = 4;
+      a/*'temp*/ = 4;
       /*$T$* a'another = a'temp; *$T$*/
 
-      /*$T$* b'temp = 'b; *$T$*/ b$T$temp = /*'*/b
+      /*$T$* b'temp = 'b; *$T$*/ int b$T$temp = b/*'temp*/;
       b/*'*/ = a/*'another*/;
       a/*'*/ = b$T$temp;
     }
-    /*$T$* means(a' = 5 & b' = 4); *$T$*/
+    /*$T$* means(a' = 'b & b' = 4); *$T$*/
+
+    }
     """
