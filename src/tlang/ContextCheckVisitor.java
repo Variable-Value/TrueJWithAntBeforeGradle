@@ -550,7 +550,7 @@ private void checkAssignment(T_identifierContext ctx) {
     checkForPriorDefinitionOfValueName(valueNameToken, varInfo);
 //    firstScope.preserveAnyEnclosingScopeLatestValue(variableName(valueNameToken));
     String valueName = workingValueName(valueNameToken);
-    firstScope.addToDelegatedValueNames(varInfo, variableName(valueNameToken), valueName);
+    firstScope.setDeligationObligationForEnclosingScopes(valueName);
     defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
 
   } else if (branchState == BranchState.FollowingBranch) {
@@ -723,21 +723,15 @@ private VarInfo ensureVarInfo(Token valueNameToken) {
   Optional<VarInfo> OptVar = currentScope.getOptionalExistingVarInfo(variableName(valueNameToken));
   if ( isMissing(OptVar) ) {
     issueUndefinedVariableError(valueNameToken);
-    OptVar = currentScope.declareVarName(valueNameToken, "UnknownType_UndeclaredVariable$T$");
+    OptVar = currentScope.declareVarName(valueNameToken, "UnknownType_ForUndeclaredVariable$T$");
   }
   return OptVar.get();
 }
-/**
- * @param OptVar
- * @return
- */
+
 private boolean isMissing(Optional<?> OptVar) {
   return ! OptVar.isPresent();
 }
-/**
- * @param currentValueName
- * @return
- */
+
 private boolean isAlreadyFinallyDecorated(String currentValueName) {
   boolean hasCurrentValue = (currentValueName != null);
   return hasCurrentValue && isFinalDecorated(currentValueName);

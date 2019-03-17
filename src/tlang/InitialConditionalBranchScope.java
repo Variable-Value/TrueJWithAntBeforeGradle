@@ -46,9 +46,8 @@ void reestablishEnclosingScopeValues() {
     final String varName = maplet.getKey();
     String latestValueForVariable = maplet.getValue();
     Optional<VarInfo> optionalInfo = getOptionalExistingVarInfo(varName);
-    if (optionalInfo.isPresent()) {
+    if (optionalInfo.isPresent())
       resetVarToBeforeConditionalStatement(varName, latestValueForVariable, optionalInfo.get());
-    }
   }
 }
 
@@ -89,52 +88,49 @@ Scope getVariableDeclarationScope(String varName) {
   return parent.getVariableDeclarationScope(varName);
 }
 
-//TODO Clean up this JavaDoc
-/** When we assign a value to a new valueName in an initial branch of a conditional, all following
- * branches of the same conditional are obligated to assign a value to that same valueName to ensure
- * that code following the conditional will be able to treat valueNames consistently. This creates
- * an obligation also gets created in
- * all ancestor {@link InitialConditionalBranchScope} scopes until we find an enclosing
- * {@link FollowingConditionalBranchScope}. If this initial branch is enclosed in a
- * following branch, the assignment may be to a valueName fulfilling an obligation of that following
- * branch; in which case, we remove the valueName from the nestedValueNames of the following
- * branch.
+/** Conditional statement handling of valueNames gets complicated. We create a new valueName anytime
+ * we assign a value to a variable, and that valueName is used later in the code to represent the
+ * value. If the assignment is in a branch of a conditional statement, we must therefore make the
+ * valueName available to statements that follow the conditional, but that implies that all paths
+ * through the conditional must assign a value to the valueName. So if we assign a value to a new
+ * valueName inside any branch of a conditional statement, then all the branches of that conditional
+ * are obligated to assign a value to that same valueName; therefore, we will encounter the new
+ * valueName first in the initial branch. The "obligation" for all the following branches of the
+ * conditional statement is recorded as a "delegation" in the <code>nestedValueNames</code> set of
+ * the corresponding initial branch.
  * <p>
- * If this variable was defined in an enclosing scope, then it was assigned a value name there.
- * Preserve that value name so it can be restored to use as a starting point in processing other
- * branches of this conditional statement. This must also be set in any ancestor scopes that are in
- * a chain of immediately enclosing {@link InitialConditionalBranchScope} scopes.
- * @implementation Add to the chain of
- * @param varInfo TODO*/
-public void addToDelegatedValueNames(VarInfo varInfo, String varName, String valueName) {
-  delegatedValueNames.add(valueName);
-  setDelegationsAndremoveObligationForEnclosingScopes(varInfo, varName, valueName);
+ * This kind of obligation can be created in the initial branch even when the assignment to a new
+ * valueName happens in a nested conditional statement. So when we assign to a new valueName in an
+ * initial branch, we need to check <em>enclosing</em> scopes and set the delegation in every
+ * enclosing <code>InitialConditionalBranchScope</code> until we run out of enclosing scopes in the
+ * executable, or until we find an enclosing {@link FollowingConditionalBranchScope}. We can stop at
+ * a following scope because its corresponding initial scope will have already created the
+ * delegation/obligation in its enclosing scopes, as we just described.
+ * <p>
+ * So, often, we will be left sitting at an enclosing following scope, and in that case it turns out
+ * there will be more to do. This is because nested conditional statements under following branches
+ * can fulfill that branches obligations. To see this, let's start with the nestedValueNames set of
+ * delegations from the initial branch. Each corresponding following branch gets a copy of that set
+ * and records meeting its obligations by removing valueNames from its copy of the set. When an
+ * assignment is made in the following branch it fulfills the obligation; however, this obligation
+ * may also be fulfilled by a nested conditional statement in our following branch with the
+ * assignment in all of its branches. So, when we are searching upwards from an initial branch
+ * assignment, the assignment may be to a valueName fulfilling an obligation created by a following
+ * branch's corresponding initial branch. Therefore, we remove the valueName from the
+ * nestedValueNames of the following branch where the search stops. */
+public void setDeligationObligationForEnclosingScopes(String valueName) {
+  Scope s;
+  for (s = this; notAnEnclosingFollowingScope(s); s = s.parent)
+    if (s instanceof InitialConditionalBranchScope)
+      delegateInScope((InitialConditionalBranchScope)s, valueName);
+
+  if (s instanceof FollowingConditionalBranchScope)
+    ((FollowingConditionalBranchScope)s).removeAnyObligationOnValueName(valueName);
 }
 
-private void setDelegationsAndremoveObligationForEnclosingScopes(VarInfo varInfo, String varName
-                                                                 , String valueName) {
-  String currentValueName = varInfo.getCurrentValueName();
-  Scope s = this;
-  while(notAnEnclosingFollowingScope(s)) {
-    if (s instanceof InitialConditionalBranchScope) {
-      InitialConditionalBranchScope initialS = (InitialConditionalBranchScope)s;
-      initialS.delegatedValueNames.add(valueName);
-      initialS.varToHeldLatestValue.put(varName, currentValueName);
-    }
-    s = s.parent;
-  }
-  if (s instanceof FollowingConditionalBranchScope) {
-    ((FollowingConditionalBranchScope)s).removeAnyObligationOnValueName(valueName);
-  }
-//  while (parentIsStillInExecutable(s)) {
-//    s = s.parent;
-//    if (s instanceof FollowingConditionalBranchScope) {
-//      ((FollowingConditionalBranchScope)s).removeAnyObligationOnValueName(valueName);
-//    }
-//    if (s instanceof InitialConditionalBranchScope) {
-//      ((InitialConditionalBranchScope)s).delegatedValueNames.add(valueName);
-//    }
-//  }
+private void delegateInScope(InitialConditionalBranchScope scope, String valueName) {
+  scope.delegatedValueNames.add(valueName);
+  scope.varToHeldLatestValue.put(variableName(valueName), valueName);
 }
 
 /**
