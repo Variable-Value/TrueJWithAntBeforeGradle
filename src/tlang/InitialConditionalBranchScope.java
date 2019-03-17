@@ -36,11 +36,7 @@ public InitialConditionalBranchScope(String scopeLabel, Scope parent) {
 }
 
 /** Restore the current values for all enclosing scopes to set the context for processing any
- * following branch.
- * @implementation We do not need to check if the varInfo is nonnull here because in the enclosing
- *                 scope {@link #visitT_assignable(T_assignableContext)} only adds the current value
- *                 to the <code>currentScope.varToHeldLatestValue</code> map if the varInfo is
- *                 present.*/
+ * following branch. */
 void reestablishEnclosingScopeValues() {
   for (Entry<String,String> maplet : varToHeldLatestValue.entrySet()) {
     final String varName = maplet.getKey();
