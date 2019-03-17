@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.PredictionMode;
@@ -24,13 +26,16 @@ import static tlang.TLantlrParser.*;
  */
 public class TUtil {
 
-
+static final HashMap<String,String> EMPTY_HASH_MAP = new HashMap<>(0);
+static final HashSet<String> EMPTY_HASH_SET = new HashSet<>(0);
 static final char decorator = '\'';
 static final String decoratorString = "'";
 
 @SuppressWarnings("null") // Arrays.asList performs unchecked conversion
 final static List<Integer> decoratedTokenTypes
-    = Arrays.asList(PreValueName, PostValueName, MidValueName);
+    = Arrays.asList(TLantlrParser.PreValueName,
+                    TLantlrParser.PostValueName,
+                    TLantlrParser.MidValueName);
 
 /**
  * Read file as a token stream.
@@ -196,11 +201,12 @@ final public static boolean isDecorated(String valueName) {
 }
 
 final public static boolean isUndecorated(Token valueToken) {
-  return (! isDecorated(valueToken));
+  return valueToken.getType() == UndecoratedIdentifier;
+  //return (! isDecorated(valueToken)); //TODO: remove this line
 }
 
 final public static boolean isUndecorated(String valueName) {
-  return (! isDecorated(valueName));
+  return (! isDecorated(valueName)); //TODO: remove this line
 }
 
 final public static boolean isMidDecorated(Token valueToken) { // e.g., abc'de
@@ -366,5 +372,6 @@ TCompilerCounts {
   }
 
 } // end nested class TCompilerCounts
+
 
 } // end class TUtil

@@ -528,13 +528,6 @@ public class TLantlrBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitT_nestedBlock(TLantlrParser.T_nestedBlockContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
 	@Override public T visitT_blockStatement(TLantlrParser.T_blockStatementContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}

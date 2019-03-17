@@ -1,5 +1,6 @@
 package tlang;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -10,12 +11,10 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import tlang.KnowledgeBase.ProofResult;
 import tlang.Scope.VarInfo;
-import tlang.TLantlrParser.T_expressionContext;
-import tlang.TLantlrParser.T_expressionDetailContext;
-import tlang.TLantlrParser.T_identifierContext;
-import tlang.TLantlrParser.T_nestedBlockContext;
-import tlang.TLantlrParser.T_parExpressionContext;
-import tlang.TLantlrParser.T_primaryContext;
+import tlang.TLantlrParser.T_blockStatementContext;
+import tlang.TLantlrParser.T_localVariableDeclarationContext;
+import tlang.TLantlrParser.T_statementContext;
+import tlang.TLantlrParser.T_typeDeclarationContext;
 import static tlang.TUtil.*;
 import static tlang.TLantlrParser.*;
 
@@ -240,21 +239,76 @@ private String withoutSemicolon(String code) {
   return code.substring(0, semicolonPosition) + code.substring(semicolonPosition + 1);
 }
 
+/**
+ * {@inheritDoc}
+ *
+ * <p>The default implementation returns the result of calling
+ * {@link #visitChildren} on {@code ctx}.</p>
+ */
+@Override public Void visitEmptyStmt(TLantlrParser.EmptyStmtContext ctx) {
+  rewriter.substituteText(ctx, "true");
+  return null;
+}
+
+/** Translate a block of statements into the meaning of its statements, changing the surrounding
+ * braces to parentheses. Loop from the bottom up, stopping with the latest means-statement that was
+ * issued, which summarizes everything needed from the code above it in this block. */
+@Override public Void visitT_block(T_blockContext ctx) {
+  final Scope parentScope = currentScope;
+  currentScope = scopeMap.get(ctx);
+
+  visitChildren(ctx);
+
+  boolean statementsAreActive = true; // so far
+  String meaning = "true";
+  for (int i = ctx.t_blockStatement().size()-1; i >= 0; i-- ) {
+    T_blockStatementContext blockCtx = ctx.t_blockStatement(i);
+    T_statementContext statement = blockCtx.t_statement();
+    if (statement != null) {
+      if (statementsAreActive) {
+        meaning += and + rewriter.source(statement);
+        statementsAreActive = (statement instanceof MeansStmtContext) ? false : true;
+      } else
+        ;
+    } else {
+      T_localVariableDeclarationContext localDeclaration = blockCtx.t_localVariableDeclaration();
+      if (localDeclaration != null) {
+//        String type = localDeclaration.t_type().getText();
+//        for (T_variableDeclaratorContext varOrValueName : localDeclaration.t_variableDeclarator()) {
+//          if (varOrValueName instanceof UninitializedVariableContext) {
+//            then;
+//          } else {
+//            orElse;
+//          }
+//        types += and + " type("+ type +","+ localDeclaration.t_variableDeclarator(v));
+      } else {
+        T_typeDeclarationContext localType = blockCtx.t_typeDeclaration();
+        // localType cannot be null because of syntax
+          // blah blah blah
+      }
+    }
+  rewriter.substituteText(ctx, meaning);
+  }
+
+
+  currentScope = parentScope;
+  return null;
+}
+
 /** Translate if-statement to logic. */
 @Override
 public Void visitIfStmt(IfStmtContext ctx) {
   visitChildren(ctx);
 
   String condition = rewriter.source(ctx.t_parExpression());
-  String thenMeaning = par(rewriter.source(ctx.t_nestedBlock(0)));
-  T_nestedBlockContext elseContext = ctx.t_nestedBlock(1);
-  if (elseContext == null)
+  String thenMeaning = par(rewriter.source(ctx.t_statement(0)));
+  T_statementContext elseContext = ctx.t_statement(1);
+  if (elseContext == null) {
     rewriter.substituteText(ctx, condition + "==>" + thenMeaning);
-  else {
+  } else {
     String elseMeaning = par(rewriter.source(elseContext));
-    rewriter.substituteText(ctx,
-                            condition + and + thenMeaning
-                                 + or + not + condition + and + elseMeaning);
+    rewriter.substituteText(ctx, condition + and + thenMeaning
+                    + or + not + condition + and + elseMeaning);
   }
   return null;
 }

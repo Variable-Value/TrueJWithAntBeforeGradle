@@ -94,6 +94,98 @@ Scenario: The if statement with one variable
     } // end class
     """
 
+Scenario: Two-deep if-statement
+
+  * A valid T Language run unit is
+    """
+    class TwoDeepIfNull {
+      Object a;
+
+      void testTwoDeepNull() {
+        if (true) {
+          if (true) {
+            a' = null;
+          } else {
+            a' = null;
+          }
+        } else {
+            a' = null;
+        }
+      }
+      means (a' = null);
+
+    }
+    """
+
+  * A valid T Language run unit is
+    """
+    class TwoDeepIfNull {
+      Object a;
+
+      void testTwoDeepNull() {
+        if (true) {
+          if (true) {
+            a' = null;
+          } else {
+            a' = null;
+          }
+        } else {
+          if (true) {
+            a' = null;
+          } else {
+            a' = null;
+          }
+        }
+      }
+      means (a' = null);
+
+    }
+    """
+
+
+Scenario: Three-deep if-statement
+
+  * A valid T Language run unit is
+    """
+    class ThreeDeepIfNull {
+      Object a;
+
+      void testTwoDeepNull() {
+        if (true) {
+          if (true) {
+            if (true) {
+              a' = null;
+            } else {
+              a' = null;
+            }
+          } else {
+            if (true) {
+              a' = null;
+            } else {
+              a' = null;
+            }
+          }
+        } else {
+          if (true) {
+            if (true) {
+              a' = null;
+            } else {
+              a' = null;
+            }
+          } else {
+            if (true) {
+              a' = null;
+            } else {
+              a' = null;
+            }
+          }
+        }
+      }
+      means (a' = null);
+
+    }
+    """
+
 
 #  @Ignore -------------------
 
@@ -103,3 +195,8 @@ Scenario: The if statement with one variable
 #    for a value name to require reuse in one branch but not the other.
 
 # END @Ignore --------------------
+
+
+#Scenario: End of if-statement details
+#
+#  * using feature "End of ab1_ifStatementDetails"

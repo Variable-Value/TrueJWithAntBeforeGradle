@@ -59,15 +59,17 @@ Scenario: Any value set in one branch of an if-statement must be set in both
       rate'standard = standardRate';
       if ('hasDiscount)
         rate' = discountRate';
-      else ;
-        // attempting to let rate variable defalt to rate'standard previous value
-        // but the rate' value is not defined
-      reportRate' = rate'; // the problem is not discovered here
+      else
+        ; // ERROR: attempting to let rate variable default to rate'standard previous value
+
+      reportRate' = rate'; /* This is also an error because rate' is not defined in all paths
+                            * but it is not discovered here */
     }
     means ( (   'hasDiscount & reportRate' = discountRate')
           | ( ! 'hasDiscount & reportRate' = standardRate')
-              // no proof that reportRate' = standardRate' can be constructed without the missing
-              // definition of rate' in the else-clause when 'hasDiscount = false
+              /* this last disjunct would also be an error because there is no proof
+                * that reportRate' = standardRate' when 'hasDiscount = false,
+                * but it is not found because the else-error stops the proof attempt */
           );
 
     } // end class
@@ -75,7 +77,7 @@ Scenario: Any value set in one branch of an if-statement must be set in both
 
     Then an error message contains
     """
-    rate' was not defined in the else-clause
+    rate' was not defined in an else-clause
     """
 
 Scenario: An if-then-statement, without the else clause, cannot set values in both conditions
@@ -106,11 +108,11 @@ Scenario: An if-then-statement, without the else clause, cannot set values in bo
 
     Then an error message contains
     """
-    a' was not defined in the else-clause
+    a' was not defined in an else-clause
     """
     And an error message contains
     """
-    b' was not defined in the else-clause
+    b' was not defined in an else-clause
     """
 
 
@@ -142,68 +144,68 @@ Scenario: Always include definitions of value names in all branches
     } // end class
     """
 
-  Scenario: A more complex example - ThreeSort
-
-    This version of sorting three items minimizes copying in each case.
-
-    The means-statement is used to good effect to keep track of the state determined so far. If
-    there are mistakes in programming, the final means statement for the threeSort() method could be
-    copied to the end of suspected cases to see which one is at fault.
-
-    The implicit local variable that TrueJ creates is often helpful, but in one case we need to use a different ordering of the code than our preferred one to avoid creating two implicit local variables.
-
-  * A valid T Language run unit is
-    """
-    class Triplet {
-
-    int a;
-    int b;
-    int c;
-
-    void threeSort() {
-      if ('a <= 'b ) {
-        if ('b <= 'c) { // already in order
-          a' = 'a;                          // no-op
-          b' = 'b;                          // no-op
-          c' = 'c;                          // no-op
-        } else { // 'a & 'c both <= 'b
-          if ('a <= c') {
-            means ('a <= 'c && 'c <= 'b); // 'a <= 'c <= 'b);
-            a' = 'a;                        // no-op
-            b' = 'c;
-            c' = 'b;
-          } else {
-            means ('c < 'a && 'a <= 'b); // 'c < 'a <= 'b);
-            a' = 'c;
-            c' = 'b; // definition of c' and b' swapped to minimize implicit local variables
-            b' = 'a;
-          }
-        }
-      } else { // 'b < 'a
-        if ('a <= 'c) { // 'b < 'a <= 'c
-          means ('b < 'a && 'a <= 'c); // 'b < 'a <= 'c);
-          a' = 'b;
-          b' = 'a;
-          c' = 'c;                          // no-op
-        } else {          // 'b & 'c both <= 'a
-          if ('b <= c') {
-            means ('b <= 'c && 'c < 'a); // 'b <= 'c < 'a
-            a' = 'b;
-            b' = 'c;
-            c' = 'a;
-          } else {
-            means ('c < 'b && 'b < 'a); // 'c < 'b < 'a);
-            a' = 'c;
-            b' = 'b;                        // no-op
-            c' = 'b;
-          }
-        }
-      }
-    }
-    means (a' <= b' && b' <= c');
-
-    } // end class
-    """
+#  Scenario: A more complex example - ThreeSort
+#
+#    This version of sorting three items minimizes copying in each case.
+#
+#    The means-statement is used to good effect to keep track of the state determined so far. If
+#    there are mistakes in programming, the final means statement for the threeSort() method could be
+#    copied to the end of suspected cases to see which one is at fault.
+#
+#    The implicit local variable that TrueJ creates is often helpful, but in one case we need to use a different ordering of the code than our preferred one to avoid creating two implicit local variables.
+#
+#  * A valid T Language run unit is
+#    """
+#    class Triplet {
+#
+#    int a;
+#    int b;
+#    int c;
+#
+#    void threeSort() {
+#      if ('a <= 'b ) {
+#        if ('b <= 'c) { // already in order
+#          a' = 'a;                          // no-op
+#          b' = 'b;                          // no-op
+#          c' = 'c;                          // no-op
+#        } else { // 'a & 'c both <= 'b
+#          if ('a <= 'c) {
+#            means ('a <= 'c && 'c <= 'b); // 'a <= 'c <= 'b);
+#            a' = 'a;                        // no-op
+#            b' = 'c;
+#            c' = 'b;
+#          } else {
+#            means ('c < 'a && 'a <= 'b); // 'c < 'a <= 'b);
+#            a' = 'c;
+#            c' = 'b; // definition of c' and b' swapped to minimize implicit local variables
+#            b' = 'a;
+#          }
+#        }
+#      } else { // 'b < 'a
+#        if ('a <= 'c) { // 'b < 'a <= 'c
+#          means ('b < 'a && 'a <= 'c); // 'b < 'a <= 'c);
+#          a' = 'b;
+#          b' = 'a;
+#          c' = 'c;                          // no-op
+#        } else {          // 'b & 'c both <= 'a
+#          if ('b <= 'c) {
+#            means ('b <= 'c && 'c < 'a); // 'b <= 'c < 'a
+#            a' = 'b;
+#            b' = 'c;
+#            c' = 'a;
+#          } else {
+#            means ('c < 'b && 'b < 'a); // 'c < 'b < 'a);
+#            a' = 'c;
+#            b' = 'b;                        // no-op
+#            c' = 'b;
+#          }
+#        }
+#      }
+#    }
+#    means (a' <= b' && b' <= c');
+#
+#    } // end class
+#    """
 
 #  @Ignore # save this for after we have established proving for less-than relations
 

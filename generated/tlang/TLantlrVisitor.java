@@ -453,12 +453,6 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitT_block(TLantlrParser.T_blockContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link TLantlrParser#t_nestedBlock}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitT_nestedBlock(TLantlrParser.T_nestedBlockContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link TLantlrParser#t_blockStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
