@@ -14,10 +14,8 @@ import static tlang.TUtil.*;
  * Initializer, Constructor, Method, Block, Interface, EnumType, and EnumValue. */
 class Scope {
 
-@SuppressWarnings("unused")
-
 //@formatter:off
-
+/** may be another executable scope or the background scope of the method */
 protected @Nullable Scope    parent;
   public            void       setParent(Scope parent) { this.parent = parent; }
   public  @Nullable Scope      getParent()             {return parent;}
@@ -110,7 +108,7 @@ public @Nullable VarInfo getConflictingVarDeclarationInfo(String varName) {
   if (varDefinedInThisScope) {
     return varInfo;
   } else { // may be able to find the variable in an ancestor scope
-    return parent.getConflictingVarDeclarationInfo(varName); // parent may be a BackgroundScope
+    return parent.getConflictingVarDeclarationInfo(varName);
   }
 }
 

@@ -10,9 +10,7 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.eclipse.jdt.annotation.Nullable;
-import tlang.ContextCheckVisitor.BranchState;
 import tlang.Scope.VarInfo;
-import tlang.TLantlrParser.T_statementContext;
 import static tlang.TLantlrParser.*;
 import static tlang.TUtil.*;
 
@@ -30,14 +28,11 @@ private static final String reservedCharString = "$T$";
 private static final String invalidCharsMsg
       = reservedCharString +" is reserved for T language internal use only";
 
-/** Is Context in code with statements, i.e., method, constructor, or
- * initializer, but not field initialization
- */
+/** Is Context in code with statements, i.e., method, constructor, or initializer, but not field
+ * initialization */
 private boolean isInExecutable = false;
 
-/** Is Context in non-executable logic statement, e.g., constraint or means,
- *  but not conjecture
- */
+/** Is Context in non-executable logic statement, e.g., constraint or means, but not conjecture */
 private boolean isInLogic = false;
 
 /** Are we in executable code nested within a conditional statement, e.g., then-block or else-block
