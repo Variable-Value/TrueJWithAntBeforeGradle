@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
@@ -240,6 +241,10 @@ public static void printMap(java.util.Map<String, String> map) {
   for (java.util.Map.Entry<String, String> entry : map.entrySet()) {
     System.out.println(entry.getKey() +" --> "+ entry.getValue());
   }
+}
+
+boolean isMissing(Optional<?> optional) {
+  return !optional.isPresent();
 }
 
 /** the string argument is all white space or empty

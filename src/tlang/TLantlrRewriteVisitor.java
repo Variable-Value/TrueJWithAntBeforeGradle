@@ -24,6 +24,10 @@ public class TLantlrRewriteVisitor extends RewriteVisitor {
  */
 boolean inAssignableExpression = false;
 
+/** A string of characters that may not be used in TrueJ programs. They are reserved for use by the
+ * compiler and TrueJ system to use for implemention. */
+public static final String $T$ = "$T$";
+
 public TLantlrRewriteVisitor( TokenStream             tokenStream
                             , Map<RuleContext, Scope> ctxToScope
                             ) {
@@ -131,7 +135,7 @@ protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx)
       String initValue = decoratorString+ varName;
       if (varInfo.reusedValueNames.contains(initValue)) {
         tempInitializations.append(" ")       .append(varInfo.getType())
-                           .append(" $T$")    .append(varName)
+                           .append(" "+ $T$)  .append(varName)
                            .append(" = /*'*/").append(varName)
                            .append(";");
       }
@@ -155,8 +159,6 @@ protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx)
  * {@inheritDoc}
  * @return a null to indicate that there are no children to visit.
  */
-// TODO: the value inserted should only be like "a$T$ = a/*'*/;" and the "int a$T$;" should be
-//       declared at the declaration of the variable "a" so it will have the scope of "a".
 @Override public Void //@formatter:off
 visitAssignStmt(AssignStmtContext ctx) {
   // Collect pre-visit (unmodified) info
@@ -176,6 +178,8 @@ visitAssignStmt(AssignStmtContext ctx) {
   if (isReusedAfterOverwrite(assignedValueName, varInfo)) {          // a' is reused later in code
     rewriter.insertAfter(ctx.getStop(), saveOriginalValue(assignedValueName, varInfo));
     // saves the value for later reuse by inserting "int a$T$ = a/*'*/;" after the assignment
+    // TODO: the value inserted should only be like "a$T$ = a/*'*/;" and the "int a$T$;" should be
+    //       declared at the declaration of the variable "a" so it will have the scope of "a".
   }
   return null;
 } // @formatter:on
@@ -244,7 +248,7 @@ visitT_UndecoratedIdentifier(T_UndecoratedIdentifierContext undecoratedCtx) {
   final String id = rewriter.source(preDecoratedCtx);
   final String variableName = id.substring(1);
   final String javaVarName = ( ! inAssignableExpression && isReusedValue(id))
-                             ? "$T$"+ variableName
+                             ? $T$ + variableName
                              : "/*'*/"+ variableName
                              ;
   rewriter.replace(preDecoratedCtx.getStart(), preDecoratedCtx.getStop(), javaVarName);
@@ -270,7 +274,7 @@ visitT_UndecoratedIdentifier(T_UndecoratedIdentifierContext undecoratedCtx) {
 
   final String javaVarName;
   if ( ! inAssignableExpression && isReusedValue(valueName))
-    javaVarName = variableName +"$T$"+ decorationText;                      // id$T$xxx
+    javaVarName = variableName + $T$ + decorationText;                      // id$T$xxx
   else                                                                      //  or
     javaVarName = variableName +"/*"+ decoratorString+decorationText +"*/"; // id/*'xxx*/
   rewriter.replace(midNameContext.getStart(), midNameContext.getStop(), javaVarName);
@@ -309,7 +313,7 @@ visitT_UndecoratedIdentifier(T_UndecoratedIdentifierContext undecoratedCtx) {
  */
 private String newID(final String id) {
   if ( ! inAssignableExpression && isReusedValue(id))
-    return id.replace(decoratorString, "$T$"); // e.g., 'id --> $T$id
+    return id.replace(decoratorString, $T$); // e.g., 'id --> $T$id
   else
     return dedecorate(id, decoratorPosition(id));
 }
@@ -361,10 +365,10 @@ private void commentTheCode(ParserRuleContext ctx) {
  */
 private String commentTheCode(String code) {
   if (code.contains("/*")) {
-    return "/*$T$* "+ code.replace("/*", "(*$T$*").replace("*/", "*$T$*)")
-          +" *$T$*/";
+    return "/*"+ $T$ +"* "+ code.replace("/*", "(*"+ $T$ +"*").replace("*/", "*"+ $T$ +"*)")
+          +" *"+ $T$ +"*/";
   } else {
-    return "/*$T$* "+ code +" *$T$*/";
+    return "/*"+ $T$ +"* "+ code +" *"+ $T$ +"*/";
   }
 }
 
@@ -373,10 +377,10 @@ private String commentTheCode(String code) {
  */
 @SuppressWarnings("unused")
 private String uncommentTheCode(String code) {
-  if (code.contains("/*$T$ ")) {
-    code = code.replace("/*$T$* ", ""  ).replace(" *$T$*/", ""  );
-    if (code.contains("(*$T$*")) {
-      code = code.replace("(*$T$*" , "/*").replace("*$T$*)" , "*/");
+  if (code.contains("/*"+ $T$ +" ")) {
+    code = code.replace("/*"+ $T$ +"* ", ""  ).replace(" *"+ $T$ +"*/", ""  );
+    if (code.contains("(*"+ $T$ +"*")) {
+      code = code.replace("(*"+ $T$ +"*" , "/*").replace("*"+ $T$ +"*)" , "*/");
     }
   }
   return code;

@@ -83,8 +83,8 @@ public Optional<VarInfo> declareVarName(Token varOrValueName, String type) {
   }
 }
 
-private boolean isMissing(Optional<?> optional) {
-  return !optional.isPresent();
+boolean scopeIsStillInExecutable() {
+  return ! (this instanceof BackgroundScope);
 }
 
 /* Notes on getConflictingVarDeclarationInfo and getVarReferenceInfo

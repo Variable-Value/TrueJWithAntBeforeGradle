@@ -67,6 +67,8 @@ final String source(String programName, ParseTree ctx) {
  * channel that is visible to the parser, i.e., no whitespace or comments.
  * @param ctx The root of the parse-tree node for the source code
  * @return original input source code corresponding to the parse tree at <code>ctx</code>
+ * @implementation getText() for the original source by using a name for the generated code that
+ *                 contains $T$ so it is a name that is otherwise never used
  */
 final String originalSource(ParseTree ctx) {
   return getText("WITHOUT_CHANGES$T$", ctx.getSourceInterval());

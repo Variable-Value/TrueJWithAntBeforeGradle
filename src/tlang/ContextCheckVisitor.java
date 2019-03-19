@@ -24,9 +24,9 @@ import static tlang.TUtil.*;
  */
 public class ContextCheckVisitor extends TLantlrBaseVisitor<Void> {
 
-private static final String reservedCharString = "$T$";
+private static final String $T$ = TLantlrRewriteVisitor.$T$;
 private static final String invalidCharsMsg
-      = reservedCharString +" is reserved for T language internal use only";
+      = $T$ +" is reserved for T language internal use only";
 
 /** Is Context in code with statements, i.e., method, constructor, or initializer, but not field
  * initialization */
@@ -545,27 +545,12 @@ private void checkAssignment(T_identifierContext ctx) {
     checkForPriorDefinitionOfValueName(valueNameToken, varInfo);
 //    firstScope.preserveAnyEnclosingScopeLatestValue(variableName(valueNameToken));
     String valueName = workingValueName(valueNameToken);
-    firstScope.setDeligationObligationForEnclosingScopes(valueName);
+    setDeligationObligationForEnclosingScopes(firstScope, valueName);
     defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
 
   } else if (branchState == BranchState.FollowingBranch) {
 
     FollowingConditionalBranchScope followingScope = getEnclosingFollowingScope(valueNameToken);
-    InitialConditionalBranchScope firstScope = followingScope.getFirstScope();
-    /* TODO: For each variable assigned in the conditional statement, if a following branch ends
-     *       it's scope with a different valueName as the ending value of the variable
-     *       then the conditional as a whole has a disjunctive value for that variable. We need to
-     *       represent that
-     *       with a distinct valueName, say varName'$T$conditionScopeName_finalValue and a fact that
-     *       is added to each
-     *       branch:
-     *          varName'$T$conditionScopeName_finalValue = <the branches final value for the variable>
-     *
-     *       But what if one was the final value of the variable, e.g., var'?
-     *
-     *       Perhaps each Initial- or Following- scope could hhave a map of current value names for
-     *       each variable name?
-     */
     String valueName = workingValueName(valueNameToken);
     if ( ! followingScope.getNestedValueNames().remove(valueName))
       errs.collectError(program, valueNameToken, "Value name "+ valueName
@@ -577,6 +562,55 @@ private void checkAssignment(T_identifierContext ctx) {
     checkForPriorDefinitionOfValueName(valueNameToken, varInfo);
     defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
   }
+}
+
+/** Conditional statement handling of valueNames gets complicated. We create a new valueName anytime
+ * we assign a value to a variable, and that valueName is used later in the code to represent the
+ * value. If the assignment is in a branch of a conditional statement, we must therefore make the
+ * valueName available to statements that follow the conditional, but that implies that all paths
+ * through the conditional must assign a value to the valueName. So if we assign a value to a new
+ * valueName inside any branch of a conditional statement, then all the branches of that conditional
+ * are obligated to assign a value to that same valueName; therefore, we will encounter the new
+ * valueName first in the initial branch. The "obligation" for all the following branches of the
+ * conditional statement is recorded as a "delegation" in the <code>delegatedValueNames</code> set
+ * of the corresponding initial branch.
+ * <p>
+ * This kind of obligation can be created in the initial branch even when the assignment to a new
+ * valueName happens in a nested conditional statement. So when we assign to a new valueName in an
+ * initial branch, we need to check <em>enclosing</em> scopes and set the delegation in every
+ * enclosing <code>InitialConditionalBranchScope</code> until we run out of enclosing scopes in the
+ * executable, or until we find an enclosing {@link FollowingConditionalBranchScope}. We can stop at
+ * a following scope because its corresponding initial scope will have already created the
+ * delegation/obligation in its enclosing scopes, as we just described.
+ * <p>
+ * So, often, we will be left sitting at an enclosing following scope, and in that case it turns out
+ * there will be more to do. This is because nested conditional statements under following branches
+ * can fulfill that branch's obligations. To see this, let's start with the
+ * <code>delegatedValueNames</code> set from the initial branch. Each corresponding following branch
+ * gets a copy of that set, which it calls <code>obligatedValueNames</code>, and it records meeting
+ * its obligations by removing valueNames from its copy of the set. When an assignment is made in
+ * the following branch to a valueName, it fulfills the obligation for that valueName; however, this
+ * obligation may also be fulfilled by a nested conditional statement in our following branch with
+ * the assignment in all of its branches. So, when we are searching upwards from an initial branch
+ * assignment, the assignment may be to a valueName fulfilling an obligation of a following branch.
+ * Therefore, we remove the valueName from the <code>obligatedValueNames</code> of the following
+ * branch where the search stops.
+ * @param firstScope the starting scope for the upward search of enclosing scopes
+ * @param valueName  the valueName that was assigned a value inside an initial branch of a
+ *                    conditional statement */
+public void setDeligationObligationForEnclosingScopes(InitialConditionalBranchScope firstScope,
+                                                      String valueName) {
+  Scope s;
+  for (s = firstScope; notAnEnclosingFollowingScope(s); s = s.getParent())
+    if (s instanceof InitialConditionalBranchScope)
+      ((InitialConditionalBranchScope)s).delegateInScope(valueName);
+
+  if (s instanceof FollowingConditionalBranchScope)
+    ((FollowingConditionalBranchScope)s).removeAnyObligationOnValueName(valueName);
+}
+
+boolean notAnEnclosingFollowingScope(Scope s) {
+  return ! (s instanceof FollowingConditionalBranchScope) && s.scopeIsStillInExecutable();
 }
 
 /** Search up through ancestor scopes to find the nearest one that is a
@@ -642,7 +676,7 @@ private void checkForPriorDefinitionOfValueName(Token valueNameToken, VarInfo va
                       +" has already been defined on line "+ existingValueLineNum);
 }
 
-/** Either the originally coded value name or a kludged one to allow catching more error messages.
+/** The originally coded value name, or perhaps a kludged one to allow catching more error messages.
  */
 private String workingValueName(Token valueNameToken) {
   if (isUndecorated(valueNameToken)) {
@@ -656,7 +690,7 @@ private String workingValueName(Token valueNameToken) {
 /** A value name generated purely in hopes of helping to generate additional helpful error messages
  */
 private String kludgedValueName(Token valueNameToken) {
-  return "'$T$"+ variableName(valueNameToken);
+  return "'" + $T$ +  variableName(valueNameToken);
 }
 
 /** Check to see if this variable, from the valueNameToken, was already assigned a final value,
@@ -699,8 +733,9 @@ private void checkForAlreadyFinalValue(Token valueNameToken, VarInfo varInfo) {
 
   Scope varInfoScope = currentScope.getVariableDeclarationScope(varName);
   errs.collectError( program, valueNameToken,
-                     varName +" in scope "+ varInfoScope +" was final decorated at line "+ varInfo.lineOf(currentValueName)
-                             +", so it cannot receive a new value in scope: "+ currentScope);
+                     varName +" in scope "+ varInfoScope
+                     +" was final decorated at line "+ varInfo.lineOf(currentValueName)
+                     +", so it cannot receive a new value in scope: "+ currentScope);
 }
 
 
@@ -718,7 +753,8 @@ private VarInfo ensureVarInfo(Token valueNameToken) {
   Optional<VarInfo> OptVar = currentScope.getOptionalExistingVarInfo(variableName(valueNameToken));
   if ( isMissing(OptVar) ) {
     issueUndefinedVariableError(valueNameToken);
-    OptVar = currentScope.declareVarName(valueNameToken, "UnknownType_ForUndeclaredVariable$T$");
+    OptVar = currentScope.declareVarName(valueNameToken,
+                                         "UnknownType_ForUndeclaredVariable"+ $T$);
   }
   return OptVar.get();
 }
@@ -818,7 +854,7 @@ String checkedText(TerminalNode id) {
 
 private void checkForReservedChars(final Token idToken) {
   final String id = idToken.getText();
-  if (id.contains(reservedCharString)) {
+  if (id.contains($T$)) {
     errs.collectError(program, idToken , invalidCharsMsg);
   }
 }
