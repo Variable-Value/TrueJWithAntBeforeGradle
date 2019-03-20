@@ -40,7 +40,7 @@ public InitialConditionalBranchScope(String scopeLabel, Scope parent) {
 void reestablishEnclosingScopeValues() {
   for (Entry<String,String> maplet : varToHeldLatestValue.entrySet()) {
     final String varName = maplet.getKey();
-    String latestValueForVariable = maplet.getValue();
+    final String latestValueForVariable = maplet.getValue();
     Optional<VarInfo> optionalInfo = getOptionalExistingVarInfo(varName);
     if (optionalInfo.isPresent())
       resetVarToBeforeConditionalStatement(varName, latestValueForVariable, optionalInfo.get());
@@ -53,15 +53,6 @@ private void resetVarToBeforeConditionalStatement
   for (String valueName : delegatedValueNames)
     if (varName.equals(variableName(valueName)))
       varInfo.removeLineInfo(valueName);
-}
-
-void setNewEnclosingScopeCurrentValues() {
-  for (Entry<String,String> maplet : varToHeldLatestValue.entrySet()) {
-    String variableName = maplet.getKey();
-    Scope declarationScope = getVariableDeclarationScope(variableName);
-    VarInfo varInfo = parent.varToInfoMap.get(maplet.getKey()); //TODO: finish change
-    varInfo.setCurrentValueName(maplet.getValue());
-  }
 }
 
 @SuppressWarnings("unchecked")
@@ -84,9 +75,12 @@ Scope getVariableDeclarationScope(String varName) {
   return parent.getVariableDeclarationScope(varName);
 }
 
-void delegateInScope(String valueName) {
+void delegateInScope(String valueName, String currentValueName) {
   delegatedValueNames.add(valueName);
-  varToHeldLatestValue.put(variableName(valueName), valueName);
+  String varName = variableName(valueName);
+  if ( ! varToHeldLatestValue.containsKey(varName)) {
+    varToHeldLatestValue.put(varName, currentValueName);
+  }
 }
 
 void setCollectionsToEmpty() {
