@@ -186,6 +186,52 @@ Scenario: Three-deep if-statement
     }
     """
 
+Scenario: A reference to a value name from a following branch is to the enclosing scope
+
+  The scope of the initial branch disappears, so those value names cannot be referenced from a
+  following scope. The original enclosing scope state is the state that the following branch starts
+  with.
+
+# a valid reference to an enclosing scope value name
+  * A valid T Language run unit is
+  """
+    class NestedEmptyBranches1 {
+      int a;
+
+    void emptyBranches() {
+      a'temp = 'a + 1;
+      if (true)
+        a'next = 1;
+      else
+        a'next = a'temp + 2;
+      a' = a'next -1;
+    }
+    means (true);
+
+    } // end class
+  """
+
+# an error when the following scope refers to an initial scope value name
+  When an invalid run unit is
+  """
+  class MultipleEmptyBranches2 {
+
+  int a, b;
+
+  void emptyBranches() {
+    if (true) {
+      a'temp = 'b;
+      a' = a'temp + 2;
+    }
+    else {
+      a' = a'temp + 1;
+    }
+  }
+
+  } // end class
+  """
+  Then an error message contains "The value name a'temp was not defined"
+
 
 #  @Ignore -------------------
 
