@@ -77,7 +77,7 @@ Scenario: Any value set in one branch of an if-statement must be set in both
 
     Then an error message contains
     """
-    rate' was not defined in an else-clause
+    rate' was not defined in the else-clause
     """
 
 Scenario: An if-then-statement, without the else clause, cannot set values in both conditions
@@ -108,11 +108,11 @@ Scenario: An if-then-statement, without the else clause, cannot set values in bo
 
     Then an error message contains
     """
-    a' was not defined in an else-clause
+    a' was not defined in the else-clause
     """
     And an error message contains
     """
-    b' was not defined in an else-clause
+    b' was not defined in the else-clause
     """
 
 
