@@ -210,7 +210,7 @@ private void checkFollowingBranch(
  * in the following branch */
 private void issueMissingValueNameMessages(IfStmtContext ctx, Set<String> undefinedNames) {
   for (String valueName : undefinedNames) {
-    String msg = valueName + " was not defined in an else-clause";
+    String msg = "The value name "+ valueName + " was not defined in the else-clause";
     errs.collectError(program, ctx.getStop(), msg);
   }
 }
@@ -545,7 +545,7 @@ private void checkAssignment(T_identifierContext ctx) {
     checkForPriorDefinitionOfValueName(valueNameToken, varInfo);
 //    firstScope.preserveAnyEnclosingScopeLatestValue(variableName(valueNameToken));
     String valueName = workingValueName(valueNameToken);
-    setDeligationObligationForEnclosingScopes(firstScope, valueName);
+    setDeligationObligationForEnclosingScopes(firstScope, valueName, varInfo.getCurrentValueName());
     defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
 
   } else if (branchState == BranchState.FollowingBranch) {
@@ -597,13 +597,14 @@ private void checkAssignment(T_identifierContext ctx) {
  * branch where the search stops.
  * @param firstScope the starting scope for the upward search of enclosing scopes
  * @param valueName  the valueName that was assigned a value inside an initial branch of a
- *                    conditional statement */
+ *                    conditional statement
+ * @param currentValueName */
 public void setDeligationObligationForEnclosingScopes(InitialConditionalBranchScope firstScope,
-                                                      String valueName) {
+                                                      String valueName, String currentValueName) {
   Scope s;
   for (s = firstScope; notAnEnclosingFollowingScope(s); s = s.getParent())
     if (s instanceof InitialConditionalBranchScope)
-      ((InitialConditionalBranchScope)s).delegateInScope(valueName);
+      ((InitialConditionalBranchScope)s).delegateInScope(valueName, currentValueName);
 
   if (s instanceof FollowingConditionalBranchScope)
     ((FollowingConditionalBranchScope)s).removeAnyObligationOnValueName(valueName);
@@ -804,13 +805,17 @@ private boolean reusingAPreviousValueName(String valueName, VarInfo varInfo) {
 }
 
 private void errorAndRecoveryForReferenceToUndefinedValue(Token valueNameToken, VarInfo varInfo) {
-  String valueName = valueNameToken.getText();
   if (isDecorated(valueNameToken))
-    errs.collectError( program, valueNameToken, "Value "+ valueName +" has not been defined"
-                + " for variable defined in scope: "+ varInfo.getScopeWhereDeclared());
+    issueUndefinedValueNameMsg(valueNameToken, varInfo);
   else
     issueUndecoratedMsg(valueNameToken);
   defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
+}
+
+private void issueUndefinedValueNameMsg(Token valueNameToken, VarInfo varInfo) {
+  errs.collectError( program, valueNameToken, "Value "+ valueNameToken.getText()
+                      +" has not been defined for the variable "+ variableName(valueNameToken)
+                      +" that was declared in scope "+ varInfo.getScopeWhereDeclared());
 }
 
 /** We generate the missing VarInfo and make sure that it has some current value decoration, hoping
