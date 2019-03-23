@@ -139,12 +139,7 @@ public Void visitIfStmt(IfStmtContext ctx) {
 
   BranchState holdBranchState = branchState;
 
-  if (branchState == BranchState.InitialBranch) // if-statement is nested in initial branch
-    checkIfBranches(ctx);
-  else if (branchState == BranchState.FollowingBranch) // if-statement is nested in following branch
-    checkIfBranches(ctx);
-  else // if-statement is not nested in another conditional branch
-    checkIfBranches(ctx);
+  checkIfBranches(ctx);
 
   branchState = holdBranchState;
   return null;
