@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import org.eclipse.jdt.annotation.Nullable;
 import tlang.Scope.VarInfo;
 import tlang.TLantlrParser.T_assignableContext;
@@ -26,7 +27,16 @@ Map<String, String> varToHeldLatestValue = new HashMap<>();
  * then all the same valueNames must be used in all the branches. If a complicated computation is
  * needed in just one branch, then the others might avoid extra computation by trivially assigning
  * the current value to the unneeded valueNames. */
-private HashSet<String> delegatedValueNames = new HashSet<>();;
+private HashSet<String> delegatedValueNames = new HashSet<>();
+
+/** The value of the variables at the end of the initial branch. If a following branch ends with a
+ * different valueName we change its value here to $T$. Then at the end of the conditional
+ * statement, we set that variable's varInfo.currentValueName to $T$. This will force the next
+ * refernce to the variable, whatever the valueName, to be seen as a reference to an overwritten
+ * valueName, and the code necessary to access the valueName's value will be generated, whether it
+ * was the ending currentValueName or not. */
+Map<String, String> varToEndingValueName = new HashMap<>();
+
 /**
  * @param scopeLabel
  * @param parent
@@ -80,6 +90,30 @@ void delegateInScope(String valueName, String currentValueName) {
   String varName = variableName(valueName);
   if ( ! varToHeldLatestValue.containsKey(varName)) {
     varToHeldLatestValue.put(varName, currentValueName);
+  }
+}
+
+void setEndingValueNames() {
+  Set<String> modififedVariables = varToHeldLatestValue.keySet();
+  for (String var : modififedVariables) {
+    VarInfo varInfo = getExistingVarInfo(var);
+    varToEndingValueName.put(var, varInfo.getCurrentValueName());
+  }
+}
+
+public void captureConflictingEndingValueNames() {
+  for (Entry<String,String> maplet : varToEndingValueName.entrySet()) {
+    String var = maplet.getKey();
+    String endingValueName = maplet.getValue();
+    VarInfo varInfo = getExistingVarInfo(var);
+    String currentValueName = varInfo.getCurrentValueName();
+    if ( ! endingValueName.equals(currentValueName) ) {
+      if (endingValueName != TLantlrRewriteVisitor.$T$)
+        varInfo.reusedValueNames.add(endingValueName);
+      varInfo.reusedValueNames.add(currentValueName);
+      varToEndingValueName.put(var, TLantlrRewriteVisitor.$T$);
+      varInfo.setCurrentValueName(TLantlrRewriteVisitor.$T$);
+    }
   }
 }
 

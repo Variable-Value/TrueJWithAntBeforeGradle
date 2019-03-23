@@ -466,11 +466,11 @@ Scenario: Assignments with no operational effect are commented out in Java
     int /*'*/a = 1;
     int /*'*/b = 2;
 
-    void assign() {
+    void assign() { int b$T$temp;
       a/*'temp*/ = 4;
       /*$T$* a'another = a'temp; *$T$*/
 
-      /*$T$* b'temp = 'b; *$T$*/ int b$T$temp = b/*'temp*/;
+      /*$T$* b'temp = 'b; *$T$*/ b$T$temp = b/*'temp*/;
       b/*'*/ = a/*'another*/;
       a/*'*/ = b$T$temp;
     }

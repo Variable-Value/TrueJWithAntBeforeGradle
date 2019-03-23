@@ -178,6 +178,8 @@ private InitialConditionalBranchScope checkFirstBranch(IfStmtContext ctx) {
   visitCodeScope(ctx.t_statement(0));
   currentScope = holdScope;
 
+  thenScope.setEndingValueNames();
+
   branchState = holdBranchState;
   return thenScope;
 }
@@ -200,7 +202,9 @@ private void checkFollowingBranch(
   currentScope = holdScope;
 
   issueMissingValueNameMessages(ctx, elseScope.getNestedValueNames());
-  //thenScope.setNewEnclosingScopeCurrentValues();
+  thenScope.captureConflictingEndingValueNames();
+  /* We leave the current value names of the variables at their ending values for the (last)
+   * following branch */
 
   branchState = holdBranchState;
   elseScope.setCollectionsToEmpty();
@@ -495,9 +499,6 @@ public Void visitT_identifier(T_identifierContext ctx) {
   return null;
 }
 
-//@formatter:off
-//The rest of the program has not been checked for preserving readability
-
 
 // *************** Helper methods *******************************
 
@@ -507,27 +508,41 @@ public void typeDeclarationVisit(String typeName, ParserRuleContext ctx) {
   // filled in the parent scope for that Scope object except for the instance of the top level type.
   // We let the Java compiler check for a single visible top-level type per file.
   final Scope parent = currentScope;
-  final Scope savedClassScopeFromFieldVisitor = scopeMap.get(ctx);
 
-  if (thisIsTheTopLevelType()) { topTypeName = typeName; }
-  if (savedClassScopeFromFieldVisitor == null) { //push new
-    currentScope = new Scope(typeName, parent);
-    scopeMap.put(ctx, currentScope);
-  } else { //or push existing
-    setParentIfInnerClass(savedClassScopeFromFieldVisitor, parent);
-    currentScope = savedClassScopeFromFieldVisitor;
-  }
+  if (thisIsTheTopLevelType())
+    topTypeName = typeName;
+  currentScope = typeScope(typeName, ctx, parent);
 
   visitChildren(ctx);
 
   currentScope.clearForCodeGeneration();
-  currentScope = parent; //pop
+  currentScope = parent; // pop
+}
+
+/** Use the class scope saved from the field Visitor for this rule context or create a new scope for
+ * this type. */
+private Scope typeScope(String typeName, ParserRuleContext ctx, final Scope parent) {
+  final Scope savedClassScopeFromFieldVisitor = scopeMap.get(ctx);
+  if (savedClassScopeFromFieldVisitor == null) {
+    Scope newScopeForType = new Scope(typeName, parent);
+    scopeMap.put(ctx, newScopeForType);
+    return newScopeForType;
+  } else {
+    setParentIfInnerClass(savedClassScopeFromFieldVisitor, parent);
+    return savedClassScopeFromFieldVisitor;
+  }
 }
 
 private void setParentIfInnerClass(Scope possibleInnerClass, Scope parent) {
-  if (possibleInnerClass.parent == null)  // yes, it's an inner class
-    possibleInnerClass.setParent(currentScope);
+  if (isInnerClass(possibleInnerClass))
+    possibleInnerClass.setParent(parent);
 }
+private boolean isInnerClass(Scope possibleInnerClass) {
+  return possibleInnerClass.parent == null;
+}
+
+//@formatter:off
+//The rest of the program has not been checked for preserving readability
 
 /** Check for possible values in a value name that is being assigned a value.
  * @implementation We Define the new value name, even if there was an error, in hopes of finding

@@ -191,7 +191,7 @@ void clear() {
 
 
   // inner
-  class VarInfo {
+  static class VarInfo {
 
     private Scope scopeWhereDeclared;
 

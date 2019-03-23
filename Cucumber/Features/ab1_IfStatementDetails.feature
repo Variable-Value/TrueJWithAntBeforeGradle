@@ -235,10 +235,11 @@ Scenario: A reference to a value name from a following branch is to the enclosin
 
 #  @Ignore -------------------
 
-# Scenario: Different orders of execution for reused value names
+#Scenario: Order of valueNames in different branches is not an issue
 #
-#    All branches of a conditional statement must be considered when looking for reuse. It's possible
-#    for a value name to require reuse in one branch but not the other.
+#    The different branches of a conditional statement must create all the same value names, but they
+#    do not need to create them in the same order. Even the last value name for a variable may be
+#    different in different branches.
 
 # END @Ignore --------------------
 

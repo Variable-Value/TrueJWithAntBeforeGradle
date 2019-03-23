@@ -118,12 +118,33 @@ Scenario: An if-then-statement, without the else clause, cannot set values in bo
 
 Scenario: Always include definitions of value names in all branches
 
-  The definitions in the else branch are often trivial, and the compiler omits them in the generated
-  code. This may be simplified in future versions if a suitable symbol or keyword can be found,
-  perhaps "default", or as a pseudo-function like "default(a', b')", or even as a default-clause
-  that is an alternative to the else-clause.
+    Every branch of a conditional statement must define the same value names. If this were not true,
+    then the only value names that could be reused in the code following the conditional statement
+    would be those that were defined in all branches. So at the point where a value name was reused,
+    all paths through the preceding code would need to be checked to ensure that each one defined
+    the value name. And the worst part would be that it would be very difficult to help a programmer
+    pinpoint where the missing definition was in an error message.
 
-  But a valid run unit is
+    By insisting that every branch define the same value names, we ensure that the programmer always
+    has a consistent set of prior value names. And our error messages are helpful because they point
+    to the branch that omits a value name, or misspells it, or attempts to define a new name that
+    was not in prior branches.
+
+    Sometimes a value name will be needed in only one branch. When this happens, one approach is for
+    the programmer to use a new local variable instead. Otherwise the programmer will be required to
+    define that value name in another branch solely because it was needed in this branch. However,
+    in the other branch, if the programmer writes this otherwise unneeded definition as a trivial
+    assignment of the latest value to the needed value name, the compiler will recognize that it
+    doesn't need to generate any code to establish the truth of the assignment's semantics, and that
+    semantics will still be available for use in status expressions following the conditional
+    statement.
+
+    Although we require the value names to be the same from branch to branch, we do not require them
+    to be defined in the same order. Even the last value name used for a variable can be different from one branch to another.
+
+    The coding could be simplified if a suitable default value for the missing value names from a branch could be established, perhaps the first or last value of the variable in the branch scope. Then a perhaps a pseudo-function could be used taking parameters of the value names that would otherwise be undefined, for instance, "default(a', b')", or just "default", or the compiler could always default the value names without requiring extra code. A disadvantage of this approach is that it makes the mapping from the executable code to its meaning a little more obscure.
+
+  * a valid run unit is
     """
     class Swapper_2 {
 
@@ -132,8 +153,8 @@ Scenario: Always include definitions of value names in all branches
 
     void validSwap() {
       if ('a = 'b) {
-        a' = 'a; // the Java compiler generates a null operation a = a and b = b
-        b' = 'b; // for a = a and b = b
+        a' = 'a; // the compiler generates a null operation for the assignments
+        b' = 'b;
       } else {
         a' = 'b;
         b' = 'a;
@@ -143,6 +164,34 @@ Scenario: Always include definitions of value names in all branches
 
     } // end class
     """
+
+  * a valid run unit is
+    """
+    class Swapper_3 {
+
+    int a;
+    int b;
+
+    void validSwap() {
+      if ('a = 'b) {
+        a'temp1 = 'b;
+        a'temp2 = a'temp1;
+        b'temp1 = 'a;
+        b'temp2 = b'temp1;
+      } else {
+        a'temp2 = 'b; // note the different order of assignment here to the variables a and b
+        a'temp1 = a'temp2;
+        b'temp2 = 'a;
+        b'temp1 = b'temp2;
+      }
+      a' = a'temp2;
+      b' = b'temp2;
+    }
+    means(a' = 'b && b' = 'a);
+
+    } // end class
+    """
+    # see the generated code for this example in ...EndToEnd.feature
 
 #  Scenario: A more complex example - ThreeSort
 #

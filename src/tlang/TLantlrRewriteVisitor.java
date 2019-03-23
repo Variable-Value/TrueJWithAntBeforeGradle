@@ -133,11 +133,17 @@ protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx)
       String varName = varEntry.getKey();
       VarInfo varInfo = varEntry.getValue();
       String initValue = decoratorString+ varName;
-      if (varInfo.reusedValueNames.contains(initValue)) {
-        tempInitializations.append(" ")       .append(varInfo.getType())
-                           .append(" "+ $T$)  .append(varName)
-                           .append(" = /*'*/").append(varName)
-                           .append(";");
+      for (String reusedName : varInfo.reusedValueNames) {
+        if (reusedName.equals(initValue)) {
+          tempInitializations.append(" ")       .append(varInfo.getType())
+                             .append(" "+ $T$)  .append(varName)
+                             .append(" = /*'*/").append(varName)
+                             .append(";");
+        } else {
+          tempInitializations.append(" ")       .append(varInfo.getType())
+                             .append(" ")       .append(reusedName.replace("'", $T$))
+                             .append(";");
+        }
       }
     }
     rewriter.insertAfter(openBraceForBlock, tempInitializations);
@@ -167,19 +173,24 @@ visitAssignStmt(AssignStmtContext ctx) {
   String assignedValueName = assignedValueToken.getText();           // a'
   String varName = variableName(assignedValueName);                  // a
 
-  if (sameVariable(varName, ctx.t_expression())) {
+  VarInfo varInfo = currentScope.getExistingVarInfo(varName);        // a
+  if (  sameVariable(varName, ctx.t_expression())
+     && ! (  isReusedAfterOverwrite(ctx.t_expression().getText(), varInfo)
+//          || isReusedAfterOverwrite(assignedValueName, varInfo)
+          )
+     ) {
     commentTheCode(ctx);                  // whole command becomes   /*$T$* a' = 'a + 1; *$T$*/
   } else {
     visit(ctx.t_expression());                                       // becomes /*'*/a + 1
     visit(ctx.t_assignable());                                       // becomes a/*'*/
       // (equal sign and ; are unchanged) so whole command becomes   a/*'*/ = /*'*/a + 1;
   }
-  VarInfo varInfo = currentScope.getExistingVarInfo(varName);        // a
   if (isReusedAfterOverwrite(assignedValueName, varInfo)) {          // a' is reused later in code
     rewriter.insertAfter(ctx.getStop(), saveOriginalValue(assignedValueName, varInfo));
-    // saves the value for later reuse by inserting "int a$T$ = a/*'*/;" after the assignment
-    // TODO: the value inserted should only be like "a$T$ = a/*'*/;" and the "int a$T$;" should be
-    //       declared at the declaration of the variable "a" so it will have the scope of "a".
+    // saves the value for later reuse by inserting "a$T$ = a/*'*/;" after the assignment
+    // TODO: An "int a$T$;" should be declared at the declaration of a local variable "a" so it will
+    //       have the scope of "a". We have already taken care of fields, so it will only be needed
+    //       after local variable declarations.
   }
   return null;
 } // @formatter:on
@@ -196,10 +207,7 @@ private boolean isReusedAfterOverwrite(String assignedValueName, VarInfo varInfo
 }
 
 private String saveOriginalValue(String assignedValueName, VarInfo varInfo) {
-  return String.format(" %s %s = %s;"
-                      , varInfo.getType(), newID(assignedValueName), dedecorate(assignedValueName)
-                      );
-  //  return " "+ variableType +" "+ javaValueName +" = "+ dedecorate(assignedValueName) +";";
+  return " "+ newID(assignedValueName) +" = "+ dedecorate(assignedValueName) +";";
 }
 
 /**
@@ -311,7 +319,7 @@ visitT_UndecoratedIdentifier(T_UndecoratedIdentifierContext undecoratedCtx) {
  * @param id a possibly decorated T language identifier
  * @return a valid Java form to use for the <code>id</code>
  */
-private String newID(final String id) {
+private String newID(String id) {
   if ( ! inAssignableExpression && isReusedValue(id))
     return id.replace(decoratorString, $T$); // e.g., 'id --> $T$id
   else
