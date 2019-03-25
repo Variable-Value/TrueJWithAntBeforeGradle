@@ -144,9 +144,7 @@ public Void visitIfStmt(IfStmtContext ctx) {
   branchState = holdBranchState;
   return null;
 }
-/**
- * @param ctx
- */
+
 private void checkIfBranches(IfStmtContext ctx) {
   InitialConditionalBranchScope thenScope = checkFirstBranch(ctx);
   if (ctx.t_statement(1) != null)
@@ -156,10 +154,6 @@ private void checkIfBranches(IfStmtContext ctx) {
   thenScope.setCollectionsToEmpty();
 }
 
-/**
- * @param ctx
- * @return
- */
 private InitialConditionalBranchScope checkFirstBranch(IfStmtContext ctx) {
   BranchState holdBranchState = branchState;
   branchState = BranchState.InitialBranch;
