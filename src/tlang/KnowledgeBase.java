@@ -141,10 +141,16 @@ private static Theory theory;
  * {@link #prologConsistencyResult(SolveInfo)} */
 private static final String prologConsistencyResult = "ConsistencyResult";
 
-/** The logical conjunction operator, AND, is written "/\" in the KnowledgeBase first-order predicate
- * language.
- */
-public static final String AND = " /\\ "; //  AND = /\
+/** The logical conjunction operator, AND, is written as <code>/\</code> in the first-order
+ * predicate language for the KnowledgeBase and the Prolog prover. */
+public static final String and = " /\\ ";
+/** The logical disjunction operator, OR, is written as <code>\/</code> in the first-order predicate
+ * language for the KnowledgeBase and the Prolog prover. */
+public static final String or = "\\/";
+/** The logical negation operator, NOT, is written as <code>-</code> in the first-order predicate
+ * language for the KnowledgeBase and the Prolog prover */
+public static final String not = "-";
+
 
 /** The result of an attempted proof will be one of:
  * <ul> <li>{@link #provenTrue}
@@ -377,7 +383,7 @@ public ProofResult substituteIfProven(String newFact) {
  * @return a {@link ConsistencyResult}
  */
 public ConsistencyResult checkConsistency(String statement) {
-  String testString = parens(statement) + AND + conjoined(facts);
+  String testString = parens(statement) + and + conjoined(facts);
   SolveInfo solutionInfo = checkForConsistency(testString);
   return prologConsistencyResult(solutionInfo);
   }
@@ -412,6 +418,7 @@ InvalidResultFromProverException(String resultState) {
 }
 
 private SolveInfo checkForConsistency(String testString) {
+  System.out.println("Checking consistency: "+ testString);
   SolveInfo info = engine.solve(Term.createTerm(prologCommand(testString), engine.getOperatorManager()));
 
   if (testMode == SolverInTestMode.on) {
@@ -530,7 +537,7 @@ private String conjoined(Deque<String> stack) {
   //TODO: use Collectors.joining
   String first = stack.isEmpty() ? "true" : parens(stack.pop());
     // TODO: just use else to explore why method should ever be used when stack.isEmpty()
-  return stack.stream().reduce(first, (previous, next) -> previous + AND + parens(next)) ;
+  return stack.stream().reduce(first, (previous, next) -> previous + and + parens(next)) ;
 }
 
 private String parens(String s) {
