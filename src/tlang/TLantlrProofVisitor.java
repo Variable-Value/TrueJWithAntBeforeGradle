@@ -13,10 +13,12 @@ import tlang.KnowledgeBase.ProofResult;
 import tlang.Scope.VarInfo;
 import tlang.TLantlrParser.T_blockStatementContext;
 import tlang.TLantlrParser.T_localVariableDeclarationContext;
+import tlang.TLantlrParser.T_parExpressionContext;
 import tlang.TLantlrParser.T_statementContext;
 import tlang.TLantlrParser.T_typeDeclarationContext;
 import static tlang.TUtil.*;
 import static tlang.TLantlrParser.*;
+import static tlang.KnowledgeBase.*;
 
 /** Check all constraints for consistency and check that all deductions are supported. This is the
  * final pass before the compiler generates Java code. Eventually, the proof pass will be rather
@@ -45,13 +47,6 @@ import static tlang.TLantlrParser.*;
 class TLantlrProofVisitor extends RewriteVisitor {
 
 private static final String prover = "Prover";
-/** The logical and-operator for the prover, /\ */
-private static final String and = "/\\";
-/** The logical or-operator for the prover, \/ */
-private static final String or = "\\/";
-/** The logical not-operator for the prover, the negative sign - */
-private static final String not = "-";
-
 /* TODO: remove the following CollectingMsgListener from the knowledgeBase and have the calling
  * program decide what to do. */
 
@@ -215,7 +210,7 @@ public Void visitAssignStmt(AssignStmtContext ctx) {
 //    rewriter.replace(op,"===");
 //    assignmentCode = assignmentCode.replaceFirst("=", "===");
 //  }
-  String lhs = par(rewriter.source(ctx.t_expression()));
+  String lhs = parenthesize(rewriter.source(ctx.t_expression()));
 //  String src  = withoutSemicolon(rewriter.source(ctx));
   String src = rhs + op + lhs;
   rewriter.substituteText(ctx, src);
@@ -267,8 +262,8 @@ private String withoutSemicolon(String code) {
   boolean statementsAreActive = true; // so far
   String meaning = "true";
   for (int i = ctx.t_blockStatement().size()-1; i >= 0; i-- ) {
-    T_blockStatementContext blockCtx = ctx.t_blockStatement(i);
-    T_statementContext statement = blockCtx.t_statement();
+    T_blockStatementContext bStCtx = ctx.t_blockStatement(i);
+    T_statementContext statement = bStCtx.t_statement();
     if (statement != null) {
       if (statementsAreActive) {
         meaning += and + rewriter.source(statement);
@@ -276,7 +271,7 @@ private String withoutSemicolon(String code) {
       } else
         ;
     } else {
-      T_localVariableDeclarationContext localDeclaration = blockCtx.t_localVariableDeclaration();
+      T_localVariableDeclarationContext localDeclaration = bStCtx.t_localVariableDeclaration();
       if (localDeclaration != null) {
 //        String type = localDeclaration.t_type().getText();
 //        for (T_variableDeclaratorContext varOrValueName : localDeclaration.t_variableDeclarator()) {
@@ -287,14 +282,14 @@ private String withoutSemicolon(String code) {
 //          }
 //        types += and + " type("+ type +","+ localDeclaration.t_variableDeclarator(v));
       } else {
-        T_typeDeclarationContext localType = blockCtx.t_typeDeclaration();
+        T_typeDeclarationContext localType = bStCtx.t_typeDeclaration();
         // localType cannot be null because of syntax
           // blah blah blah
       }
     }
-  rewriter.substituteText(ctx, meaning);
   }
 
+  rewriter.substituteText(ctx, meaning);
 
   currentScope = parentScope;
   return null;
@@ -303,19 +298,30 @@ private String withoutSemicolon(String code) {
 /** Translate if-statement to logic. */
 @Override
 public Void visitIfStmt(IfStmtContext ctx) {
-  visitChildren(ctx);
-
-  String condition = rewriter.source(ctx.t_parExpression());
-  String thenMeaning = par(rewriter.source(ctx.t_statement(0)));
+  String condition = translateCondition(ctx.t_parExpression());
+  // String thenMeaning = parenthesize(rewriter.source(ctx.t_statement(0)));
+  String thenMeaning = checkBranch(condition, ctx.t_statement(0));
   T_statementContext elseContext = ctx.t_statement(1);
   if (elseContext == null) {
-    rewriter.substituteText(ctx, condition + "==>" + thenMeaning);
+    rewriter.substituteText(ctx, thenMeaning + or + not + condition);
   } else {
-    String elseMeaning = par(rewriter.source(elseContext));
-    rewriter.substituteText(ctx, condition + and + thenMeaning
-                    + or + not + condition + and + elseMeaning);
+    // String elseMeaning = parenthesize(rewriter.source(elseContext));
+    String elseMeaning = checkBranch(not + condition, elseContext);
+    rewriter.substituteText(ctx, thenMeaning + or + elseMeaning);
   }
+  kb.assume(rewriter.source(ctx));
   return null;
+}
+
+private String translateCondition(T_parExpressionContext conditionCtx) {
+  visit(conditionCtx);
+  String condition = rewriter.source(conditionCtx);
+  return condition;
+}
+
+private String checkBranch(String condition, T_statementContext branchCtx) {
+  visit(branchCtx);
+  return parenthesize(condition + and + rewriter.source(branchCtx));
 }
 
 /** Translate <code>!</code> to the provers negation <code>-</code> */
@@ -334,7 +340,7 @@ public Void visitConjRelationExpr(TLantlrParser.ConjRelationExprContext ctx) {
   visitChildren(ctx);
 
   translateOps(ctx);
-  rewriter.substituteText(ctx, par(rewriter.source(ctx)));
+  rewriter.substituteText(ctx, parenthesize(rewriter.source(ctx)));
   return null;
 }
 
@@ -575,7 +581,7 @@ private String expandForall(String statement) {
 /* ************************ Helper methods ************************************/
 
 /** Parenthesize the string */
-private String par(String expression) {
+private String parenthesize(String expression) {
   return "(" + expression + ")";
 }
 
