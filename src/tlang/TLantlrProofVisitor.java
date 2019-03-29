@@ -11,7 +11,11 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import tlang.KnowledgeBase.ProofResult;
 import tlang.Scope.VarInfo;
+import tlang.TLantlrParser.InitializedVariableContext;
+import tlang.TLantlrParser.MeansStmtContext;
 import tlang.TLantlrParser.T_blockStatementContext;
+import tlang.TLantlrParser.T_expressionContext;
+import tlang.TLantlrParser.T_expressionDetailContext;
 import tlang.TLantlrParser.T_localVariableDeclarationContext;
 import tlang.TLantlrParser.T_parExpressionContext;
 import tlang.TLantlrParser.T_statementContext;
@@ -204,7 +208,7 @@ public Void visitAssignStmt(AssignStmtContext ctx) {
   visitChildren(ctx);
 
   String rhs = rewriter.source(ctx.t_assignable());
-  String op = needsEquivalenceForBooleanTarget(ctx) ? "===" : "=";
+  String op = needsEquivalenceForBooleanTarget(ctx) ? "===" : " = ";
 //  if (needsEquivalenceForBooleanTarget(ctx)) {
 //    Token op = (Token)ctx.getChild(1).getPayload();
 //    rewriter.replace(op,"===");
@@ -253,6 +257,8 @@ private String withoutSemicolon(String code) {
 /** Translate a block of statements into the meaning of its statements, changing the surrounding
  * braces to parentheses. Loop from the bottom up, stopping with the latest means-statement that was
  * issued, which summarizes everything needed from the code above it in this block. */
+/* TODO: keep looking after the means is encountered for variable declarations to collect type
+ * information for all valueNames that occur in the meaningful code. */
 @Override public Void visitT_block(T_blockContext ctx) {
   final Scope parentScope = currentScope;
   currentScope = scopeMap.get(ctx);
@@ -260,31 +266,43 @@ private String withoutSemicolon(String code) {
   visitChildren(ctx);
 
   boolean statementsAreActive = true; // so far
+  String types = "true";
   String meaning = "true";
   for (int i = ctx.t_blockStatement().size()-1; i >= 0; i-- ) {
+    System.out.println("Block line "+i+" of "+ctx.t_blockStatement().size()+":"+rewriter.source(ctx.t_blockStatement(i)));
     T_blockStatementContext bStCtx = ctx.t_blockStatement(i);
     T_statementContext statement = bStCtx.t_statement();
     if (statement != null) {
       if (statementsAreActive) {
-        meaning += and + rewriter.source(statement);
-        statementsAreActive = (statement instanceof MeansStmtContext) ? false : true;
+        if (statement instanceof MeansStmtContext) {
+          statementsAreActive = false;
+          meaning += and + rewriter.source(meansExpressionCtx(statement));
+        } else {
+          meaning += and + rewriter.source(statement);
+        }
       } else
         ;
     } else {
       T_localVariableDeclarationContext localDeclaration = bStCtx.t_localVariableDeclaration();
       if (localDeclaration != null) {
-//        String type = localDeclaration.t_type().getText();
-//        for (T_variableDeclaratorContext varOrValueName : localDeclaration.t_variableDeclarator()) {
-//          if (varOrValueName instanceof UninitializedVariableContext) {
-//            then;
-//          } else {
-//            orElse;
-//          }
-//        types += and + " type("+ type +","+ localDeclaration.t_variableDeclarator(v));
+        String type = localDeclaration.t_type().getText();
+        for (T_variableDeclaratorContext initialization : localDeclaration.t_variableDeclarator()) {
+          if (initialization instanceof UninitializedVariableContext) {
+            InitializedVariableContext uninitStatement = (InitializedVariableContext)initialization;
+            String valueName = rewriter.source(uninitStatement.t_initializedVariableDeclaratorId());
+            types += and + " type("+ type +","+ valueName +")";
+          } else { // initialization instanceof InitializedVariableContext
+            InitializedVariableContext initStatement = (InitializedVariableContext)initialization;
+            String valueName = rewriter.source(initStatement.t_initializedVariableDeclaratorId());
+            String value = rewriter.source(initStatement.t_variableInitializer());
+            meaning += and + valueName + " = " + value;
+            types += and + " type("+ type +","+ valueName +")";
+          }
+        }
       } else {
         T_typeDeclarationContext localType = bStCtx.t_typeDeclaration();
-        // localType cannot be null because of syntax
-          // blah blah blah
+        //if (localType != null) // localType cannot be null because of syntax
+        // TODO: After programming type definition, make sure that local type definition works, too.
       }
     }
   }
@@ -293,6 +311,10 @@ private String withoutSemicolon(String code) {
 
   currentScope = parentScope;
   return null;
+}
+
+private T_expressionContext meansExpressionCtx(T_statementContext statement) {
+  return ((MeansStmtContext)statement).t_means().t_expression();
 }
 
 /** Translate if-statement to logic. */
@@ -367,7 +389,7 @@ private void translateOps(ConjRelationExprContext ctx) {
   if ("<=".equals(operator))
     rewriter.replace(ctx.op, "=<");
   if ("=".equals(operator))
-    rewriter.replace(ctx.op, hasBooleanTerms(ctx.t_expressionDetail(0)) ? "===" : "=");
+    rewriter.replace(ctx.op, hasBooleanTerms(ctx.t_expressionDetail(0)) ? "===" : " = ");
   if ("!=".equals(operator))
     rewriter.replace(ctx.op, hasBooleanTerms(ctx.t_expressionDetail(0)) ? "=#=" : "#=");
 }
@@ -503,9 +525,10 @@ public Void visitConjunctiveBoolExpr(ConjunctiveBoolExprContext ctx) {
 }
 
 
-/** Submit the means statement to the {@link KnowledgeBase} for proof, and substitute the
- * <code>means</code> statement for all the preceding assumptions, preserving the type information
- * for any value names that occur in the <code>means</code> statement.
+/** Translate the expression of the means-statement into the KnowledgeBase language and submit the
+ * means statement to the {@link KnowledgeBase} for proof, then substitute the <code>means</code>
+ * expression for all the preceding assumptions, preserving the type information for any value names
+ * that occur in the <code>means</code> statement.
  * <p>
  * {@inheritDoc}
  * @return a null */
@@ -515,22 +538,28 @@ public Void visitT_means(T_meansContext ctx) {
 
   T_expressionDetailContext predicate = ctx.t_expression().t_expressionDetail();
   String meansStatementForProver = prologCode(predicate);
+  System.out.println("Prove means: "+ meansStatementForProver);
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
-  if ( !(result == ProofResult.provenTrue))
-    proveEachConjunct(predicate);
+  System.out.println("Result: "+result);
+  if ( result != ProofResult.provenTrue)
+    result = proveEachConjunct(predicate);
+  rewriter.substituteText(ctx.t_expression(), meansStatementForProver);
   return null;
 }
 
 private ProofResult proveEachConjunct(T_expressionDetailContext conjunction) {
+  System.out.println("Prove conjunction: "+ prologCode(conjunction));
   if (isSingleConjunct(conjunction)) {
+    System.out.println("Prove single conjunct: "+ prologCode(conjunction));
     ProofResult result = kb.assumeIfProven(prologCode(conjunction));
     reportAnyError(conjunction, result);
     return result;
   }
 
   for (ParseTree child : conjunction.children) {
-    if (isConjunction(child) || child instanceof T_expressionDetailContext) {
-      ProofResult conjunctResult = proveEachConjunct((T_expressionDetailContext)child);
+    if (child instanceof T_expressionDetailContext) {
+      T_expressionDetailContext expr = (T_expressionDetailContext)child;
+      ProofResult conjunctResult = proveEachConjunct(expr);
       if (conjunctResult != ProofResult.provenTrue)
         return conjunctResult;
     }
