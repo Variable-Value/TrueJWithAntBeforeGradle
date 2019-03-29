@@ -648,7 +648,7 @@ Scenario: A single valid literal can be proven
 
   * A valid T Language run unit is
     """
-    class SwapAgain {
+    class SwapAgain1 {
 
     int a, b;
 
@@ -665,9 +665,11 @@ Scenario: A single valid literal can be proven
 
 Scenario: The prover detects a single invalid literal
 
+  * using feature "***** aa1_valueNamesDetail.feature - The prover detects a single invalid literal - first test *****"
+
   When an invalid run unit is
     """
-    class SwapAgain {
+    class SwapAgain2 {
 
     int a, b;
 
@@ -697,7 +699,7 @@ Scenario: Nested && and || translate to the Prover correctly
 
   * A valid T Language run unit is
     """
-    class SwapAgain {
+    class SwapAgain3 {
 
     int a, b;
 
