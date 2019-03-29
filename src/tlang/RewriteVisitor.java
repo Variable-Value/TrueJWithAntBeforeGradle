@@ -7,9 +7,7 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.eclipse.jdt.annotation.Nullable;
-import tlang.TLantlrParser.T_blockContext;
-import tlang.TLantlrParser.T_constructorBodyContext;
-import tlang.TLantlrParser.T_methodBodyContext;
+import static tlang.TLantlrParser.*;
 
 abstract class RewriteVisitor extends TLantlrBaseVisitor<Void> {
 
@@ -27,19 +25,19 @@ public RewriteVisitor( TokenStream             tokenStream
   this.rewriter = new ExtendedRewriter(tokenStream);
 }
 
-@Override public Void visitT_classDeclaration(TLantlrParser.T_classDeclarationContext ctx) {
+@Override public Void visitT_classDeclaration(T_classDeclarationContext ctx) {
   return typeVisit(ctx);
 }
 
-@Override public Void visitEnumDeclaration(TLantlrParser.EnumDeclarationContext ctx) {
+@Override public Void visitEnumDeclaration(EnumDeclarationContext ctx) {
   return typeVisit(ctx);
 }
 
-@Override public Void visitT_interfaceDeclaration(TLantlrParser.T_interfaceDeclarationContext ctx) {
+@Override public Void visitT_interfaceDeclaration(T_interfaceDeclarationContext ctx) {
   return typeVisit(ctx);
 }
 
-@Override public Void visitAnnotationTypeDeclaration(TLantlrParser.AnnotationTypeDeclarationContext ctx) {
+@Override public Void visitAnnotationTypeDeclaration(AnnotationTypeDeclarationContext ctx) {
   return typeVisit(ctx);
 }
 
@@ -50,7 +48,7 @@ public RewriteVisitor( TokenStream             tokenStream
  * @return a null to indicate that there are no children to visit.
  */
 @Override public Void
-visitT_constructorDeclaration(TLantlrParser.T_constructorDeclarationContext ctx) {
+visitT_constructorDeclaration(T_constructorDeclarationContext ctx) {
   Scope parentScope = currentScope;
   currentScope = scopeMap.get(ctx);
   final T_constructorBodyContext bodyCtx = ctx.t_constructorBody();
@@ -68,7 +66,7 @@ visitT_constructorDeclaration(TLantlrParser.T_constructorDeclarationContext ctx)
  * @return a null to indicate that there are no children to visit.
  */
 @Override public Void
-visitT_initializer(TLantlrParser.T_initializerContext ctx) {
+visitT_initializer(T_initializerContext ctx) {
   Scope parentScope = currentScope;
   currentScope = scopeMap.get(ctx);
   final T_blockContext bodyCtx = ctx.t_block();
@@ -86,7 +84,7 @@ visitT_initializer(TLantlrParser.T_initializerContext ctx) {
  * @return a null to indicate that there are no children to visit.
  */
 @Override public Void
-visitT_methodDeclaration(TLantlrParser.T_methodDeclarationContext ctx) {
+visitT_methodDeclaration(T_methodDeclarationContext ctx) {
   Scope parentScope = currentScope;
   currentScope = scopeMap.get(ctx);
   final T_methodBodyContext bodyCtx = ctx.t_methodBody();
@@ -102,7 +100,7 @@ visitT_methodDeclaration(TLantlrParser.T_methodDeclarationContext ctx) {
  * @return a null to indicate that there are no children to visit.
  */
 @Override public Void
-visitT_block(TLantlrParser.T_blockContext ctx) {
+visitT_block(T_blockContext ctx) {
   final Scope parentScope = currentScope;
   currentScope = scopeMap.get(ctx);
 

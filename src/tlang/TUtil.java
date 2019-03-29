@@ -9,7 +9,10 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
@@ -24,13 +27,16 @@ import static tlang.TLantlrParser.*;
  */
 public class TUtil {
 
-
+static final HashMap<String,String> EMPTY_HASH_MAP = new HashMap<>(0);
+static final HashSet<String> EMPTY_HASH_SET = new HashSet<>(0);
 static final char decorator = '\'';
 static final String decoratorString = "'";
 
-@SuppressWarnings("null") // Arrays.asList perfors unchecked conversion
+@SuppressWarnings("null") // Arrays.asList performs unchecked conversion
 final static List<Integer> decoratedTokenTypes
-    = Arrays.asList(PreValueName, PostValueName, MidValueName);
+    = Arrays.asList(TLantlrParser.PreValueName,
+                    TLantlrParser.PostValueName,
+                    TLantlrParser.MidValueName);
 
 /**
  * Read file as a token stream.
@@ -170,27 +176,18 @@ compileSource(String packageName, String typeName, String javaCodeFromT
   return wasSuccessful;
 }
 
+ final static String variableName(final Token valueNameToken) {
+   return variableName(valueNameToken.getText());
+ }
 
 final public static String
 variableName(String valueName) {
   final int pos = decoratorPosition(valueName);
-  if      (pos == -1) { return valueName; }                      // return abc for abc
-  else if (pos ==  0) { return knownToBeNonNull(valueName.substring(1)); }     // return abc for 'abc
-  else                { return knownToBeNonNull(valueName.substring(0,pos)); } // return abc for abc' or abc'de
+  if      (pos == -1) { return valueName; }                  // return abc for abc
+  else if (pos ==  0) { return valueName.substring(1); }     // return abc for 'abc
+  else                { return valueName.substring(0,pos); } // return abc for abc' or abc'de
 }
 
-
-/**
- * Returns the argument without change, but with appropriate annotations to pass non-null checking.
- * DANGER: The calling code must guarantee that the input parameter is NOT NULL.
- *
- * @param nonNull a string guaranteed to be nonnull by the calling code
- * @return the string nonNull with appropriate annotation
- */
-@SuppressWarnings("null")
-public static String knownToBeNonNull(@Nullable String nonNull) {
-  return nonNull;
-}
 
 final public static int decoratorPosition(String valueName) {
   return valueName.indexOf(decorator);
@@ -205,11 +202,12 @@ final public static boolean isDecorated(String valueName) {
 }
 
 final public static boolean isUndecorated(Token valueToken) {
-  return (! isDecorated(valueToken));
+  return valueToken.getType() == UndecoratedIdentifier;
+  //return (! isDecorated(valueToken)); //TODO: remove this line
 }
 
 final public static boolean isUndecorated(String valueName) {
-  return (! isDecorated(valueName));
+  return (! isDecorated(valueName)); //TODO: remove this line
 }
 
 final public static boolean isMidDecorated(Token valueToken) { // e.g., abc'de
@@ -243,6 +241,10 @@ public static void printMap(java.util.Map<String, String> map) {
   for (java.util.Map.Entry<String, String> entry : map.entrySet()) {
     System.out.println(entry.getKey() +" --> "+ entry.getValue());
   }
+}
+
+boolean isMissing(Optional<?> optional) {
+  return !optional.isPresent();
 }
 
 /** the string argument is all white space or empty

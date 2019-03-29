@@ -1,13 +1,15 @@
 package tlang;
 
 import java.util.Map;
+import java.util.Optional;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 import org.eclipse.jdt.annotation.Nullable;
 import tlang.Scope;
-
+import tlang.Scope.VarInfo;
 import static tlang.TLantlrParser.*;
+import static tlang.TUtil.variableName;
 import static tlang.Scope.*;
 
 /**
@@ -43,13 +45,14 @@ visitT_classDeclaration(T_classDeclarationContext classCtx) {
   Scope localParent = currentScope;
 
   String classStaticScopeName = classCtx.UndecoratedIdentifier().getText();
-  Scope classScope= new Scope(program, classStaticScopeName, scopeParentLeftNullHere);
-    /* For classes that are at the top level in their compile unit, a null parent indicates that they
-     * are a top level class. For inner classes, the correct enclosing scope will be determined
-     * during the ContextCheckVisitor.
-     * TODO: Create a test and implement the inner-class parent assignment.
-     */
-  currentScope = new Scope(program, "this", classScope);
+  Scope classScope= new Scope(classStaticScopeName, scopeParentLeftNullHere);
+  /* For classes that are at the top level in their compile unit, a null parent indicates that they
+   * are a top level class. For inner classes, the correct enclosing scope will be determined during
+   * the ContextCheckVisitor.
+   *
+   * TODO: Create a test and implement the inner-class parent
+   * assignment. */
+  currentScope = new Scope("this", classScope); // instance scope
   scopeMap.put(classCtx, currentScope);                                         // push
     // note that static fields will need to be defined with
     // currentScope.parent.declareFieldName(fieldId, idDeclarationCtx.idType)
@@ -60,10 +63,10 @@ visitT_classDeclaration(T_classDeclarationContext classCtx) {
   return null;
 }
 
-public void typeDeclarationVisit(ParserRuleContext ctx, String scopeName) {
+public void otherTypeDeclarationVisit(ParserRuleContext ctx, String scopeName) {
   final Scope localParent = currentScope; // push
 
-  currentScope= new Scope(program, scopeName, scopeParentLeftNullHere);
+  currentScope= new Scope(scopeName, scopeParentLeftNullHere);
     // a scope within a method would not point to the correct parent if we were
     // to fill in parent scope here, so we wait until ContextCheckVisitor
   scopeMap.put(ctx, currentScope);
@@ -78,7 +81,7 @@ public void typeDeclarationVisit(ParserRuleContext ctx, String scopeName) {
 @Override
 public Void visitT_enumDeclaration(T_enumDeclarationContext ctx) {
   String scopeName = ctx.UndecoratedIdentifier().getText();
-  typeDeclarationVisit(ctx, scopeName);
+  otherTypeDeclarationVisit(ctx, scopeName);
   return null;
 }
 
@@ -88,7 +91,7 @@ public Void visitT_enumDeclaration(T_enumDeclarationContext ctx) {
 @Override
 public Void visitT_interfaceDeclaration(T_interfaceDeclarationContext ctx) {
   String scopeName = ctx.UndecoratedIdentifier().getText();
-  typeDeclarationVisit(ctx, scopeName);
+  otherTypeDeclarationVisit(ctx, scopeName);
   return null;
 }
 
@@ -112,7 +115,11 @@ public Void visitUninitializedField(UninitializedFieldContext uninitializedCtx) 
 
 private void declareANewField(final T_idDeclarationContext idDeclarationCtx) {
   final Token fieldId = idDeclarationCtx.getStart();
-  currentScope.declareFieldName(fieldId, idDeclarationCtx.idType);
+  Optional<VarInfo> newFieldInfo = currentScope.declareFieldName(fieldId, idDeclarationCtx.idType);
+  if ( ! newFieldInfo.isPresent() ) {
+    VarInfo otherField = currentScope.getConflictingVarDeclarationInfo(variableName(fieldId));
+    errs.collectError(program, fieldId, "The field "+ otherField.varName() +" has already been declared at line "+ otherField.getLineWhereDeclared());;
+  }
 }
 
 

@@ -602,15 +602,15 @@ t_expression // in order of most sticky to least sticky
   | t_expression ('+'|'-') t_expression                               # AdditiveExpr
   | t_expression ('<' '<' | '>' '>' '>' | '>' '>') t_expression       # ShiftExpr
   | t_expression op=('<' | '<=' | '=' | '>=' | '>' | '!=')
-                                          t_expression becauseOf?     # ConjCompareExpr
+                                          t_expression becauseOf?     # ConjRelationExpr
     // The becauseOf clause is included for use in equational proofs
-    // with comparison.
+    // with relational operators.
     // The allowed conjuctive sequence of operarators are
-    //   * sequence of '='s with or without a single '!=' (at either end)
+    //   * sequence of '='s with or without a single '!=' (in any position)
     //   * ascending  sequence including one or more of '<', '<=', or '='
     //   * descending sequence including one of more of '>', '>=', or '='
     // Note that == is not allowed in order to make a clean break with the Java
-    // conventions.
+    // conventions (we can start with making it deprecated).
 
   | t_expression 'instanceof' t_type                                  # InstanceOfExpr
   | t_expression '&' t_expression                                     # AndExpr
@@ -655,6 +655,13 @@ t_expression // in order of most sticky to least sticky
   | t_expression becauseOf                                           # BecauseExpr
   //| t_expression '==' t_expression                                 # ConjEqualsExpr
   | t_expression op=('<==' | '===' | '=!='| '==>') t_expression      # ConjunctiveBoolExpr
+      // Allowed conjunctive chains:
+      //   A sequence of ===
+      //   A sequence of === with a single embedded =!=, which implies =!=
+      //   A sequence of intermixed === and ==>, which implies ==>
+      //   A sequence of intermixed === and <==, which implies <==
+      //   Other sequences are prohibited, such as A ==> B =!= C <== D,
+      //                             which implies (A =!= D) | (A === false)
 //  | t_expression            // only = assignment allowed so these are invalid
 //      (  '='<assoc=right>
 //      | '+='<assoc=right> // a' += 'b would be a' = <a'current> + 'b
@@ -672,7 +679,8 @@ t_expression // in order of most sticky to least sticky
 //      t_expression
   ;
 
-// ComparesBecauseExpr //TODO: is this just leftover junk or something to think more about?
+// ComparesBecauseExpr //  is this needed for chaining relational operators:
+                       //  '<' | '<=' | '=' | '>=' | '>' | '!='
 //   :     '(' 'compares' becauseOf
 //         ')'                                                          // # ComparesBecauseExpr
 //         // if one of the above expressions has a label then all must
@@ -870,11 +878,12 @@ DOLLAR        : '$'  ;
 
 // §3.12 Operators
 
-// Equational Proof Conjunctive Operators
+// Conjunctive Boolean Operators
 
-CONJUNCTIVEBOOLEANEQUAL  : '===';
-CONJUNCTIVEIMPLIES       : '==>';
-CONJUNCTIVEIMPLIEDBY     : '<==';
+CONJUNCTIVE_BOOLEAN_EQUAL : '===';
+CONJUNCTIVE_IMPLIES       : '==>';
+CONJUNCTIVE_CONSEQUENCE   : '<==';
+CONJUNCTIVE_NOT_EQUAL     : '=!=';
 
 // §3.8 Identifiers (must appear after all keywords in the grammar)
 //      but valueNames are OK because none of the keywords contain apostrophe

@@ -16,8 +16,8 @@ private Scope child;
   public Scope getChild()            {return child;}
   public void  setChild(Scope child) {this.child = child;}
 
-public BackgroundScope(String program, String backgroundLabel, Scope parent) {
-  super(program, backgroundLabel, parent);
+public BackgroundScope(String backgroundLabel, Scope parent) {
+  super(backgroundLabel, parent);
 }
 
 /* Notes on getVarDeclarationInfo and getVarReferenceInfo
@@ -69,7 +69,7 @@ public VarInfo getExistingVarInfo(String varName) {
     if (varUndefined) {
       return null;
     } else {
-      VarInfo shadowingInfo = new VarInfo(this, originalInfo);
+      VarInfo shadowingInfo = new VarInfo(originalInfo);
       if (shadowingInfo.getCurrentValueName() == null) {
         final String valueName = "'"+ varName;
         shadowingInfo.setCurrentValueName(valueName);
@@ -81,6 +81,20 @@ public VarInfo getExistingVarInfo(String varName) {
   }
 }
 
+/**
+ * We must preserve the information as to whether a field's value may be
+ * modified or not for repeated use in all methods, constructors, and
+ * initializers. Therefore a method must make a copy of the field information
+ * before modifying it, and this background scope contains those copies when the
+ * method needs them. When referencing a value name within a method, we do not
+ * know if the name is based on a local variable or a class component field. If
+ * the name is found in a scope above a background scope, then the value name is
+ * based on a field, and we copy the field information to the background scope
+ * before changing the field's current value and other info. As a design
+ * decision, the copying is done on a lazy basis, when the background scope is
+ * searched for a variable, instead of cached when the background scope is
+ * created.
+ */
 @Override
 public Optional<VarInfo> getOptionalExistingVarInfo(String varName) {
   VarInfo varInfo = varToInfoMap.get(varName);
@@ -90,8 +104,9 @@ public Optional<VarInfo> getOptionalExistingVarInfo(String varName) {
   } else { // background always has a parent
     Optional<VarInfo> originalInfo = parent.getOptionalExistingVarInfo(varName);
     if ((originalInfo.isPresent())) {
-      VarInfo shadowingInfo = new VarInfo(this, originalInfo.get());
-      if (shadowingInfo.getCurrentValueName() == null) {
+      VarInfo shadowingInfo = new VarInfo(originalInfo.get());
+      String shadowCurrentValueName = shadowingInfo.getCurrentValueName();
+      if (shadowCurrentValueName == null || shadowCurrentValueName == "") {
         final String valueName = "'"+ varName;
         shadowingInfo.setCurrentValueName(valueName);
         shadowingInfo.defineNewValue(valueName, shadowingInfo.getLineWhereDeclared());
@@ -125,16 +140,16 @@ Scope getDeclarationScope(String varName) {
  * background scope is created.
  */
 @Override
-Scope getReferenceScope(String varName) {
+Scope getVariableDeclarationScope(String varName) {
   if (varToInfoMap.containsKey(varName)) {
     return this;
   } else { // background always has a parent
-    Scope originalScope = parent.getReferenceScope(varName);
+    Scope originalScope = parent.getVariableDeclarationScope(varName);
     if (originalScope == null) {
       return null;
     } else {
       VarInfo originalInfo = originalScope.varToInfoMap.get(varName);
-      VarInfo shadowingInfo = new VarInfo(this, originalInfo);
+      VarInfo shadowingInfo = new VarInfo(originalInfo);
       varToInfoMap.put(varName, shadowingInfo);
       return this;
     }

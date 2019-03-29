@@ -4,8 +4,13 @@
 # Compiled class file
 *.class
 
-# Temp files from testing in ant build
+# Copy of token file that is copied to build directory
+# (I think accidentally, but it may be needed by Antlr parser)
+build/prod/tlang/TLantlrLexer.tokens
+
+# Temp files from ant build
 /temp/
+/antlrsysout/
 
 # .jar files for project dependencies, along with source and sha
 /vendor/lib/

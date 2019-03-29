@@ -151,9 +151,9 @@ Scenario: A reused intermediate value is saved immediately before reuse
 
     int a, b;
 
-    void swap() { int $T$b = /*'*/b;
+    void swap() { int a$T$temp; int $T$b = /*'*/b;
       b/*'temp*/ = /*'*/a;
-      a/*'temp*/ = $T$b; int a$T$temp = a/*'temp*/; // reuseing 'b that was overwritten as b'temp
+      a/*'temp*/ = $T$b; a$T$temp = a/*'temp*/; // reuseing 'b that was overwritten as b'temp
       a/*'*/ = b/*'temp*/;
       b/*'*/ = a$T$temp; // reusing a'temp that was overwritten as a'
     }
@@ -648,7 +648,7 @@ Scenario: A single valid literal can be proven
 
   * A valid T Language run unit is
     """
-    class SwapAgain {
+    class SwapAgain1 {
 
     int a, b;
 
@@ -665,9 +665,11 @@ Scenario: A single valid literal can be proven
 
 Scenario: The prover detects a single invalid literal
 
+  * using feature "***** aa1_valueNamesDetail.feature - The prover detects a single invalid literal - first test *****"
+
   When an invalid run unit is
     """
-    class SwapAgain {
+    class SwapAgain2 {
 
     int a, b;
 
@@ -697,7 +699,7 @@ Scenario: Nested && and || translate to the Prover correctly
 
   * A valid T Language run unit is
     """
-    class SwapAgain {
+    class SwapAgain3 {
 
     int a, b;
 

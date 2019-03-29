@@ -84,12 +84,23 @@ nnf(Fml,NNF) :- nnfdebug(['Starting ',Fml])
 
 % ??? nnf(Fml,_,_,_) :- var(Fml) -> print('Invalid Formula').
 
+%% The theory for inequalities
+% We assume that if inequalities occur, the following theory has been given to the prover
+%   all(A, all(B,
+%       ((A < B) \/ (B < A) \/ (A = B))
+%    /\ all(C, ((A < B) /\ (B < C) ==> (A < C)) )
+%   ))
+
+
 nnf(Fml,FreeV,NNF,Paths)
  :-   ( Fml = -false          -> Fml1 = true
       ; Fml = -true           -> Fml1 = false
       ; Fml = -(-A)              -> Fml1 = A
       ; Fml = -(A #= B)          -> Fml1 =  (A = B)
       ; Fml =  (A #= B)          -> Fml1 = -(A = B)
+      ; Fml =  (A > B)           -> Fml1 =  (B < A)
+      ; Fml =  (A >= B)          -> Fml1 = -(A < B)
+      ; Fml =  (A =< B)          -> Fml1 = -(B < A)
 % For quantification, X is assumed to match a free variable
       ; Fml = -all(X,F)          -> Fml1 = ex(X,-F)
       ; Fml = -ex(X,F)           -> Fml1 = all(X,-F)

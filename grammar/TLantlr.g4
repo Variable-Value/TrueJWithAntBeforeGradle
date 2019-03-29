@@ -249,10 +249,6 @@ t_annotationVariableDeclarator
   : t_annotationVariableDeclaratorId '=' t_variableInitializer
   ;
 
-t_variableDeclarators [String idType]
-  : t_variableDeclarator[$idType] (',' t_variableDeclarator[$idType])*
-  ;
-
 t_variableDeclarator [String idType]
   : t_initializedVariableDeclaratorId[$idType] '=' t_variableInitializer #InitializedVariable
   | t_uninitializedVariableDeclaratorId[$idType]                         #UninitializedVariable
@@ -422,9 +418,15 @@ t_defaultValue
 
 // STATEMENTS / BLOCKS
 
+
 t_block
-  : '{' t_blockStatement* '}'
+  : openBrace='{'  t_blockStatement*  closeBrace='}'
   ;
+
+// t_nestedStatement
+//   : t_block
+//   | t_statement { ! getText().startsWith("{") }?
+//   ;
 
 t_blockStatement
   : t_localVariableDeclaration ';'
@@ -433,7 +435,8 @@ t_blockStatement
   ;
 
 t_localVariableDeclaration
-  : t_variableModifier* ty=t_type t_variableDeclarators[$ty.text]
+  : t_variableModifier* ty=t_type
+        t_variableDeclarator[$ty.text] (',' t_variableDeclarator[$ty.text])*
   ;
 
 t_statement
@@ -552,16 +555,30 @@ t_expressionDetail // in order of most sticky to least sticky
   | t_expressionDetail ('*'|'/'|'%') t_expressionDetail                        # MultiplicativeExpr
   | t_expressionDetail ('+'|'-') t_expressionDetail                            # AdditiveExpr
   | t_expressionDetail ('<' '<' | '>' '>' '>' | '>' '>') t_expressionDetail    # ShiftExpr
-  | t_expressionDetail ('<=' | '>=' | '>' | '<') t_expressionDetail            # CompareExpr
+  | t_expressionDetail op=('<'|'<='|'='|'>='|'>'|'!=')  t_expressionDetail     # ConjRelationExpr
+                                // = is not assignment in expressions
+      // Allowed conjunctive chains:
+      //   A sequence of =
+      //   A sequence of = with a single embedded !=, which implies !=
+      //   A sequence of intermixed =, > and >=, which implies >= (or > if one is present)
+      //   A sequence of intermixed =, < and <=, which implies <= (or < if one is present)
+      //   Other sequences are prohibited, such as a >= b <= c,
+      //                          which would mean a and c >= b
   | t_expressionDetail 'instanceof' t_type                                     # InstanceOfExpr
-  | t_expressionDetail (op='!=' | op='=') t_expressionDetail                   # EqualityExpr
-                                                                                 // not assignment
   | t_expressionDetail '&' t_expressionDetail                                  # AndExpr
   | t_expressionDetail '^' t_expressionDetail                                  # ExclusiveOrExpr
   | t_expressionDetail '|' t_expressionDetail                                  # OrExpr
   | t_expressionDetail '&&' t_expressionDetail                                 # ConditionalAndExpr
   | t_expressionDetail '||' t_expressionDetail                                 # ConditionalOrExpr
   | t_expressionDetail '?' t_expressionDetail ':' t_expressionDetail           # ConditionalExpr
+  | t_expressionDetail op=('<==' | '===' | '=!='| '==>') t_expressionDetail    # ConjunctiveBoolExpr
+      // Allowed conjunctive chains:
+      //   A sequence of ===
+      //   A sequence of === with a single embedded =!=, which implies =!=
+      //   A sequence of intermixed === and ==>, which implies ==>
+      //   A sequence of intermixed === and <==, which implies <==
+      //   Other sequences are prohibited, such as A ==> B =!= C <== D,
+      //                             which implies (A =!= D) | (A === false)
 //  | t_expressionDetail            // only = assignment allowed
 //      (  '='<assoc=right>
 //      | '+='<assoc=right>
@@ -747,6 +764,22 @@ BooleanLiteral
     :   'true'
     |   'false'
     ;
+
+// §3.10.7 The Null Literal
+
+NullLiteral
+    :   'null'
+    ;
+
+// §3.12 Operators
+
+// Conjunctive Boolean Operators
+
+CONJUNCTIVE_BOOLEAN_EQUAL : '===';
+CONJUNCTIVE_IMPLIES       : '==>';
+CONJUNCTIVE_CONSEQUENCE   : '<==';
+CONJUNCTIVE_NOT_EQUAL     : '=!=';
+
 
 /* §3.8 Identifiers (this definition must appear after all keywords and alphabetic
                      literals in the grammar because they would be subsumed by

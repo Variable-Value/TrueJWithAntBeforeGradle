@@ -12,6 +12,7 @@ import alice.tuprolog.event.OutputEvent;
 import alice.tuprolog.event.OutputListener;
 import alice.tuprolog.event.WarningEvent;
 import alice.tuprolog.event.WarningListener;
+import tlang.TLantlrParser.T_typeContext;
 
 
 
@@ -30,15 +31,16 @@ import alice.tuprolog.event.WarningListener;
  *            associative, not conjunctive, see below. Inequivalence can also be thought of as
  *            exclusive disjunction (<code>xor</code>). Both are left associative.
  *     <dt> A ==> B, A <== B
- *       <dd> Implication, "A implies B". And converse implication, "A if B". Both are left
- *            associative.
+ *       <dd> Implication, "A implies B", and consequence, "A if B". Both are
+ *            left associative.
  *     <dt> A \/ B       <dd> Disjunction, "or"
  *     <dt> A /\ B       <dd> Conjunction, "and"
- *     <dt> a = b        <dd> Equals; a and b may be substituted for one another.
+ *     <dt> (a = b)      <dd> Equals; a and b may be substituted for one another.
  *                            Use <code> = </code> to compare objects and <code> === </code> to
  *                            compare logical expressions.
- *                            Unfortunately, an equality expression should always be
- *                            enclosed in parentheses, <code>(a = a)</code>.
+ *                            Unfortunately, because of implementation issues, an equality
+ *                            expression must always be enclosed in parentheses,
+ *                            <code>(a = b)</code>.
  *     <dt> a #= b       <dd> Not equal
  *     <dt> -A           <dd> Logical negation; "not A"
  *     <dt> false, true  <dd> The logical constants
@@ -53,19 +55,20 @@ import alice.tuprolog.event.WarningListener;
  * and <code>hasChildren(x)</code> and write statements which may or may not be true like
  * <code>isHusband(x) === hasChildren(x)</code>.
  * We might have functions at the same time of
- * <code>salary(x)</code> and <code>spentToday(x)</code>, and write wish to prove statements like
- * <code>(salary(x) = spentToday(x))</code>. Because <code>=</code> is a relational operator whose
- * value might be either <code>true</code> or <code>false</code>, we can also write the possible
- * fact <code>isHusband(x) === (salary(x) = spentToday(x))</code>.
+ * <code>salary(person)</code> and <code>spentToday(person)</code>, and write wish to prove
+ * statements like<code>(salary(x) = spentToday(x))</code>. Because <code>=</code> is an operator
+ * whose value might be either <code>true</code> or <code>false</code>, we can also write the
+ * possible fact <code>isHusband(x) === (salary(x) = spentToday(x))</code>.
  * <p>
- * In Java, <code>true</code> and <code>false</code> are just
- * different values that methods may produce, but the implementation of the prover makes it
- * simpler to keep them separate. if we want <code>keepsSecrets(x)</code> to be defined to be always
- * <code>true</code>, it is more convenient to define <code>keepsSecrets(x)</code> as a relation using
- * <code>keepsSecrets(x) === true</code>
+ * In Java, <code>true</code> and <code>false</code> are just different values that methods may
+ * produce, but the implementation of the prover makes it simpler to keep them separate. if we want
+ * <code>keepsSecrets(x)</code> to be defined to be always <code>true</code>, it is more convenient
+ * to define <code>keepsSecrets(x)</code> as a relation using <code>keepsSecrets(x) === true</code>
  * and write <code>isHusband(x) === keepsSecrets(x)</code> because if we define it as a function
- * with a truth value result, using equality instead of equivalence, <code>keepsSecrets(x) = true</code>, the
- * prover forces us to awkwardly write <code>isHusband(x) === (keepsSecrets(x) = true)</code>.
+ * with a truth value result, using equality instead of equivalence,
+ * <code>keepsSecrets(x) = true</code>, the prover forces us to awkwardly write
+ * <code>isHusband(x) === (keepsSecrets(x) = true)</code>. (No husbands were injured during the
+ * construction of these fictional examples.)
  *
  * <h4> Logical quantifiers </h4>
  * <dl><dt> all(X,p(X))
@@ -75,31 +78,33 @@ import alice.tuprolog.event.WarningListener;
  *            <code>p(x)</code> stands for any expression containing <code>X</code>.
  *     <dt> all(X, range-of(X), body(X))
  *       <dd> For all <code>X</code> where <code>range-of(X)</code> is true, <code>body(X)</code> is
- *            true. Here, <code>X</code>
- *            stands for any Prolog variable name, a string of letters, digits,
- *            or underscores beginning with a capital letter or underscore. And <code>range-of(X)</code> and
- *            <code>body(X)</code> stand for any expressions containing <code>X</code>. Although
- *            it just means
- *            <code>all(X, range-of-X ==> body)</code>, it's a
- *            convenient way to give a type or other restriction for the quantified variable, as in
- *            <code>all(N, (type(integer,N) /\ N > 0), square(N) > 0)</code> or
- *            <code>all(Employee, type(part_time_employee,Employee), paid_biweekly(Employee))</code>.
+ *            true. Here, <code>X</code> stands for any Prolog variable name, that is, a string of
+ *            letters, digits, or underscores beginning with a capital letter or underscore. And
+ *            <code>range-of(X)</code> and <code>body(X)</code> stand for any expressions containing
+ *            <code>X</code>. Although it just means <code>all(X, range-of-X ==> body)</code>, it's
+ *            a convenient way to give a type or other restriction for the quantified variable, as
+ *            in <code>all(N, (type(integer,N) /\ N #= 0), square(N) > 0)</code> or
+ *            <code>all(Employee, type(partTime,Employee), paidBiweekly(Employee))</code>.
  *     <dt> ex(X,p(X))
- *       <dd> Existential quantification. For all <code>X</code> where <code>range-of(X)</code> is true, <code>body(X)</code> is
+ *       <dd> Existential quantification. For all <code>X</code>, <code>p(X)</code> is true.
  *     <dt> ex (X, range-of(X), body(X))
  *       <dd> For all <code>X</code> where <code>range-of(X)</code> is true, <code>body(X)</code> is
+ *            true.
  * </dl>
- *       for all     all(X,p(X))             there exists  ex(X,p(X))
-                  all(X, range-of-X, body)              ex (X, range-of-X, body)
- * <dl><dt> A === B      <dd> Logical equivalence of boolean expressions. Associative,
- *                            not conjunctive, see below.
+ *
+ * <h4> A Note on Associativity of logical operators </h4>
+ *
+ * <dl><dt> A === B      <dd> Logical equivalence of predicates. Associative,
+ *                            <em>not conjunctive</em>.
  *     <dt> A =#= B      <dd> Inequivalence for boolean expressions; exclusive disjunction (xor)
  *                            (Left associative)
  *     <dt> A ==> B      <dd> Implication, "A implies B" (Left associative)
- *     <dt> A <== B      <dd> converse implication, "A if B" (Left associative)
+ *     <dt> A <== B      <dd> Consequence, "A if B" (Left associative)
  * </dl>
  * <p>
- * Logical equivalence is associative, not conjunctive (chaining). For instance, the following are
+ * Do not chain the logical operators together, for instance, avoid <code>A ==> B ==> C</code>
+ * because it means if <code>A ==> B</code> then <code>C</code>. And logical equivalence is
+ * associative, not conjunctive (chaining). For instance, the following are
  * all the same:
  * <dl><dt> ((p===q) === r) === (p === (q===r))
  *       <dd> associativity of equivalence
@@ -109,11 +114,13 @@ import alice.tuprolog.event.WarningListener;
  *                <li>(p===q), if and only if (r===p) is the same as (q===r)
  *            </ul>
  *     <dt> p === q === r === p === q === r
- *       <dd> Divide this up any way you like, it all means the same thing.
+ *       <dd> Parenthesize this up any way you like, it all means the same thing.</dd>
  * </dl>
- *
+ *<p>
  * The last two can be confusing. Liberal use of parentheses are recommended, or perhaps adding
- * extra spaces around some === to give them extra visual weight. Since we mentioned
+ * extra spaces around some === to give them extra visual weight.
+ * <p>
+ * Since we mentioned
  * conjunctivity, perhaps we need to also mention that equality <code>=</code> is not
  * conjunctive either, and in fact, must always be enclosed in parentheses, as in
  * <code>(a = successor(b))</code>.
@@ -128,16 +135,22 @@ private static String relativeDir = "./";
 private static Prolog engine = createPrologEngine();
 private static String prologStdOut = "";
   // TODO: remove prologStdOut or provide an accessor method
-private static boolean isDebugging = false; // set to true to print Prolog output
+private static boolean isDebugging = false; // set isDebugging to true to print Prolog output
 private static Theory theory;
 /** Name of the prolog code field where the result is stored. See
  * {@link #prologConsistencyResult(SolveInfo)} */
-private static String prologConsistencyResult = "ConsistencyResult";
+private static final String prologConsistencyResult = "ConsistencyResult";
 
-/** The logical conjunction operator, AND, is written "/\" in the KnowledgeBase first-order predicate
- * language.
- */
-public static final String AND = " /\\ "; //  AND = /\
+/** The logical conjunction operator, AND, is written as <code>/\</code> in the first-order
+ * predicate language for the KnowledgeBase and the Prolog prover. */
+public static final String and = " /\\ ";
+/** The logical disjunction operator, OR, is written as <code>\/</code> in the first-order predicate
+ * language for the KnowledgeBase and the Prolog prover. */
+public static final String or = "\\/";
+/** The logical negation operator, NOT, is written as <code>-</code> in the first-order predicate
+ * language for the KnowledgeBase and the Prolog prover */
+public static final String not = "-";
+
 
 /** The result of an attempted proof will be one of:
  * <ul> <li>{@link #provenTrue}
@@ -178,48 +191,53 @@ public static enum ConsistencyResult
  * are kept in a queue data structure in the hope that the most recently entered fact will be the
  * one most important in proving a new fact.
  */
-private ArrayDeque<String> facts = new ArrayDeque<>();
+private ArrayDeque<String> facts;
 
 /** Creates an empty KnowledgeBase that is ready to accept facts. */
-public KnowledgeBase() {}
+// Implementation note: initialize facts here so that
+public KnowledgeBase() {
+  this.facts = new ArrayDeque<>();
+}
 
-/** Duplicates a KnowledgeBase, allowing you to back up to a previous state.
+/** Duplicates a KnowledgeBase, allowing you to save a previous state.
  * @param kb the KnowledgeBase to be copied
  */
 public KnowledgeBase(KnowledgeBase kb) {
-  this.facts = kb.facts;
+  this.facts = kb.facts.clone();
 }
 
+/** Add Type information for a value name. Look up the predicates that define the type, substitute
+ * the value name for all occurrences of the example name in the definition's predicates, and copy
+ * the predicates individually to the list of type information. Unlike other facts, type information
+ * is preserved when a means statement subsumes the preceding facts.
+ *
+ * @param variableType
+ * @param valueName
+ */
+// TODO Create a separate list of type facts to hold these assumptions
+// TODO Write a method to insert a list of rule templates for a type into a map
+public void assumeType(String variableType, String valueName) {
+  // Note that no consistency check is necessary because this is a new valueName
+    // should we keep a list in the KnowledgeBase of used valueNames to make sure?
+  // use the map to find the list of templates
+  // insert the valueName into the templates to create a list of facts
+  // add these new facts to the type facts
+}
 
 /** Add information that cannot possibly be inconsistent with prior facts to the
- * <code>KnowledgeBase</code>. No check for consistency with the <code>KnowledgeBase</code> is
- * performed. This is useful for TrueJ <code>given</code> statements or executable code.
- * Executable code establishes facts about new states, which can not conflict with existing states.
+ * <code>KnowledgeBase</code>. Use the method {@link #assumeIfConsistent(String)} if a check for consistency
+ * with the <code>KnowledgeBase</code> could possibly be needed. {@link #assume(String)} is useful
+ * for TrueJ <code>given</code> statements or executable code. This is safe for <code>given</code>
+ * statements because they checked every place the method is used, and safe for executable code
+ * because it establishes facts about new states, which can not conflict with existing states.
+ * <p>
  * For efficiency this method could be used to add a fact that is known to be consistent with the
- * existing knowledge base in some other way, but if a mistake is made, the
+ * the existing knowledge base in some other way, but if a mistake is made, the
  * <code>KnowledgeBase</code> would be corrupted.
- * @param newText
+ * @param fact
  */
-public void assume(String newText) {
-  facts.push(newText);
-}
-
-/** Checks whether a statement is consistent with the {@link KnowledgeBase} facts and adds it
- * to the list of facts if it is. This is much more efficient than doing the
- * {@link #checkConsistency} and {@link #assume} in two separate steps.
- * @param newText
- * @return a {@link ConsistencyResult}
- */
-/* IMPLEMENTATION NOTE:
- * When the incremental prover is done, this will be the most efficient way to add questionable
- * facts to the KnowledgeBase.
- */
-public ConsistencyResult assumeIfConsistent(String newText) {
-  ConsistencyResult c = checkConsistency(newText);
-  if ( c == ConsistencyResult.consistent) {
-    assume(newText);
-  }
-  return c;
+public void assume(String fact) {
+  facts.push(fact);
 }
 
 /** Checks whether a statement is consistent with the {@link KnowledgeBase} facts and adds it
@@ -313,12 +331,15 @@ private ProofResult proofResults(ConsistencyResult c) {
  * @return a {@link ProofResult}
  */
 public ProofResult assumeIfProven(String newFact, SolverInTestMode... modeOfTest) {
+  SolverInTestMode savedTestMode = testMode;
   if (modeOfTest.length > 0)
     testMode = modeOfTest[0];
+
   ProofResult result = prove(newFact);
   if (result == ProofResult.provenTrue)
     assume(newFact);
-  testMode = SolverInTestMode.off;
+
+  testMode = savedTestMode;
   return result;
 }
 
@@ -362,7 +383,7 @@ public ProofResult substituteIfProven(String newFact) {
  * @return a {@link ConsistencyResult}
  */
 public ConsistencyResult checkConsistency(String statement) {
-  String testString = parens(statement) + AND + conjoined(facts);
+  String testString = parens(statement) + and + conjoined(facts);
   SolveInfo solutionInfo = checkForConsistency(testString);
   return prologConsistencyResult(solutionInfo);
   }
@@ -390,7 +411,6 @@ private ConsistencyResult prologConsistencyResult(SolveInfo solutionInfo) { // @
   }
 } // @formatter:on
 
-@SuppressWarnings("serial")
 private class InvalidResultFromProverException extends RuntimeException {
 InvalidResultFromProverException(String resultState) {
   super("A call to the etleantap.pl prover gave the invalid result: " + resultState);
@@ -398,6 +418,7 @@ InvalidResultFromProverException(String resultState) {
 }
 
 private SolveInfo checkForConsistency(String testString) {
+  System.out.println("Checking consistency: "+ testString);
   SolveInfo info = engine.solve(Term.createTerm(prologCommand(testString), engine.getOperatorManager()));
 
   if (testMode == SolverInTestMode.on) {
@@ -475,8 +496,35 @@ private void restoreState(ArrayDeque<String> deque) {
   facts = deque;
 }
 
-private ConsistencyResult addFact(String statement) {
-  return checkConsistency(statement);
+/** Add a fact to the knowledge base that is expected to be consistent with the current facts. To
+ * avoid using a try statement, you can the following code instead.
+ * <pre><code>
+ *   ConsistencyResult consistency = {@link #checkForConsistency(statement)};
+ *   if (consistency = ConsistencyResult.consistent)
+ *     {@link #assume(statement)};
+ *   else
+ *     ...
+ * </code></pre>
+ *
+ * @param statement
+ * @throws InvalidConsistencyResultException
+ */
+public void assumeIfConsistent(String statement) throws InvalidConsistencyResultException {
+  ConsistencyResult consistencyResult = checkConsistency(statement);
+  if (consistencyResult == ConsistencyResult.consistent)
+    assume(statement);
+  else
+    throw new InvalidConsistencyResultException(consistencyResult);
+}
+
+public class InvalidConsistencyResultException extends Exception {
+  private ConsistencyResult consistency;
+  /*getter*/ public ConsistencyResult getStatus() { return consistency; }
+
+  InvalidConsistencyResultException(ConsistencyResult consistency) {
+    super("The new fact is not provably consistent: " + consistency);
+    this.consistency = consistency;
+  }
 }
 
 /** Create a single string with all the statements from the stack conjoined. Each statement from the
@@ -487,8 +535,9 @@ private ConsistencyResult addFact(String statement) {
 //TODO: generalize Deque (? to collection ?) as long as order is kept
 private String conjoined(Deque<String> stack) {
   //TODO: use Collectors.joining
-  String first = parens(stack.pop());
-  return stack.stream().reduce(first, (previous, next) -> previous + AND + parens(next)) ;
+  String first = stack.isEmpty() ? "true" : parens(stack.pop());
+    // TODO: just use else to explore why method should ever be used when stack.isEmpty()
+  return stack.stream().reduce(first, (previous, next) -> previous + and + parens(next)) ;
 }
 
 private String parens(String s) {
