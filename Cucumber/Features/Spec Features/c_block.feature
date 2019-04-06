@@ -17,33 +17,34 @@ Feature: Blocks contain the scope of variable names and value names
   Because every method must end with a final value for any field that was modified anywhere in the method, field value names are usually referenced in a following means statement as part of the flow of constructing the final value of the field.
 
 
-Scenario: The meaning of a block if formed from the meaning of its statements
+Scenario: The meaning of a block is formed from the meaning of its statements
 
     If there is no top-level means-statement, then the meaning of a block is the conjunction of the meaning of all of its top level statements. But because a means-statement summarizes what is important to the programmer about all the preceding code of the block, its meaning is substituted for the meaning of all that code, making the meaning of the block be the meaning of its last top-level means-statement conjoined with the meaning of any following top-level statements. Note that the means-statement must be provable from the preceding code, but does not have to be logically equivalent to it.
+
+  * using feature "***** c_block.feature - The meaning of a block - first test *****"
 
   When an invalid run unit is
     """
     class BlockMeaning1 {
 
-    int a, b;
+    int aa, b;
 
     void swap() {
-      int startingA' = 'a;
+      int startingA' = 'aa;
       int startingB' = 'b;
       b' = startingA';
-      means(b' = 'a);
+      means(b' = 'aa);
 
-
-      a' = startingB';
-      means(a' = 'b); // ignores the (b' = 'a) of the previous means
+      aa' = startingB';
+      means(aa' = 'b); // ignores the (b' = 'aa) of the previous means
     }
-    means(a' = 'b && b' = 'a);
+    means(aa' = 'b && b' = 'aa);
 
     } // end class
     """
   Then an error message contains
     """
-    The code does not support the proof of the statement: b' = 'a
+    The code does not support the proof of the statement: b' = 'aa
     """
 
 Scenario: Code from enclosing blocks is still available for proofs in a nested block after a means-statement

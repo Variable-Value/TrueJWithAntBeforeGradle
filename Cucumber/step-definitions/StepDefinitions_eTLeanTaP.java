@@ -98,10 +98,8 @@ public void formula_is_underspecified(String formula) throws Throwable {
 
 @Given("^[Tt]he conjunction of these formulas is underspecified$")
 public void the_conjunction_of_these_formulas_is_underspecified(String formulas) throws Throwable {
-  final String f1 = formulas.replace("\n\r", ") /\\ (");
-  final String f2 = f1      .replace("\n"  , ") /\\ ("); //  a) /\ (b
-  final String conjunction = "("+ f2 +")";               // (a) /\ (b)
-  System.out.println(conjunction);
+  final String f1 = formulas.replace("\r\n", ") /\\ (").replace("\n"  , ") /\\ ("); //  a) /\ (b
+  final String conjunction = "("+ f1 +")";               // (a) /\ (b)
   formula_is_underspecified(conjunction);
   }
 

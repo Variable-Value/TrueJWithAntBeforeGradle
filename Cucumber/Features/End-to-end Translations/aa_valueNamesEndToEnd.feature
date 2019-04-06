@@ -44,9 +44,10 @@ Scenario: Values have names
 
   * Note
     """
-    In the following generated Java code you can see that we avoid inserting or
-    deleting lines so that line numbers in Java error messages will match the T
-    language line where the error is.
+    If there were Java error messages, we would want the line numbers in the error messages to match
+    the TrueJ language line number where the error is. In the following generated Java code you can
+    see that we avoid inserting or deleting lines to keep the TrueJ and Java line numbers
+    synchronized.
     """
 
   Then the Java operational run unit is

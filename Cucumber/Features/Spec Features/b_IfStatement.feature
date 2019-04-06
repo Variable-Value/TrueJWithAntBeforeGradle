@@ -165,6 +165,8 @@ Scenario: Always include definitions of value names in all branches
     } // end class
     """
 
+  * using feature "***** b_IfStatement.feature - Include definitions of value names - second test *****"
+
   * a valid run unit is
     """
     class Swapper_3 {

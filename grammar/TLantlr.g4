@@ -579,15 +579,16 @@ t_expressionDetail // in order of most sticky to least sticky
       //   A sequence of intermixed === and <==, which implies <==
       //   Other sequences are prohibited, such as A ==> B =!= C <== D,
       //                             which implies (A =!= D) | (A === false)
-//  | t_expressionDetail            // only = assignment allowed
-//      (  '='<assoc=right>
+
+//  | t_expressionDetail     // only = assignment allowed
+//      (  '='<assoc=right>     // specified in rule (t_statement # AssignStmt)
 //      | '+='<assoc=right>
-//      | '-='<assoc=right>
-//      | '*='<assoc=right>
-//      | '/='<assoc=right>
-//      | '&='<assoc=right>
-//      | '|='<assoc=right>
-//      | '^='<assoc=right>
+//      | '-='<assoc=right>  // All incremental operators are useless in TrueJ because reference
+//      | '*='<assoc=right>  // to a particular value of a variable is required, e.g.,
+//      | '/='<assoc=right>  //   x' += 4;
+//      | '&='<assoc=right>  // is ambiguous because we need to specify the value name of the
+//      | '|='<assoc=right>  // previous value of x, as in,
+//      | '^='<assoc=right>  //   x' = x'almostThere + 4;
 //      | '>>='<assoc=right>
 //      | '>>>='<assoc=right>
 //      | '<<='<assoc=right>

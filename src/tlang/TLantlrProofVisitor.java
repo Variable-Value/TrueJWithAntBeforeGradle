@@ -3,6 +3,8 @@ package tlang;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
@@ -17,6 +19,8 @@ import tlang.TLantlrParser.T_blockStatementContext;
 import tlang.TLantlrParser.T_expressionContext;
 import tlang.TLantlrParser.T_expressionDetailContext;
 import tlang.TLantlrParser.T_localVariableDeclarationContext;
+import tlang.TLantlrParser.T_methodBodyContext;
+import tlang.TLantlrParser.T_methodDeclarationContext;
 import tlang.TLantlrParser.T_parExpressionContext;
 import tlang.TLantlrParser.T_statementContext;
 import tlang.TLantlrParser.T_typeDeclarationContext;
@@ -60,7 +64,8 @@ private CollectingMsgListener errors;
 private static char prologDecoratorChar = '^';
 private static TLantlrProofVisitor latestProofVisitor;
 
-/** Contains a logical representation of the state of a program */
+/** Contains a logical representation of the state of a program. A child KnowledgeBase is created
+ * for each scope in which something might need to be proven. */
 private KnowledgeBase kb = new KnowledgeBase();
 
 
@@ -254,22 +259,36 @@ private String withoutSemicolon(String code) {
   return null;
 }
 
+/**
+ * A method declaration has a background scope for a parent in order to hold all
+ * the higher scope fields.
+ */
+@Override public Void visitT_methodDeclaration(T_methodDeclarationContext ctx) {
+  withParentKb(kb, parentKb -> {
+    super.visitT_methodDeclaration(ctx);
+  });
+  return null;
+}
+
 /** Translate a block of statements into the meaning of its statements, changing the surrounding
  * braces to parentheses. Loop from the bottom up, stopping with the latest means-statement that was
  * issued, which summarizes everything needed from the code above it in this block. */
 /* TODO: keep looking after the means is encountered for variable declarations to collect type
  * information for all valueNames that occur in the meaningful code. */
 @Override public Void visitT_block(T_blockContext ctx) {
-  final Scope parentScope = currentScope;
-  currentScope = scopeMap.get(ctx);
 
-  visitChildren(ctx);
+
+  withParentKb(kb,
+               parentKb -> withParentScope(ctx, parent -> visitChildren(parent))
+               );
 
   boolean statementsAreActive = true; // so far
   String types = "true";
   String meaning = "true";
   for (int i = ctx.t_blockStatement().size()-1; i >= 0; i-- ) {
-    System.out.println("Block line "+i+" of "+ctx.t_blockStatement().size()+":"+rewriter.source(ctx.t_blockStatement(i)));
+    System.out.println("Block line "+i+" of "+ctx.t_blockStatement().size()
+                       +" "+(statementsAreActive ? " active:" : " inactive:")
+                       +rewriter.source(ctx.t_blockStatement(i)));
     T_blockStatementContext bStCtx = ctx.t_blockStatement(i);
     T_statementContext statement = bStCtx.t_statement();
     if (statement != null) {
@@ -295,21 +314,27 @@ private String withoutSemicolon(String code) {
             InitializedVariableContext initStatement = (InitializedVariableContext)initialization;
             String valueName = rewriter.source(initStatement.t_initializedVariableDeclaratorId());
             String value = rewriter.source(initStatement.t_variableInitializer());
-            meaning += and + valueName + " = " + value;
             types += and + " type("+ type +","+ valueName +")";
+            if (statementsAreActive) {
+              meaning += and + valueName + " = " + value;
+            }
           }
         }
       } else {
         T_typeDeclarationContext localType = bStCtx.t_typeDeclaration();
         //if (localType != null) // localType cannot be null because of syntax
         // TODO: After programming type definition, make sure that local type definition works, too.
+        //if (statementsAreActive) {
+        //  meaning += and + ....
+        //}
       }
     }
   }
 
+  System.out.println("Block meaning: "+meaning);
   rewriter.substituteText(ctx, meaning);
+  kb.assume(meaning);
 
-  currentScope = parentScope;
   return null;
 }
 
@@ -641,15 +666,28 @@ private String typeFullName(String idType) {
  * @return     The variable name constructed from the <code>val</code> */
 private String varName(String val) {
   final int pos = val.indexOf(prologDecoratorChar);
-  if (pos == -1) {
-    return val;
-  }                        // return 'abc' for 'abc'
-  else if (pos == 1) {
-    return "'" + val.substring(2);
-  }      // return 'abc' for '^abc'
-  else {
-    return val.substring(0, pos) + "'";
-  }  // return 'abc' for 'abc^' or 'abc^de'
+  if (pos == -1)
+    return val;                         // return 'abc' for 'abc'
+  else if (pos == 1)
+    return "'" + val.substring(2);      // return 'abc' for '^abc'
+  else
+    return val.substring(0, pos) + "'"; // return 'abc' for 'abc^' or 'abc^de'
+}
+
+/** Use the Java stack as an implicit stack for knowledgebases  */
+private void withParentKb(KnowledgeBase kb2, Consumer<KnowledgeBase> acceptFuction) {
+  KnowledgeBase parentKb = kb;       // push kb on parent stack
+  kb = new KnowledgeBase(parentKb);  // create child kb
+  acceptFuction.accept(kb);          // use child kb
+  kb = parentKb;                     // pop kb
+}
+
+/** Use the Java stack as an implicit stack for scopes  */
+private void withParentScope(ParserRuleContext ctx, Function<ParserRuleContext, Void> function) {
+  final Scope parentScope = currentScope; // push currentScope on parent stack
+  currentScope = scopeMap.get(ctx);       // create child scope
+  function.apply(ctx);                    // apply function using child scope
+  currentScope = parentScope;             // pop currentScope
 }
 
 } // end class

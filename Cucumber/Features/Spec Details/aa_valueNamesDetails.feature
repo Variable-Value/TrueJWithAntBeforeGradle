@@ -665,8 +665,6 @@ Scenario: A single valid literal can be proven
 
 Scenario: The prover detects a single invalid literal
 
-  * using feature "***** aa1_valueNamesDetail.feature - The prover detects a single invalid literal - first test *****"
-
   When an invalid run unit is
     """
     class SwapAgain2 {

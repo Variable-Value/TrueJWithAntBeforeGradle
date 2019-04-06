@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
+import java.util.stream.Collectors;
 import alice.tuprolog.*;
 import alice.tuprolog.event.ExceptionEvent;
 import alice.tuprolog.event.ExceptionListener;
@@ -15,7 +17,7 @@ import alice.tuprolog.event.WarningListener;
 import tlang.TLantlrParser.T_typeContext;
 
 
-
+//@formatter:off
 /** Contains facts about some consistent world. Represented as a list of consistent, first-order
  * predicate logic facts. A new fact can be checked to
  * either see if it is consistent with the current facts or if it can be proven from the current
@@ -125,17 +127,18 @@ import tlang.TLantlrParser.T_typeContext;
  * conjunctive either, and in fact, must always be enclosed in parentheses, as in
  * <code>(a = successor(b))</code>.
  */
+//@formatter:on
 public class KnowledgeBase {
 
 enum SolverInTestMode {on,off}
 SolverInTestMode testMode = SolverInTestMode.off;
+private static boolean isDebugging = false; // set isDebugging to true to print Prolog output
 
 private static String relativeDir = "./";
 
 private static Prolog engine = createPrologEngine();
 private static String prologStdOut = "";
   // TODO: remove prologStdOut or provide an accessor method
-private static boolean isDebugging = false; // set isDebugging to true to print Prolog output
 private static Theory theory;
 /** Name of the prolog code field where the result is stored. See
  * {@link #prologConsistencyResult(SolveInfo)} */
@@ -194,7 +197,6 @@ public static enum ConsistencyResult
 private ArrayDeque<String> facts;
 
 /** Creates an empty KnowledgeBase that is ready to accept facts. */
-// Implementation note: initialize facts here so that
 public KnowledgeBase() {
   this.facts = new ArrayDeque<>();
 }
@@ -390,6 +392,7 @@ public ConsistencyResult checkConsistency(String statement) {
 
 private ConsistencyResult prologConsistencyResult(SolveInfo solutionInfo) { // @formatter:off
   try {
+    System.out.println("SolveInfo: "+solutionInfo);
     String resultState = solutionInfo.getTerm(prologConsistencyResult).toString();
   switch (resultState) {
   // Possible values of resultState are listed in the Prolog etleantap.pl file in predicate
@@ -419,7 +422,13 @@ InvalidResultFromProverException(String resultState) {
 
 private SolveInfo checkForConsistency(String testString) {
   System.out.println("Checking consistency: "+ testString);
-  SolveInfo info = engine.solve(Term.createTerm(prologCommand(testString), engine.getOperatorManager()));
+  SolveInfo info;
+  try {
+    info = engine.solve(Term.createTerm(prologCommand(testString), engine.getOperatorManager()));
+  } catch (InvalidTermException iTE) {
+    System.out.println("****** INVALID TERM EXCEPTION: "+ iTE.getMessage());
+    throw iTE;
+  }
 
   if (testMode == SolverInTestMode.on) {
     System.out.println("\nIN TEST MODE: Attempting to prove: "+ testString);
@@ -432,6 +441,7 @@ private String prologCommand(String formula) {
   String command = "nnf( ("+ formula +"), NNF ), runProver(NNF, "+ prologConsistencyResult +")";
   if (testMode == SolverInTestMode.on)
     command = "db_start_debugging, "+ command;
+  System.out.println("***** Prolog command: "+command);
   return command;
 }
 
@@ -533,11 +543,17 @@ public class InvalidConsistencyResultException extends Exception {
  * @return The stack of statements as one big AND statement
  */
 //TODO: generalize Deque (? to collection ?) as long as order is kept
-private String conjoined(Deque<String> stack) {
-  //TODO: use Collectors.joining
-  String first = stack.isEmpty() ? "true" : parens(stack.pop());
-    // TODO: just use else to explore why method should ever be used when stack.isEmpty()
-  return stack.stream().reduce(first, (previous, next) -> previous + and + parens(next)) ;
+private String conjoined(Collection<String> stack) {
+  final String andWithParens = ") "+and+" (";
+  if (stack.isEmpty())
+    return "true";
+  else
+    return parens(stack.stream().collect(Collectors.joining(andWithParens)));
+
+//  String first = stack.isEmpty() ? "true" : parens(stack.pop());
+//  // TODO: just use else to explore why method should ever be used when stack.isEmpty()
+//  //TODO: use Collectors.joining
+//  return stack.stream().reduce(first, (previous, next) -> previous + and + parens(next)) ;
 }
 
 private String parens(String s) {
@@ -554,9 +570,20 @@ static private void ensurePrologEngine() {
   if (engine == null) {
     final String[] libs = {"alice.tuprolog.lib.BasicLibrary"
                           ,"alice.tuprolog.lib.ISOLibrary"
+                          ,"alice.tuprolog.lib.IOLibrary"
+                          ,"alice.tuprolog.lib.ISOIOLibrary"
+                              // ISOIOLibrary overrides some IOLibrary predicates
                           ,"alice.tuprolog.lib.OOLibrary"
                           ,"alice.tuprolog.lib.ThreadLibrary"
                           };
+//    final String[] libs = {"alice.tuprolog.lib.BasicLibrary"
+//                           ,"alice.tuprolog.lib.ISOLibrary"
+//                           ,"alice.tuprolog.lib.IOLibrary"
+//                           ,"alice.tuprolog.lib.ISOIOLibrary"
+//                              // ISOIOLibrary overrides some IOLibrary predicates
+//                           ,"alice.tuprolog.lib.OOLibrary"
+//                           ,"alice.tuprolog.lib.ThreadLibrary"
+//                           };
     try {
       engine = new Prolog(libs);
     } catch (InvalidLibraryException e) {
@@ -564,13 +591,13 @@ static private void ensurePrologEngine() {
     }
     engine.addOutputListener(  new OutputListener()
       { @Override public void onOutput(OutputEvent e) {
-          postToStdOut("\n"+ e.getMsg());
+          postToStdOut("\n"+ e.getMsg(), isDebugging);
         }
       }
     );
     engine.addExceptionListener(new ExceptionListener()
       { @Override public void onException(ExceptionEvent e) {
-          postToStdOut("\n***** EXCEPTION: "+ e.getMsg());
+          postToStdOut("\n***** EXCEPTION: "+ e.getMsg(), isDebugging);
         }
       }
     );
@@ -595,8 +622,8 @@ private static void setTheories() {
     addAFileTheory(new File(relativeDir +"src/leantap/nnf.pl"));
     addAFileTheory(new File(relativeDir +"src/leantap/etleantap.pl"));
     addAFileTheory(new File(relativeDir +"src/leantap/tLangProof.prolog"));
-  } catch (InvalidTheoryException it) {
-    it.printStackTrace();
+  } catch (InvalidTheoryException iT) {
+    iT.printStackTrace();
   } catch (IOException io) {
     io.printStackTrace();
   }
