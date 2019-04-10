@@ -221,7 +221,7 @@ public Void visitAssignStmt(AssignStmtContext ctx) {
 //  }
   String lhs = parenthesize(rewriter.source(ctx.t_expression()));
 //  String src  = withoutSemicolon(rewriter.source(ctx));
-  String src = rhs + op + lhs;
+  String src = parenthesize(rhs + op + lhs);
   rewriter.substituteText(ctx, src);
   kb.assume(src);
   return null;
@@ -286,9 +286,6 @@ private String withoutSemicolon(String code) {
   String types = "true";
   String meaning = "true";
   for (int i = ctx.t_blockStatement().size()-1; i >= 0; i-- ) {
-    System.out.println("Block line "+i+" of "+ctx.t_blockStatement().size()
-                       +" "+(statementsAreActive ? " active:" : " inactive:")
-                       +rewriter.source(ctx.t_blockStatement(i)));
     T_blockStatementContext bStCtx = ctx.t_blockStatement(i);
     T_statementContext statement = bStCtx.t_statement();
     if (statement != null) {
@@ -331,7 +328,6 @@ private String withoutSemicolon(String code) {
     }
   }
 
-  System.out.println("Block meaning: "+meaning);
   rewriter.substituteText(ctx, meaning);
   kb.assume(meaning);
 
@@ -350,24 +346,31 @@ public Void visitIfStmt(IfStmtContext ctx) {
   String thenMeaning = checkBranch(condition, ctx.t_statement(0));
   T_statementContext elseContext = ctx.t_statement(1);
   if (elseContext == null) {
-    rewriter.substituteText(ctx, thenMeaning + or + not + condition);
+    rewriter.substituteText(ctx, thenMeaning + or + negate(condition));
   } else {
     // String elseMeaning = parenthesize(rewriter.source(elseContext));
-    String elseMeaning = checkBranch(not + condition, elseContext);
+    String elseMeaning = checkBranch(negate(condition), elseContext);
     rewriter.substituteText(ctx, thenMeaning + or + elseMeaning);
   }
   kb.assume(rewriter.source(ctx));
   return null;
 }
 
+private String negate(String condition) {
+  return parenthesize(not + condition);
+}
+
 private String translateCondition(T_parExpressionContext conditionCtx) {
   visit(conditionCtx);
   String condition = rewriter.source(conditionCtx);
-  return condition;
+  return parenthesize(condition);
 }
 
 private String checkBranch(String condition, T_statementContext branchCtx) {
-  visit(branchCtx);
+  withParentKb(kb, parentKb -> {
+    kb.assume(condition);
+    visit(branchCtx);
+  });
   return parenthesize(condition + and + rewriter.source(branchCtx));
 }
 
@@ -536,9 +539,7 @@ private Token binaryOperatorToken(ParseTree pt) {
 }
 
 /** The operators ===, ==>, and <== are the same as those used in the prover, but =!= must be
- * replaced with =#=.
- * <p>
- * {@inheritDoc} */
+ * replaced with =#=. */
 @Override
 public Void visitConjunctiveBoolExpr(ConjunctiveBoolExprContext ctx) {
   visitChildren(ctx);
@@ -546,6 +547,10 @@ public Void visitConjunctiveBoolExpr(ConjunctiveBoolExprContext ctx) {
   if ("=!=".equals(ctx.op)) {
     rewriter.replace(ctx.op, "=#=");
   }
+  /*TODO: Look for child conjunctive boolean expression and duplicate terms to simulate conjunctive
+   * operators. See grammar for details but watch out for parentheses.
+   */
+  // rewriter.substituteText(ctx, "( "+rewriter.source(ctx)+" )");
   return null;
 }
 
@@ -563,9 +568,7 @@ public Void visitT_means(T_meansContext ctx) {
 
   T_expressionDetailContext predicate = ctx.t_expression().t_expressionDetail();
   String meansStatementForProver = prologCode(predicate);
-  System.out.println("Prove means: "+ meansStatementForProver);
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
-  System.out.println("Result: "+result);
   if ( result != ProofResult.provenTrue)
     result = proveEachConjunct(predicate);
   rewriter.substituteText(ctx.t_expression(), meansStatementForProver);
@@ -573,9 +576,7 @@ public Void visitT_means(T_meansContext ctx) {
 }
 
 private ProofResult proveEachConjunct(T_expressionDetailContext conjunction) {
-  System.out.println("Prove conjunction: "+ prologCode(conjunction));
   if (isSingleConjunct(conjunction)) {
-    System.out.println("Prove single conjunct: "+ prologCode(conjunction));
     ProofResult result = kb.assumeIfProven(prologCode(conjunction));
     reportAnyError(conjunction, result);
     return result;
