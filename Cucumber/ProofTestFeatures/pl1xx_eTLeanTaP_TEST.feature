@@ -10,6 +10,22 @@ Background: The theorem prover is loaded into a tuProlog engine
   And debugging on
   And using feature "pl1xx_eTLeanTaP_TEST"
 
+Scenario: Test of if-then-else translation
+
+  Given the following fact
+  """
+  (  true
+  /\ (   c ==> (r  =  d) )       % natural translation of if-then-else
+  /\ ( - c ==> (r  =  s) )
+  )
+  """
+
+  Then the following can be proven
+  """
+  (  (   c  /\  (r  =  d))  % our translation of if-then-else
+  \/ ( - c  /\  (r  =  s))
+  )
+  """
 
 #Scenario: FROM EQUALITY - Transitive chain on each side of an inequality
 #
@@ -42,19 +58,17 @@ Background: The theorem prover is loaded into a tuProlog engine
 #  * Formula "(a=b) ==> ex(X, (a=X))" is a theorem
 
 
-Scenario: Test of a problem with associativity of /\
-  * Formula "-( ('this.allTrue^' === ('this.^a' /\ 'this.^b' /\ 'this.^c')) )" is not a theorem
 
-Scenario Outline: Tests
+#Scenario Outline: Tests
+#
+#  When the FOP is "<Statement>"
+#  Then it is a "<Result>"
+#  * Note that "<Note>"
 
-  When the FOP is "<Statement>"
-  Then it is a "<Result>"
-  * Note that "<Note>"
-
-  Examples:
-    | Result    | Statement                        | Note                      |
-    #-----------|----------------------------------|---------------------------|
-    | theorem   |  a = b ==> f(a) = f(b)           | from preds&fns - works in natural ordering |
+#  Examples:
+#    | Result    | Statement                        | Note                      |
+#    #-----------|----------------------------------|---------------------------|
+#    | theorem   |  a = b ==> f(a) = f(b)           | from preds&fns - works in natural ordering |
 #    | theorem   |  b = a ==> f(a) = f(b)           | from preds&fns            |
 #    | theorem   |  -(f(a) = f(b)) ==> -(b = a)     | modis tolens version from preds&fns|
 #    | theorem   |  (f(a) = f(b)) \/ -(a = b)       | from preds&fns            |
