@@ -44,6 +44,7 @@ private int freeVarDepth = 7; // limit before backtracking
 private Term goal;
 private String currentGoal = "";
 private SolveInfo solutionInfo;
+private String factFormula = "";
 
 @Given("^a Prolog engine$")
 public void a_Prolog_engine() throws Throwable {
@@ -80,6 +81,37 @@ public void using_feature(String name) throws Throwable {
 public void formula_is_a_theorem(String formula) throws Throwable {
   setFormulaGoal(formula);
   proveGoal();
+}
+
+@Given("^the following fact$")
+public void the_following_fact(String fact) throws Throwable {
+  final String[] sArray = fact.split("\\r?\\n");
+  factFormula = "";
+  System.out.println("\nFacts:");
+  for (int i = 0; i<sArray.length; i++) {
+    int percent = sArray[i].indexOf('%');
+    if (percent >= 0)
+      sArray[i] = sArray[i].substring(0, percent);
+    System.out.println("Line "+ i +": "+ sArray[i]);
+    factFormula = factFormula + sArray[i].trim();
+  }
+}
+
+@Then("^the following can be proven$")
+public void the_following_can_be_proven(String theorem) throws Throwable {
+  final String[] sArray = theorem.split("\\r?\\n");
+  String formula = "";
+  System.out.println("\nTheorem");
+  for (int i = 0; i<sArray.length; i++) {
+    int percent = sArray[i].indexOf('%');
+    if (percent >= 0)
+      sArray[i] = sArray[i].substring(0, percent);
+    System.out.println("Line "+ i +": "+ sArray[i]);
+    formula = formula + sArray[i].trim();
+  }
+  // use awkward -( -(  because we only want to negate the theorem instead of whole formula
+  String formula2 = "-( -( "+ formula +") /\\ ( "+ factFormula +" ) )";
+  formula_is_a_theorem(formula2);
 }
 
 @Given("^[Ff]ormula [^b]*\"([^\"]*)\"[^b]* is not a theorem$")

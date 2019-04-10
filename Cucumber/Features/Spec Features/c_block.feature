@@ -21,7 +21,7 @@ Scenario: The meaning of a block is formed from the meaning of its statements
 
     If there is no top-level means-statement, then the meaning of a block is the conjunction of the meaning of all of its top level statements. But because a means-statement summarizes what is important to the programmer about all the preceding code of the block, its meaning is substituted for the meaning of all that code, making the meaning of the block be the meaning of its last top-level means-statement conjoined with the meaning of any following top-level statements. Note that the means-statement must be provable from the preceding code, but does not have to be logically equivalent to it.
 
-  * using feature "***** c_block.feature - The meaning of a block - first test *****"
+#  * using feature "***** c_block.feature - The meaning of a block - first test *****"
 
   When an invalid run unit is
     """

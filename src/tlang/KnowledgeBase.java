@@ -390,9 +390,11 @@ public ConsistencyResult checkConsistency(String statement) {
   return prologConsistencyResult(solutionInfo);
   }
 
-private ConsistencyResult prologConsistencyResult(SolveInfo solutionInfo) { // @formatter:off
+//@formatter:off
+private ConsistencyResult prologConsistencyResult(SolveInfo solutionInfo) {
   try {
-    System.out.println("SolveInfo: "+solutionInfo);
+    if (isDebugging)
+      System.out.println("SolveInfo: "+solutionInfo);
     String resultState = solutionInfo.getTerm(prologConsistencyResult).toString();
   switch (resultState) {
   // Possible values of resultState are listed in the Prolog etleantap.pl file in predicate
@@ -401,8 +403,6 @@ private ConsistencyResult prologConsistencyResult(SolveInfo solutionInfo) { // @
     case "consistent"  : return ConsistencyResult.consistent;
     case "limit"       : return ConsistencyResult.reachedLimit;
     default: throw new InvalidResultFromProverException(resultState);
-//    default: throw new RuntimeException
-//                      ("A call to the etleantap.pl prover gave the invalid result: " + resultState);
     }
   }
   catch (NoSolutionException e) {
@@ -421,7 +421,6 @@ InvalidResultFromProverException(String resultState) {
 }
 
 private SolveInfo checkForConsistency(String testString) {
-  System.out.println("Checking consistency: "+ testString);
   SolveInfo info;
   try {
     info = engine.solve(Term.createTerm(prologCommand(testString), engine.getOperatorManager()));
@@ -441,7 +440,6 @@ private String prologCommand(String formula) {
   String command = "nnf( ("+ formula +"), NNF ), runProver(NNF, "+ prologConsistencyResult +")";
   if (testMode == SolverInTestMode.on)
     command = "db_start_debugging, "+ command;
-  System.out.println("***** Prolog command: "+command);
   return command;
 }
 

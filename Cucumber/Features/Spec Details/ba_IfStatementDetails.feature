@@ -82,8 +82,8 @@ Scenario: The if statement with one variable
       if ('hasDiscount) rate' = .10;
                    else rate' = .20;
     // a natural logic for if-then-else statements
-    means (   'hasDiscount ==> rate' = .10
-          & ! 'hasDiscount ==> rate' = .20
+    means ( (   'hasDiscount ==> rate' = .10 )
+          & ( ! 'hasDiscount ==> rate' = .20 )
           );
     }
     // an equivalent logic
