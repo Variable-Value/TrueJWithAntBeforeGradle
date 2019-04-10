@@ -10,6 +10,8 @@ Scenario: The if-statement allows alternative definitions for values
     A value name has only one value for the whole range of its scope, but that value may be selected
     from different options, depending upon the runtime conditions of the state.
 
+#  * using feature "***** b_IfStatement.feature - allows alternative definitions - first test *****\n"
+
   * A valid T Language run unit is
     """
     class Rates {
@@ -25,8 +27,8 @@ Scenario: The if-statement allows alternative definitions for values
       if ('hasDiscount) rate' = discountRate';
                    else rate' = standardRate';
     // a natural logic for if-then-else statements
-    means (   'hasDiscount ==> rate' = discountRate'
-          & ! 'hasDiscount ==> rate' = standardRate'
+    means ( (   'hasDiscount ==> rate' = discountRate' )
+          & ( ! 'hasDiscount ==> rate' = standardRate' )
           );
     }
     // an equivalent logic
@@ -144,6 +146,8 @@ Scenario: Always include definitions of value names in all branches
 
     The coding could be simplified if a suitable default value for the missing value names from a branch could be established, perhaps the first or last value of the variable in the branch scope. Then a perhaps a pseudo-function could be used taking parameters of the value names that would otherwise be undefined, for instance, "default(a', b')", or just "default", or the compiler could always default the value names without requiring extra code. A disadvantage of this approach is that it makes the mapping from the executable code to its meaning a little more obscure.
 
+#  * using feature "***** b_IfStatement.feature - Include definitions of value names - first test *****"
+
   * a valid run unit is
     """
     class Swapper_2 {
@@ -165,7 +169,6 @@ Scenario: Always include definitions of value names in all branches
     } // end class
     """
 
-  * using feature "***** b_IfStatement.feature - Include definitions of value names - second test *****"
 
   * a valid run unit is
     """
