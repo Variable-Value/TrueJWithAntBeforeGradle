@@ -10,7 +10,7 @@ Scenario: The if-statement allows alternative definitions for values
     A value name has only one value for the whole range of its scope, but that value may be selected
     from different options, depending upon the runtime conditions of the state.
 
-#  * using feature "***** b_IfStatement.feature - allows alternative definitions - first test *****\n"
+  #  * using feature "***** b_IfStatement.feature - allows alternative definitions - first test *****\n"
 
   * A valid T Language run unit is
     """
@@ -146,7 +146,7 @@ Scenario: Always include definitions of value names in all branches
 
     The coding could be simplified if a suitable default value for the missing value names from a branch could be established, perhaps the first or last value of the variable in the branch scope. Then a perhaps a pseudo-function could be used taking parameters of the value names that would otherwise be undefined, for instance, "default(a', b')", or just "default", or the compiler could always default the value names without requiring extra code. A disadvantage of this approach is that it makes the mapping from the executable code to its meaning a little more obscure.
 
-#  * using feature "***** b_IfStatement.feature - Include definitions of value names - first test *****"
+  #  * using feature "***** b_IfStatement.feature - Include definitions of value names - first test *****"
 
   * a valid run unit is
     """
@@ -196,71 +196,67 @@ Scenario: Always include definitions of value names in all branches
 
     } // end class
     """
-    # see the generated code for this example in ...EndToEnd.feature
+    # see the generated code for this example in ba_IfStatementEndToEnd.feature
 
 #  Scenario: A more complex example - ThreeSort
-#
-#    This version of sorting three items minimizes copying in each case.
-#
-#    The means-statement is used to good effect to keep track of the state determined so far. If
-#    there are mistakes in programming, the final means statement for the threeSort() method could be
-#    copied to the end of suspected cases to see which one is at fault.
-#
-#    The implicit local variable that TrueJ creates is often helpful, but in one case we need to use a different ordering of the code than our preferred one to avoid creating two implicit local variables.
-#
-#  * A valid T Language run unit is
-#    """
-#    class Triplet {
-#
-#    int a;
-#    int b;
-#    int c;
-#
-#    void threeSort() {
-#      if ('a <= 'b ) {
-#        if ('b <= 'c) { // already in order
-#          a' = 'a;                          // no-op
-#          b' = 'b;                          // no-op
-#          c' = 'c;                          // no-op
-#        } else { // 'a & 'c both <= 'b
-#          if ('a <= 'c) {
-#            means ('a <= 'c && 'c <= 'b); // 'a <= 'c <= 'b);
-#            a' = 'a;                        // no-op
-#            b' = 'c;
-#            c' = 'b;
-#          } else {
-#            means ('c < 'a && 'a <= 'b); // 'c < 'a <= 'b);
-#            a' = 'c;
-#            c' = 'b; // definition of c' and b' swapped to minimize implicit local variables
-#            b' = 'a;
-#          }
-#        }
-#      } else { // 'b < 'a
-#        if ('a <= 'c) { // 'b < 'a <= 'c
-#          means ('b < 'a && 'a <= 'c); // 'b < 'a <= 'c);
-#          a' = 'b;
-#          b' = 'a;
-#          c' = 'c;                          // no-op
-#        } else {          // 'b & 'c both <= 'a
-#          if ('b <= 'c) {
-#            means ('b <= 'c && 'c < 'a); // 'b <= 'c < 'a
-#            a' = 'b;
-#            b' = 'c;
-#            c' = 'a;
-#          } else {
-#            means ('c < 'b && 'b < 'a); // 'c < 'b < 'a);
-#            a' = 'c;
-#            b' = 'b;                        // no-op
-#            c' = 'b;
-#          }
-#        }
-#      }
-#    }
-#    means (a' <= b' && b' <= c');
-#
-#    } // end class
-#    """
-
-#  @Ignore # save this for after we have established proving for less-than relations
-
-# END @Ignore --------------------
+  #
+  #    This version of sorting three items minimizes copying in each case.
+  #
+  #    The means-statements are used to keep track of the state determined so far. We do not do the
+  #    obvious simplifications because we have not yet presented a theory of comparisons to justify
+  #    translating, say, !('b <= 'c) to ('c < 'b).
+  #
+  #    The implicit local variable that TrueJ creates is often helpful, but in one case we need to use a different ordering of the code than our preferred one to avoid creating two implicit local variables.
+  #
+  #  * A valid T Language run unit is
+  #    """
+  #    class Triplet {
+  #
+  #    int a;
+  #    int b;
+  #    int c;
+  #
+  #    void threeSort() {
+  #      if ('a <= 'b ) {
+  #        if ('b <= 'c) { // already in order
+  #          a' = 'a;                          // no-op
+  #          b' = 'b;                          // no-op
+  #          c' = 'c;                          // no-op
+  #        } else { // 'a & 'c are both <= 'b
+  #          if ('a <= 'c) {
+  #            means ('a <= 'c && !('b <= 'c)); // actually 'a <= 'c < 'b
+  #            a' = 'a;                        // no-op
+  #            b' = 'c;
+  #            c' = 'b;
+  #          } else {
+  #            means ('c < 'a && 'a <= 'b); // 'c < 'a <= 'b);
+  #            a' = 'c;
+  #            c' = 'b; // definition of c' and b' swapped to minimize implicit local variables
+  #            b' = 'a;
+  #          }
+  #        }
+  #      } else { // 'b < 'a
+  #        if ('a <= 'c) { // 'b < 'a <= 'c
+  #          means ('b < 'a && 'a <= 'c); // 'b < 'a <= 'c);
+  #          a' = 'b;
+  #          b' = 'a;
+  #          c' = 'c;                          // no-op
+  #        } else {          // 'b & 'c both <= 'a
+  #          if ('b <= 'c) {
+  #            means ('b <= 'c && 'c < 'a); // 'b <= 'c < 'a
+  #            a' = 'b;
+  #            b' = 'c;
+  #            c' = 'a;
+  #          } else {
+  #            means ('c < 'b && 'b < 'a); // 'c < 'b < 'a);
+  #            a' = 'c;
+  #            b' = 'b;                        // no-op
+  #            c' = 'b; // RED TEST (should be c' = 'a;)
+  #          }
+  #        }
+  #      }
+  #    }
+  #    means (a' <= b' && b' <= c');
+  #
+  #    } // end class
+  #    """
