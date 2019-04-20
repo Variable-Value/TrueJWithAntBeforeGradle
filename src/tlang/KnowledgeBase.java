@@ -369,6 +369,7 @@ public ProofResult assumeIfProven(String newFact, SolverInTestMode... modeOfTest
  * @param newFact
  */
 public void substitute(String newFact) {
+  facts.clear();
   assume(newFact); // TODO: eliminate all preceding code in block except types
 }
 
