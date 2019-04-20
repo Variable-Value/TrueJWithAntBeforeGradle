@@ -62,7 +62,7 @@ private static final String prover = "Prover";
  * users a failure in an attempt to prove a statement. */
 private CollectingMsgListener errors;
 private static char prologDecoratorChar = '^';
-private static TLantlrProofVisitor latestProofVisitor;
+private static RewriteVisitor latestProofVisitor;
 
 /** Contains a logical representation of the state of a program. A child KnowledgeBase is created
  * for each scope in which something might need to be proven. */
@@ -264,7 +264,7 @@ private String withoutSemicolon(String code) {
  * the higher scope fields.
  */
 @Override public Void visitT_methodDeclaration(T_methodDeclarationContext ctx) {
-  withParentKb(kb, parentKb -> {
+  withChildOfKb(() -> {
     super.visitT_methodDeclaration(ctx);
   });
   return null;
@@ -276,12 +276,9 @@ private String withoutSemicolon(String code) {
 /* TODO: keep looking after the means is encountered for variable declarations to collect type
  * information for all valueNames that occur in the meaningful code. */
 @Override public Void visitT_block(T_blockContext ctx) {
-
-
-  withParentKb(kb,
-               parentKb -> withParentScope(ctx, parent -> visitChildren(parent))
-               );
-
+  withChildOfKb(() ->
+    withChildScopeForCtx(ctx, () -> visitChildren(ctx))
+  );
   boolean statementsAreActive = true; // so far
   String types = "true";
   String meaning = "true";
@@ -342,16 +339,16 @@ private T_expressionContext meansExpressionCtx(T_statementContext statement) {
 @Override
 public Void visitIfStmt(IfStmtContext ctx) {
   String condition = translateCondition(ctx.t_parExpression());
-  // String thenMeaning = parenthesize(rewriter.source(ctx.t_statement(0)));
   String thenMeaning = checkBranch(condition, ctx.t_statement(0));
+
+  String elseMeaning = "";
   T_statementContext elseContext = ctx.t_statement(1);
-  if (elseContext == null) {
-    rewriter.substituteText(ctx, thenMeaning + or + negate(condition));
-  } else {
-    // String elseMeaning = parenthesize(rewriter.source(elseContext));
-    String elseMeaning = checkBranch(negate(condition), elseContext);
-    rewriter.substituteText(ctx, thenMeaning + or + elseMeaning);
-  }
+  if (elseContext == null)
+    elseMeaning = negate(condition);
+  else
+    elseMeaning = checkBranch(negate(condition), elseContext);
+
+  rewriter.substituteText(ctx, thenMeaning + or + elseMeaning);
   kb.assume(rewriter.source(ctx));
   return null;
 }
@@ -366,8 +363,10 @@ private String translateCondition(T_parExpressionContext conditionCtx) {
   return parenthesize(condition);
 }
 
+/** A branch is a scope, but since it is also a single statement, it doesn't require the
+ * paraphernalia that a scope normally requires. */
 private String checkBranch(String condition, T_statementContext branchCtx) {
-  withParentKb(kb, parentKb -> {
+  withChildOfKb(() -> {
     kb.assume(condition);
     visit(branchCtx);
   });
@@ -564,10 +563,13 @@ public Void visitConjunctiveBoolExpr(ConjunctiveBoolExprContext ctx) {
  * @return a null */
 @Override
 public Void visitT_means(T_meansContext ctx) {
+//  System.out.println("Mean pre: "+ kb.getMeaning());
   visitChildren(ctx); // rewrite code into the KnowledgeBase language
+//  System.out.println("Mean post: "+ kb.getMeaning());
 
   T_expressionDetailContext predicate = ctx.t_expression().t_expressionDetail();
   String meansStatementForProver = prologCode(predicate);
+//  System.out.println("Means to prove: "+ meansStatementForProver);
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
   if ( result != ProofResult.provenTrue)
     result = proveEachConjunct(predicate);
@@ -676,19 +678,11 @@ private String varName(String val) {
 }
 
 /** Use the Java stack as an implicit stack for knowledgebases  */
-private void withParentKb(KnowledgeBase kb2, Consumer<KnowledgeBase> acceptFuction) {
-  KnowledgeBase parentKb = kb;       // push kb on parent stack
+private void withChildOfKb(Runnable acceptFunction) {
+  KnowledgeBase parentKb = kb;
   kb = new KnowledgeBase(parentKb);  // create child kb
-  acceptFuction.accept(kb);          // use child kb
-  kb = parentKb;                     // pop kb
-}
-
-/** Use the Java stack as an implicit stack for scopes  */
-private void withParentScope(ParserRuleContext ctx, Function<ParserRuleContext, Void> function) {
-  final Scope parentScope = currentScope; // push currentScope on parent stack
-  currentScope = scopeMap.get(ctx);       // create child scope
-  function.apply(ctx);                    // apply function using child scope
-  currentScope = parentScope;             // pop currentScope
+  acceptFunction.run();              // use child kb
+  kb = parentKb;                     // restore parent kb
 }
 
 } // end class

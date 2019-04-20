@@ -123,35 +123,33 @@ protected Void typeVisit(ParserRuleContext ctx) {
 //      assigned.
 @Override
 protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx) {
-  final Scope oldScope = currentScope;
-  currentScope = scopeMap.get(ctx);
-  if (bodyCtx != null) {
-    Token openBraceForBlock = bodyCtx.getStart();
-    StringBuilder tempInitializations = new StringBuilder();
-    Scope background = currentScope.parent;
-    for (Map.Entry<String, VarInfo> varEntry : background.varToInfoMap.entrySet()) {
-      String varName = varEntry.getKey();
-      VarInfo varInfo = varEntry.getValue();
-      String initValue = decoratorString+ varName;
-      for (String reusedName : varInfo.reusedValueNames) {
-        if (reusedName.equals(initValue)) {
-          tempInitializations.append(" ")       .append(varInfo.getType())
-                             .append(" "+ $T$)  .append(varName)
-                             .append(" = /*'*/").append(varName)
-                             .append(";");
-        } else {
-          tempInitializations.append(" ")       .append(varInfo.getType())
-                             .append(" ")       .append(reusedName.replace("'", $T$))
-                             .append(";");
+  withChildScopeForCtx(ctx, () -> {
+    if (bodyCtx != null) {
+      Token openBraceForBlock = bodyCtx.getStart();
+      StringBuilder tempInitializations = new StringBuilder();
+      Scope background = currentScope.parent;
+      for (Map.Entry<String, VarInfo> varEntry : background.varToInfoMap.entrySet()) {
+        String varName = varEntry.getKey();
+        VarInfo varInfo = varEntry.getValue();
+        String initValue = decoratorString+ varName;
+        for (String reusedName : varInfo.reusedValueNames) {
+          if (reusedName.equals(initValue)) {
+            tempInitializations.append(" ")       .append(varInfo.getType())
+                               .append(" "+ $T$)  .append(varName)
+                               .append(" = /*'*/").append(varName)
+                               .append(";");
+          } else {
+            tempInitializations.append(" ")       .append(varInfo.getType())
+                               .append(" ")       .append(reusedName.replace("'", $T$))
+                               .append(";");
+          }
         }
       }
+      rewriter.insertAfter(openBraceForBlock, tempInitializations);
     }
-    rewriter.insertAfter(openBraceForBlock, tempInitializations);
-  }
 
-  visitChildren(ctx);
-
-  currentScope = oldScope;
+    visitChildren(ctx);
+  });
 }
 
 /**
