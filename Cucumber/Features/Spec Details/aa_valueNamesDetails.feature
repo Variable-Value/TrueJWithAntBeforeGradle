@@ -716,3 +716,26 @@ Scenario: Nested && and || translate to the Prover correctly
 
     } // end class
     """
+
+Scenario: Assignment is right-associative while equality is left-associative
+
+  The use of the equality symbol = for both assignment and equality testing is normally clear, but we include here a short exploration of the differences.
+
+  When an invalid run unit is
+    """
+    class assignmentVsEquality {
+
+    int a, b;
+
+    void test() {
+      boolean fact' = 'a = 'b; // parsed as fact' = ('a = 'b);
+      means (fact' = 'a = 'b); // error because parses as (fact' = 'a) = 'b
+    }
+
+    } // end class
+    """
+
+  Then an error message contains
+    """
+    The code does not support the proof of the statement: b' = 'a
+    """
