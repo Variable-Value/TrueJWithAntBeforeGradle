@@ -1,10 +1,7 @@
 package tlang;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
@@ -19,7 +16,6 @@ import tlang.TLantlrParser.T_blockStatementContext;
 import tlang.TLantlrParser.T_expressionContext;
 import tlang.TLantlrParser.T_expressionDetailContext;
 import tlang.TLantlrParser.T_localVariableDeclarationContext;
-import tlang.TLantlrParser.T_methodBodyContext;
 import tlang.TLantlrParser.T_methodDeclarationContext;
 import tlang.TLantlrParser.T_parExpressionContext;
 import tlang.TLantlrParser.T_statementContext;
