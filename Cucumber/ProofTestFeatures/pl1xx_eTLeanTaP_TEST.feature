@@ -7,8 +7,8 @@ Feature: Special Test     (Tests for the eLeanTaP system)
 Background: The theorem prover is loaded into a tuProlog engine
   Given a Prolog engine
   And the eTLeanTap theory is loaded
-  And debugging on
-  And using feature "pl1xx_eTLeanTaP_TEST"
+#  And debugging on
+#  And using feature "pl1xx_eTLeanTaP_TEST"
 
 Scenario: Test of if-then-else translation
 

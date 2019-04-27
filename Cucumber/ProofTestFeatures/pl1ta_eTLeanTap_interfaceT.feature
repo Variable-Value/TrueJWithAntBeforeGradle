@@ -15,7 +15,7 @@ Background: The theorem prover is loaded into a tuProlog engine
   Given a Prolog engine
   And the eTLeanTap theory is loaded
 #  And debugging on
-  And using feature "pl1ta_eTLeanTap_interfaceT"
+#  And using feature "pl1ta_eTLeanTap_interfaceT"
 
 Scenario: A simple example of code that supports a proof
 
