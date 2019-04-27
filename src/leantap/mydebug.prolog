@@ -17,14 +17,15 @@ mydebug(A) :- ( debug_on -> printdebuglevel, mydebug_helper(A)
               )
             .
 
-mydebug_helper(A)     :- var(A), !, print(v(A))                       .
+mydebug_helper(A)     :- var(A), !, write_term(v(A),numbervars(false)).
+mydebug_helper(A)     :- atom(A),!, print(A)                          .
 mydebug_helper([])    :-         !, print('[]')                       .
 mydebug_helper([A|B]) :-         !, print('['), mydebug_nostart([A|B]).
-mydebug_helper(A)     :-         !, print(A)                          .
+mydebug_helper(A)     :-         !, write_term(A,numbervars(false))  .
 
 mydebug_nostart([A|B])
  :- mydebug_helper(A)
-  , ( var(B) -> print(','),print(v(B)),print(']')
+  , ( var(B) -> print(','),write_term(v(B),numbervars(false)),print(']')
     ; B = [] -> print(']')
     ; print(','), mydebug_nostart(B)
     )
@@ -62,7 +63,7 @@ dbfail(L) :- dbend(L,'Fail'), fail.
 dbend(Current_level,Msg)
  :- debug_on, mydebug(Msg)
      -> ( retract(db_level(Level)), Level >= 0
-           -> ( ( Current_level = Level -> true ; mydebug('ERROR: Recovering to correct error level') )
+           -> ( ( Current_level = Level -> true ; mydebug('ERROR: Recovering correct error level') )
               , NewLevel is Current_level - 1
               , assertz(db_level(NewLevel))
               )
@@ -81,9 +82,9 @@ dbend(Current_level)
               , NewLevel is (Current_level - 1)
               , assertz(db_level(NewLevel))
               )
-            ; ( mydebug('ERROR: dbend(Level) placed incorrectly, recovering to level 0')
+            ; ( print('ERROR: dbend(Level) placed incorrectly, recovering to level 0')
               , abort(db_level/1)
-              , assertz(db_level(Current_level))
+              , assertz(db_level(0))
               )
         )
   ; true

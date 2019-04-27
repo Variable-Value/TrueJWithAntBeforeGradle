@@ -133,8 +133,7 @@ inconsistent(Fml,Limit, FmlTxt)
               % expressions. Therefore, an inconsistency might have been found
               % on that conjunctive if the depth limit was large enough, and
               % we cannot be positive that the Fml is consistent.
-           -> nl, print('Reached Limit '),print(Limit)
-              , print(' on formula: '), print(FmlTxt), nl
+           -> mydebug(['Reached Limit ', Limit, ' on formula: ', FmlTxt])
               , fail
             ; mydebug(['Unprovable: ',FmlTxt])
               , fail %                    print('Proof failed for formula: '), print(FmlTxt), nl, fail
