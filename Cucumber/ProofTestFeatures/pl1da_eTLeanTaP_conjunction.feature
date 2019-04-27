@@ -14,7 +14,7 @@ Background: The theorem prover is loaded into a tuProlog engine
   Given a Prolog engine
   And the eTLeanTap theory is loaded
 #  And Java debugging
-  And using feature "pl1da_eTLeanTaP_conjunction"
+#  And using feature "pl1da_eTLeanTaP_conjunction"
 
 Scenario Outline: Simple Examples
 

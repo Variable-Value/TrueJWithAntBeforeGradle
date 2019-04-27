@@ -85,11 +85,19 @@ nnf(Fml,NNF) :- nnfdebug(['Starting ',Fml])
 % ??? nnf(Fml,_,_,_) :- var(Fml) -> print('Invalid Formula').
 
 %% The theory for inequalities
+%
 % We assume that if inequalities occur, the following theory has been given to the prover
 %   all(A, all(B,
-%       ((A < B) \/ (B < A) \/ (A = B))
+%       (  ( (A < B) /\ -(B < A) /\ -(A = B) )
+%       \/ (-(A < B) /\  (B < A) /\ -(A = B) )
+%       \/ (-(A < B) /\ -(B < A) /\  (A = B) )
+%       )
 %    /\ all(C, ((A < B) /\ (B < C) ==> (A < C)) )
 %   ))
+%
+% Some more careful thought is needed before including something like the commented out comparison
+% translations in nnf(), below. If no < comparisons are present, they should not conflict with
+% #= comparisons. But something else causes problems.
 
 
 nnf(Fml,FreeV,NNF,Paths)
@@ -98,9 +106,13 @@ nnf(Fml,FreeV,NNF,Paths)
       ; Fml = -(-A)              -> Fml1 = A
       ; Fml = -(A #= B)          -> Fml1 =  (A = B)
       ; Fml =  (A #= B)          -> Fml1 = -(A = B)
-      ; Fml =  (A > B)           -> Fml1 =  (B < A)
-      ; Fml =  (A >= B)          -> Fml1 = -(A < B)
-      ; Fml =  (A =< B)          -> Fml1 = -(B < A)
+%       ; Fml = -(A > B)           -> Fml1 =  (B =< A)
+%       ; Fml =  (A > B)           -> Fml1 =  (B < A)
+%       ; Fml = -(A < B)           -> Fml1 =  (B >= A)
+%       ; Fml = -(A >= B)          -> Fml1 = (A < B)
+%       ; Fml =  (A >= B)          -> Fml1 = (A > B) \/ (A = B)
+%       ; Fml = -(A =< B)          -> Fml1 = (B < A)
+%       ; Fml =  (A =< B)          -> Fml1 = (A < B) \/ (A = B)
 % For quantification, X is assumed to match a free variable
       ; Fml = -all(X,F)          -> Fml1 = ex(X,-F)
       ; Fml = -ex(X,F)           -> Fml1 = all(X,-F)

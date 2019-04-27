@@ -49,13 +49,8 @@ public RewriteVisitor( TokenStream             tokenStream
  */
 @Override public Void
 visitT_constructorDeclaration(T_constructorDeclarationContext ctx) {
-  Scope parentScope = currentScope;
-  currentScope = scopeMap.get(ctx);
   final T_constructorBodyContext bodyCtx = ctx.t_constructorBody();
-
   executableVisit(ctx, bodyCtx);
-
-  currentScope = parentScope;
   return null ;
 }
 
@@ -67,13 +62,8 @@ visitT_constructorDeclaration(T_constructorDeclarationContext ctx) {
  */
 @Override public Void
 visitT_initializer(T_initializerContext ctx) {
-  Scope parentScope = currentScope;
-  currentScope = scopeMap.get(ctx);
   final T_blockContext bodyCtx = ctx.t_block();
-
   executableVisit(ctx, bodyCtx);
-
-  currentScope = parentScope;
   return null;
 }
 
@@ -85,13 +75,8 @@ visitT_initializer(T_initializerContext ctx) {
  */
 @Override public Void
 visitT_methodDeclaration(T_methodDeclarationContext ctx) {
-  Scope parentScope = currentScope;
-  currentScope = scopeMap.get(ctx);
   final T_methodBodyContext bodyCtx = ctx.t_methodBody();
-
   executableVisit(ctx, bodyCtx);
-
-  currentScope = parentScope;
   return null;
 }
 
@@ -101,12 +86,7 @@ visitT_methodDeclaration(T_methodDeclarationContext ctx) {
  */
 @Override public Void
 visitT_block(T_blockContext ctx) {
-  final Scope parentScope = currentScope;
-  currentScope = scopeMap.get(ctx);
-
-  visitChildren(ctx);
-
-  currentScope = parentScope;
+  withChildScopeForCtx(ctx, () -> visitChildren(ctx));
   return null;
 }
 
@@ -118,17 +98,20 @@ visitT_block(T_blockContext ctx) {
  * @return a null to indicate that there are no children to visit.
  */
 protected Void typeVisit(ParserRuleContext ctx) {
-  Scope parentScope = currentScope;
-  currentScope = scopeMap.get(ctx);
-
-  visitChildren(ctx);
-
-  currentScope = parentScope;
+  withChildScopeForCtx(ctx, () -> visitChildren(ctx));
   return null;
 }
 
 protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx) {
-  visitChildren(ctx);
+  withChildScopeForCtx(ctx, () -> visitChildren(ctx));
+}
+
+/** Use the Java stack as an implicit stack for scopes  */
+protected void withChildScopeForCtx(ParserRuleContext childCtx, Runnable function) {
+  final Scope parentScope = currentScope; // save parent scope
+  currentScope = scopeMap.get(childCtx);  // set to child scope
+  function.run();                             // apply function using child scope
+  currentScope = parentScope;             // restore currentScope
 }
 
 }

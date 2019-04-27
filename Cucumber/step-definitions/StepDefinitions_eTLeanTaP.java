@@ -28,19 +28,19 @@ import org.hamcrest.core.CombinableMatcher;
 @SuppressWarnings({ "unused", "javadoc", "null" })
 public class StepDefinitions_eTLeanTaP {
 
+private int freeVarDepth = 7; // limit before backtracking
+/** Print debugging information from Prolog prover. */
+/*package*/ static boolean debugging = false;
+private boolean needsETLeanTapTheory = true;
+
 private static Prolog engine;
 private static Theory theory;
-/*package*/ static boolean debugging = false;
-
-private boolean needsETLeanTapTheory = true;
 
 /*package*/ static String prologStdOut = "";
 private String expectedPStdOut;
 private static String collectedErrorMsgs = "";
 
-//TODO: generalize tLAntlrDir for any developer to use
 private String relativeDir = "./";
-private int freeVarDepth = 7; // limit before backtracking
 private Term goal;
 private String currentGoal = "";
 private SolveInfo solutionInfo;
@@ -87,12 +87,10 @@ public void formula_is_a_theorem(String formula) throws Throwable {
 public void the_following_fact(String fact) throws Throwable {
   final String[] sArray = fact.split("\\r?\\n");
   factFormula = "";
-  System.out.println("\nFacts:");
   for (int i = 0; i<sArray.length; i++) {
-    int percent = sArray[i].indexOf('%');
-    if (percent >= 0)
-      sArray[i] = sArray[i].substring(0, percent);
-    System.out.println("Line "+ i +": "+ sArray[i]);
+    int percentSign = sArray[i].indexOf('%');
+    if (percentSign >= 0)
+      sArray[i] = sArray[i].substring(0, percentSign);
     factFormula = factFormula + sArray[i].trim();
   }
 }
@@ -101,12 +99,10 @@ public void the_following_fact(String fact) throws Throwable {
 public void the_following_can_be_proven(String theorem) throws Throwable {
   final String[] sArray = theorem.split("\\r?\\n");
   String formula = "";
-  System.out.println("\nTheorem");
   for (int i = 0; i<sArray.length; i++) {
-    int percent = sArray[i].indexOf('%');
-    if (percent >= 0)
-      sArray[i] = sArray[i].substring(0, percent);
-    System.out.println("Line "+ i +": "+ sArray[i]);
+    int percentSign = sArray[i].indexOf('%');
+    if (percentSign >= 0)
+      sArray[i] = sArray[i].substring(0, percentSign);
     formula = formula + sArray[i].trim();
   }
   // use awkward -( -(  because we only want to negate the theorem instead of whole formula
@@ -447,17 +443,24 @@ private void mismatchError(String msg, int lineCount, int expPos, int actPos) th
 
 }
 
+/** Search for beginning of current line. This will normally be the character after the most recent
+ * preceding newline '\n', but it may be the beginning of the file. If we are currently sitting on
+ * the end-of-line marker for a line, then we return the beginning of that line.
+ * @param lines     The text that we are in the middle of
+ * @param posInLine The character position in the lines text. We consider it to be in a line if it
+ *                    is the position of the newline character ending the line. */
 private int beginningOfLineOrFile(String lines, int posInLine) {
   final int bol = lines.lastIndexOf('\n', posInLine - 1);
-    // in case we are sitting on \n
-  return 1 + bol; // char after previous \n, or beginning of file, e.g., zero
+    // (posInLine - 1) in case posInLine is sitting on a \n
+    // bol == -1 if not found, i.e., we are in the first line
+  return 1 + bol; // char after previous \n, or beginning of file, e.g., character zero
 }
 
 private int endOfLineOrFile(String lines, int posInLine) {
   // if posInLine is \n, then that is the end of the current line
-  final int eol = lines.indexOf('\n', posInLine);
-  if (eol == -1) { return lines.length(); }
-            else { return eol;            }
+  final int endOfLine = lines.indexOf('\n', posInLine);
+  return (endOfLine == -1) ? lines.length()
+                           : endOfLine;
 }
 
 private void reportErrors() {
