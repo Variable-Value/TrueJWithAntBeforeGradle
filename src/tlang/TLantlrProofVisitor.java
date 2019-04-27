@@ -565,7 +565,6 @@ public Void visitT_means(T_meansContext ctx) {
 
   T_expressionDetailContext predicate = ctx.t_expression().t_expressionDetail();
   String meansStatementForProver = prologCode(predicate);
-//  System.out.println("Means to prove: "+ meansStatementForProver);
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
   if ( result != ProofResult.provenTrue)
     result = proveEachConjunct(predicate);
