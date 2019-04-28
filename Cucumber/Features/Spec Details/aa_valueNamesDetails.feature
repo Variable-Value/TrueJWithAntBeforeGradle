@@ -728,8 +728,11 @@ Scenario: Assignment is right-associative while equality is left-associative
     int a, b;
 
     void test() {
-      boolean fact' = 'a = 'b; // parsed as fact' = ('a = 'b);
-      means (fact' = 'a = 'b); // error because parses as (fact' = 'a) = 'b
+      boolean fact1' = ('a = 'b);
+      means  (fact1' = ('a = 'b)); // Proven successfully
+
+      boolean fact2' = 'a = 'b;    // parsed as fact' = ('a = 'b);
+      means  (fact2' = 'a = 'b);   // error because parses as (fact' = 'a) = 'b
     }
 
     } // end class
@@ -737,5 +740,5 @@ Scenario: Assignment is right-associative while equality is left-associative
 
   Then an error message contains
     """
-    The code does not support the proof of the statement: b' = 'a
+    The code does not support the proof of the statement: fact2' = 'a = 'b
     """
