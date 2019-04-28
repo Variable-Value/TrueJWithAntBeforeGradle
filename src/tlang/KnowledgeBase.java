@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.stream.Collectors;
 import alice.tuprolog.*;
 import alice.tuprolog.event.ExceptionEvent;
@@ -14,7 +13,6 @@ import alice.tuprolog.event.OutputEvent;
 import alice.tuprolog.event.OutputListener;
 import alice.tuprolog.event.WarningEvent;
 import alice.tuprolog.event.WarningListener;
-import tlang.TLantlrParser.T_typeContext;
 
 
 //@formatter:off
@@ -137,9 +135,8 @@ private static boolean isDebugging = false; // set isDebugging to true to print 
 private static String relativeDir = "./";
 
 private static Prolog engine = createPrologEngine();
-private static String prologStdOut = "";
-  // TODO: remove prologStdOut or provide an accessor method
 private static Theory theory;
+private static String prologStdOut = "";
 /** Name of the prolog code field where the result is stored. See
  * {@link #prologConsistencyResult(SolveInfo)} */
 private static final String prologConsistencyResult = "ConsistencyResult";
@@ -345,32 +342,28 @@ public ProofResult assumeIfProven(String newFact, SolverInTestMode... modeOfTest
   return result;
 }
 
-/**
- * Substitutes a new fact for the existing facts - use when the only purpose of facts is to
+/** Substitutes a new fact for the existing facts - use when the only purpose of facts is to
  * establish the new fact.
  * <p>
  * For now, we implement this by simply adding the fact to the KnowledgeBase. But the intent is for
  * this to be used in TrueJ programming to summarize the preceding code of a block with a
- * <code>means</code> statement, gathering the complexity of the code into that single
- * statement of the salient information. Note that variable type information is preserved, but
- * <em>all</em> the other code above the <code>means</code> statement is removed from the knowledge
- * base, even the definition of values whose scope extends beyond the  <code>means</code> statement;
- * therefore, the following TrueJ code is allowed to legally reference a value, but nothing could be
- * proven with it because its definition was eclipsed by the <code>means</code> statement.
+ * <code>means</code> statement, gathering the complexity of the code into that single statement of
+ * the salient information. Note that variable type information is preserved, but <em>all</em> the
+ * other code above the <code>means</code> statement is removed from the knowledge base, even the
+ * definition of values whose scope extends beyond the <code>means</code> statement; therefore, the
+ * following TrueJ code is allowed to legally reference a value, but nothing could be proven with it
+ * because its definition was eclipsed by the <code>means</code> statement.
  * <p>
  * TODO: We need to treat type information separately, ?typeFacts map from variable or value names?
- * to the list of value-facts implied by the type of the variable. Then we can
- * easily eliminate all the facts that are not type declarations and eliminate all the facts for
- * local variable names that are no longer used.
- * If we were to chain KnowledgeBases, then we would
- * not need to recreate a KnowledgeBase from its predecessor, but could just manipulate the current
- * KnowledgeBase.
+ * to the list of value-facts implied by the type of the variable. Then we can easily eliminate all
+ * the facts that are not type declarations and eliminate all the facts for local variable names
+ * that are no longer used. If we were to chain KnowledgeBases, then we would not need to recreate a
+ * KnowledgeBase from its predecessor, but could just manipulate the current KnowledgeBase.
  *
- * @param newFact
- */
+ * @param newFact */
 public void substitute(String newFact) {
   facts.clear();
-  assume(newFact); // TODO: eliminate all preceding code in block except types
+  assume(newFact);
 }
 
 public ProofResult substituteIfProven(String newFact) {
@@ -415,6 +408,7 @@ private ConsistencyResult prologConsistencyResult(SolveInfo solutionInfo) {
   }
 } // @formatter:on
 
+@SuppressWarnings("serial")
 private class InvalidResultFromProverException extends RuntimeException {
 InvalidResultFromProverException(String resultState) {
   super("A call to the etleantap.pl prover gave the invalid result: " + resultState);
@@ -541,7 +535,6 @@ public class InvalidConsistencyResultException extends Exception {
  * @param stack A Deque of first-order predicate calculus statements
  * @return The stack of statements as one big AND statement
  */
-//TODO: generalize Deque (? to collection ?) as long as order is kept
 private String conjoined(Collection<String> stack) {
   final String andWithParens = ") "+and+" (";
   if (stack.isEmpty())
@@ -549,10 +542,7 @@ private String conjoined(Collection<String> stack) {
   else
     return parens(stack.stream().collect(Collectors.joining(andWithParens)));
 
-//  String first = stack.isEmpty() ? "true" : parens(stack.pop());
-//  // TODO: just use else to explore why method should ever be used when stack.isEmpty()
-//  //TODO: use Collectors.joining
-//  return stack.stream().reduce(first, (previous, next) -> previous + and + parens(next)) ;
+  // TODO: explore if method is ever used when stack.isEmpty(). Why would that be?
 }
 
 private String parens(String s) {
