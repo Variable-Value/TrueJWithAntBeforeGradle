@@ -19,8 +19,8 @@ mydebug(A) :- ( debug_on -> printdebuglevel, mydebug_helper(A)
 
 mydebug_helper(A)     :- var(A), !, write_term(v(A),numbervars(false)).
 mydebug_helper(A)     :- atom(A),!, print(A)                          .
-mydebug_helper([])    :-         !, print('[]')                       .
-mydebug_helper([A|B]) :-         !, print('['), mydebug_nostart([A|B]).
+mydebug_helper([])    :-         !, print('[]')                       .  
+mydebug_helper([A|B]) :-         !, print('['), mydebug_nostart([A|B]).     % Kludge '] for syntax highlighting 
 mydebug_helper(A)     :-         !, write_term(A,numbervars(false))  .
 
 mydebug_nostart([A|B])
