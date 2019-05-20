@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="install-jars" basedir="." default="download-from-maven">
+<project name="install-jars" basedir="." default="download-all">
 <description> 
   This script downloads jars from other projects that are needed for T language development 
   and running the T language compiler. The download-all task renames the files 
@@ -15,6 +15,10 @@
   improve Eclipse debugging by finding the project's website, downloading their 
   full project, recompiling it with debugging options on, and setting Eclipse to 
   use those class or jar files.
+
+  Run the command
+    ant -f jar-download-build.xml
+  from the vendor directory, so effectively basedir=".../TrueJ/vendor".
 </description>
 
 <!-- Properties and paths -->
