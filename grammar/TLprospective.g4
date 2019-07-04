@@ -147,7 +147,11 @@ t_classBody
   ;
 
 t_interfaceBody
-  : '{' t_interfaceBodyDeclaration* '}'
+  : '{' nomenclature t_interfaceBodyDeclaration* '}'
+  ;
+
+nomenclature // at most one of each
+  : ( EXEMPLARS | SYNONYMS | PREFIXOPS | POSTFIXOPS | BINARYOPS )*
   ;
 
 t_classBodyDeclaration
@@ -859,6 +863,7 @@ STRICTFP      : 'strictfp';
 SUPER         : 'super';
 SWITCH        : 'switch';
 SYNCHRONIZED  : 'synchronized';
+SYNONYMS      : 'synonyms';
 TEST          : 'test';
 THEOREM       : 'theorem';
 THIS          : 'this';
