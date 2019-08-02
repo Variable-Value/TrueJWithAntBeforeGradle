@@ -95,32 +95,29 @@ protected Void typeVisit(ParserRuleContext ctx) {
   return result;
 }
 
-/** We declare temporary variables at the top of the
- * executable for any field valueNames that are reused after being
- * overwritten and initialize the temporary variables where it is an initial value of a field that
- * is overwritten.
+/** Reusing valueNames after they have been overwritten requires slightly different treatment for
+ * local variables vs. parameters and fields. In both cases we create a temporary variable to hold
+ * the overwritten value for its later use and then assign the temporary variable its value as
+ * soon as the value is known, that is, when that value is assigned to the valueName that will be
+ * overwritten. But we must be careful to ensure that we give the temporary variable the same scope
+ * that its value name has, namely the scope of the value name's variable.
  * <p>
- * A valueName
- * can be reused outside of the block where it is assigned a value as long as its variable is
- * declared outside that block. This is because ValueNames have the same scope as their associated
- * variable. Therefore, for valueNames of local variables we declare these temporary variables
- * when we declare
- * their variable; for fields however, the temporary
- * variables for reused value names must be available over the entire executable.
+ * For valueNames of local variables this means that, in code located elsewhere, we declare a
+ * temporary variable at the point where the valueName's variable is declared.
  * <p>
- * A field <code>Dollar salary</code> field would have a temporary variable initialized as
+ * However, because a parameter or field is declared and defined with an intial value before the
+ * executable begins, We declare its temporary variables at
+ * the beginning of the executable, and if the incoming initial valueName is one of the value names
+ * being reused after
+ * being overwritten, we also assign that value to the initial valueName's temporary variable.
+ * <p>
+ * A field <code>salary</code> field with type <code>Dollar</code> might have a temporary variable
+ * initialized as
  * <pre><code>
- * Dollar $T$salary = salary;
+ * Dollar $T$salary = /*'*&#47;salary;
  * </code></pre>
- * <p>
- * Implementation: Temp variables are normally assigned values immediately after their
- * value names are assigned values. Since the initial values of fields are already present at the
- * beginning of the executable, we assign those values to the temp values there.
+
  */
-//TODO: We must declare all such temp variables in the same scope as their overwritten and reused
-//      local variables. The obvious place is immediately after the declaration of their variable.
-//      note that the varible's initialization means that an associated temp variable should also be
-//      assigned.
 @Override
 protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx) {
   withChildScopeForCtx(ctx, () -> {
