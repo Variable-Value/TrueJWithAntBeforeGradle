@@ -1,9 +1,8 @@
 Feature: The if statement
 
   The if-control-structure provides us with the ability to program conditional operations. Later we
-  will cover the switch/case statement, but we postpone that until we have the basics of the T
-  language introduced.
-
+  will cover the switch/case statement, but we postpone that until we have introduced the basics of
+  the TrueJ language.
 
 Scenario: The if-statement allows alternative definitions for values
 
@@ -41,9 +40,15 @@ Scenario: The if-statement allows alternative definitions for values
 
 Scenario: Any value set in one branch of an if-statement must be set in both
 
-    For a value name to be available to an operation or logic statement later in its scope, it must
-    be defined along all paths to that statement. For an if-statement, this means that it must be
-    defined in both branches.
+    NEW AND NOT YET IMPLEMENTED:
+    A value name must be meaningful to be referenced; therefore, a value name cannot be referenced
+    in a statement unless all paths of execution to the statement define the value name.
+
+    OLD:
+
+    For a value name to be available to an operation or logic statement later in its scope, it
+    must be defined along all paths to that statement. For an if-statement, this means that it must
+    be defined in both branches.
 
   When an invalid run unit is
     """
