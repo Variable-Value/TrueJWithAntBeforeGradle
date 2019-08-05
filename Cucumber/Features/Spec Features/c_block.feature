@@ -23,9 +23,11 @@ Scenario: The meaning of a block is formed from the meaning of its statements
     } // end class
     """
 
-  Scenario: The means statement summarizes the meaning of the block's preceding statements
+Scenario: The means statement summarizes the meaning of the block's preceding statements
 
-    The means statement is used to clarify, summarize, or focus the meaning of all the preceding statements of the block, perhaps discarding some of the temporary values and stepping-stone statements that were used to establish a value. The summarized statements must logically entail the means statement for the compiler to accept it. Thus, a programmer reading the block of code can use the means statement to understand the intent of the preceding statements. Also, in order to understand the overall meaning of a block, the programmer can start reading at the bottommost means statement.
+   The means statement is used to clarify, summarize, or focus the meaning of all the preceding statements of the block, perhaps discarding some of the temporary values and stepping-stone statements that were used to establish a value. The statements that are summarized from the block have a meaning that must logically entail the means statement for the compiler to accept it. Thus, a programmer reading the block of code can use the means statement to understand the intent of the preceding statements. Also, in order to understand the overall meaning of a block, the programmer can start reading at the bottommost means statement, so it is good practice to have a final means statement at the end of every nontrivial block.
+
+   The examples in this feature description will only use means statements at the end of a block or method. In the following example, we use a means statement inside the block to summarize the three statements preceding it.
 
   * a valid run unit is
     """
@@ -43,16 +45,12 @@ Scenario: The meaning of a block is formed from the meaning of its statements
     } // end class
     """
 
-Scenario: ????
+Scenario: Blocks may be nested
 
-
-
-
-A block may be nested in another block's sequential code or used as part of a complex control statement, such as being one branch of a conditional statement. When a block is nested within another block, the inside block, being a compound statement, is treated as a single statement of the enclosing block. When a block is part of a complex control statement, the meaning of the block is one part of the more complex meaning of the control statement.
+  A block may be nested in another block's sequential code or used as part of a complex control statement, such as being one branch of a conditional statement. When a block is nested within another block, the inside block is treated as a single compound statement of the enclosing block with its own meaning that can be given in a single statement. When a block is part of a complex control statement, the meaning of the block plays one part of the more complex meaning of the control statement. We will treat the conditional and iterative statements that may contain blocks in a separate feature descriptions.
 
 The relationship of local variables and blocks is consistent with Java. To review: variables declared in a block may only be used within that block; a separate, non-overlapping, block may use the same name for one of its variables, but it is a separate variable. And the scope of a variable, which is the set of code statements where values of the variable may be defined or used, extends from the variable's declaration to the end of the block where it is declared, and includes any nested blocks. As in Java, TrueJ requires a block's variables to have names that do not shadow those that were already declared in an enclosing scope. This includes method parameter names; however, field names may be shadowed with a new variable name, requiring access to the field to be dot-prefixed with either 'super' or 'this'.
 
-If a field of an object is modified anywhere in a block, the code must define a final value for the field that is part of it the meaning of the block. This is a security feature to prevent the code from making surprise changes to a field. Sometimes a field has no security implications, such as a usage counter or log, and it can be marked with the lenient modifier to avoid the need for including it in the meaning of a block.
 
 
 
