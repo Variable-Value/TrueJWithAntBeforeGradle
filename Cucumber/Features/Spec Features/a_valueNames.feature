@@ -30,7 +30,7 @@ Scenario: Values have names
     means-statement to summarize the meaning of the preceding operations in
     terms of facts that have been established in the state.
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class Swapper {
 
@@ -176,7 +176,7 @@ Scenario: The scope of a Value name
     that writing it out as a separate means-statement adds useless verbage and detracts from its
     readability; instead, we just let the compiler infer the meaning of the method.
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class Swapper2 {
 
@@ -237,7 +237,7 @@ Scenario: Intermediate value names use middle decoration
     pre-decorated, any mid-execution values are mid-decorated, and its post-
     execution value is post-decorated.
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class AllTrue {
 
