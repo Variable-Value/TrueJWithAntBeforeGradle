@@ -260,17 +260,17 @@ private String withoutSemicolon(String code) {
  * the higher scope fields.
  */
 @Override public Void visitT_methodDeclaration(T_methodDeclarationContext ctx) {
-  withChildOfKb(() -> {
-    super.visitT_methodDeclaration(ctx);
-  });
+  withChildOfKb( () -> {super.visitT_methodDeclaration(ctx);} );
   return null;
 }
 
 /** Translate a block of statements into the meaning of its statements, changing the surrounding
  * braces to parentheses. Loop from the bottom up, stopping with the latest means-statement that was
  * issued, which summarizes everything needed from the code above it in this block. */
-/* TODO: keep looking after the means is encountered for variable declarations to collect type
- * information for all valueNames that occur in the meaningful code. */
+/* TODO: Progress from the top down. Every status statement will need to be proven. At each
+ * means-statement, discard the preceeding statements, but keep variable type info. */
+/* TODO: after the means-statement is encountered, keep looking for variable declarations to collect
+ * type information for all valueNames that occur in the meaningful code. */
 @Override public Void visitT_block(T_blockContext ctx) {
   withChildOfKb(() ->
     withChildScopeForCtx(ctx, () -> visitChildren(ctx))
