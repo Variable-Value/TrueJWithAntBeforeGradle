@@ -11,7 +11,7 @@ Scenario: The if-statement allows alternative definitions for values
 
   #  * using feature "***** b_IfStatement.feature - allows alternative definitions - first test *****\n"
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class Rates {
 
@@ -213,7 +213,7 @@ Scenario: Always include definitions of value names in all branches
   #
   #    The implicit local variable that TrueJ creates is often helpful, but in one case we need to use a different ordering of the code than our preferred one to avoid creating two implicit local variables.
   #
-  #  * A valid T Language run unit is
+  #  * A valid run unit is
   #    """
   #    class Triplet {
   #

@@ -3,16 +3,14 @@ package tlang;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import alice.tuprolog.*;
-import alice.tuprolog.event.ExceptionEvent;
-import alice.tuprolog.event.ExceptionListener;
-import alice.tuprolog.event.OutputEvent;
-import alice.tuprolog.event.OutputListener;
-import alice.tuprolog.event.WarningEvent;
-import alice.tuprolog.event.WarningListener;
+import alice.tuprolog.event.*;
+import cucumber.deps.com.thoughtworks.xstream.io.path.Path;
+import org.eclipse.jdt.annotation.*;
 
 
 //@formatter:off
@@ -24,7 +22,9 @@ import alice.tuprolog.event.WarningListener;
  * The KnowledgeBase does not syntax check the facts that it is given, but the prover uses the
  * following language:
  *
- * <h4> KnowledgeBase operators, dominant operators first (Prolog precedence) </h4>
+ * <h4> KnowledgeBase operators</h4>
+ *      <h5>least sticky dominates an expression, as in Prolog</h5>
+ * <p>
  * <h5> Right associative unless noted </h5>
  * <dl><dt> A === B, A =#= B
  *       <dd> Logical equivalence and inequivalence of boolean expressions. Equivalence is
@@ -68,34 +68,33 @@ import alice.tuprolog.event.WarningListener;
  * with a truth value result, using equality instead of equivalence,
  * <code>keepsSecrets(x) = true</code>, the prover forces us to awkwardly write
  * <code>isHusband(x) === (keepsSecrets(x) = true)</code>. (No husbands were injured during the
- * construction of these fictional examples.)
+ * construction of these examples.)
  *
  * <h4> Logical quantifiers </h4>
  * <dl><dt> all(X,p(X))
  *       <dd> The universal quantifier: For all <code>X</code>, <code>p(X)</code> is true. Here,
  *            <code>X</code> stands for any Prolog variable name, a string of letters, digits,
  *            or underscores beginning with a capital letter or underscore. And
- *            <code>p(x)</code> stands for any expression containing <code>X</code>.
+ *            <code>p(X)</code> stands for any expression containing <code>X</code>.
  *     <dt> all(X, range-of(X), body(X))
  *       <dd> For all <code>X</code> where <code>range-of(X)</code> is true, <code>body(X)</code> is
  *            true. Here, <code>X</code> stands for any Prolog variable name, that is, a string of
  *            letters, digits, or underscores beginning with a capital letter or underscore. And
  *            <code>range-of(X)</code> and <code>body(X)</code> stand for any expressions containing
- *            <code>X</code>. Although it just means <code>all(X, range-of-X ==> body)</code>, it's
- *            a convenient way to give a type or other restriction for the quantified variable, as
- *            in <code>all(N, (type(integer,N) /\ N #= 0), square(N) > 0)</code> or
+ *            <code>X</code>. Although it just means <code>all(X, range-of(X) ==> body(X))</code>,
+ *            it's a convenient way to give a type or other restriction for the quantified variable,
+ *            as in <code>all(N, (type(integer,N) /\ N #= 0), square(N) > 0)</code> or
  *            <code>all(Employee, type(partTime,Employee), paidBiweekly(Employee))</code>.
  *     <dt> ex(X,p(X))
  *       <dd> Existential quantification. For all <code>X</code>, <code>p(X)</code> is true.
- *     <dt> ex (X, range-of(X), body(X))
+ *     <dt> ex(X, range-of(X), body(X))
  *       <dd> For all <code>X</code> where <code>range-of(X)</code> is true, <code>body(X)</code> is
- *            true.
+ *            true. This is equivalent to <code>ex(X, range-of(X) /\ body(X))</code>
  * </dl>
  *
- * <h4> A Note on Associativity of logical operators </h4>
+ * <h4> A Note on Associativity of logical operators - none are conjunctive </h4>
  *
- * <dl><dt> A === B      <dd> Logical equivalence of predicates. Associative,
- *                            <em>not conjunctive</em>.
+ * <dl><dt> A === B      <dd> Logical equivalence of predicates; associative.
  *     <dt> A =#= B      <dd> Inequivalence for boolean expressions; exclusive disjunction (xor)
  *                            (Left associative)
  *     <dt> A ==> B      <dd> Implication, "A implies B" (Left associative)
@@ -107,14 +106,15 @@ import alice.tuprolog.event.WarningListener;
  * associative, not conjunctive (chaining). For instance, the following are
  * all the same:
  * <dl><dt> ((p===q) === r) === (p === (q===r))
- *       <dd> associativity of equivalence
+ *       <dd> Which is the Law of Associativity of Equivalence
+ *       <p>
  *     <dt> (p===q) === (r===p) === (q===r)
- *       <dd> Some parentheses are left out, so we can read it either as
+ *       <dd> This leaves some parentheses out, so we can read it either as
  *            <ul><li>(p===q) is the same as (r===p), if and only if (q===r), or as
  *                <li>(p===q), if and only if (r===p) is the same as (q===r)
  *            </ul>
  *     <dt> p === q === r === p === q === r
- *       <dd> Parenthesize this up any way you like, it all means the same thing.</dd>
+ *       <dd> Parenthesize this any way you like, it all means the same thing.</dd>
  * </dl>
  *<p>
  * The last two can be confusing. Liberal use of parentheses are recommended, or perhaps adding
@@ -130,16 +130,17 @@ public class KnowledgeBase {
 
 enum SolverInTestMode {on,off}
 SolverInTestMode testMode = SolverInTestMode.off;
-private static boolean isDebugging = false; // set isDebugging to true to print Prolog output
 
-private static String relativeDir = "./";
-
+/** Is the prolog engine printing its output? */
+private static boolean isDebugging = false;
 private static Prolog engine = createPrologEngine();
 private static Theory theory;
 private static String prologStdOut = "";
-/** Name of the prolog code field where the result is stored. See
+/** Name of the prolog code field where the result is stored. See method
  * {@link #prologConsistencyResult(SolveInfo)} */
 private static final String prologConsistencyResult = "ConsistencyResult";
+
+private static final String relativeDir = "./";
 
 /** The logical conjunction operator, AND, is written as <code>/\</code> in the first-order
  * predicate language for the KnowledgeBase and the Prolog prover. */
@@ -187,22 +188,52 @@ public static enum ConsistencyResult
     reachedLimit
   };
 
+
+private final KnowledgeBase parentKB;
+
+  /*getter*/ Object parentKB() { return parentKB; }
+  boolean hasParent() { return parentKB != null; }
+  boolean isTopLevelKB() { return ! hasParent(); }
+
 /** the facts known by the KnowledgeBase. These must all be consistent with one another. The facts
  * are kept in a queue data structure in the hope that the most recently entered fact will be the
  * one most important in proving a new fact.
  */
-private ArrayDeque<String> facts;
+private ArrayDeque<String> facts = null;
 
-/** Creates an empty KnowledgeBase that is ready to accept facts. */
+  boolean hasNoFacts() { return facts == null || facts.isEmpty(); }
+  boolean hasFacts()   { return ! hasNoFacts(); }
+
+
+
+/** Creates an empty top-level KnowledgeBase that is ready to accept facts.
+ * @Implementation We cannot just call the constructor <code>KnowledgeBase(null)</code> because we
+ *                 need to prevent clients from knowing that our implementation uses null to
+ *                 designate a top-level KnowledgeBase. */
 public KnowledgeBase() {
   this.facts = new ArrayDeque<>();
+  this.parentKB = null;
 }
 
-/** Duplicates a KnowledgeBase, allowing you to save a previous state.
- * @param kb the KnowledgeBase to be copied
- */
-public KnowledgeBase(KnowledgeBase kb) {
-  this.facts = kb.facts.clone();
+/** Creates an empty child KnowledgeBase that is ready to accept facts. Although the child Knowledge
+ * Base does not contain any facts of its own, it chains to the parent when it needs its facts. */
+public KnowledgeBase(KnowledgeBase parentKB) {
+  this.facts = new ArrayDeque<>();
+  this.parentKB = parentKB;
+}
+
+/** Duplicates a KnowledgeBase, allowing you to save and return to a previous state.
+ * @Implementation We cannot just clone the KnowledgeBase because both would point to the same list
+ *                 of facts, and we need to update the new list separately. */
+public KnowledgeBase copy() {
+  KnowledgeBase result;
+  if (this.parentKB == null)
+    result = new KnowledgeBase();
+  else
+    result = new KnowledgeBase(this.parentKB);
+  result.facts = this.facts.clone();
+
+  return result;
 }
 
 /** Add Type information for a value name. Look up the predicates that define the type, substitute
@@ -270,7 +301,7 @@ public ConsistencyResult assumeUnlessInconsistent(String newText) {
  * <code>facts</code>
  */
 public String getMeaning() {
-  return conjoined(facts);
+  return conjoinedFacts();
 }
 
 /** Attempts to show that the KnowledgeBase has facts that support the statement.
@@ -379,7 +410,7 @@ public ProofResult substituteIfProven(String newFact) {
  * @return a {@link ConsistencyResult}
  */
 public ConsistencyResult checkConsistency(String statement) {
-  String testString = parens(statement) + and + conjoined(facts);
+  String testString = parens(statement) + and + conjoinedFacts();
   SolveInfo solutionInfo = checkForConsistency(testString);
   return prologConsistencyResult(solutionInfo);
   }
@@ -535,12 +566,21 @@ public class InvalidConsistencyResultException extends Exception {
  * @param stack A Deque of first-order predicate calculus statements
  * @return The stack of statements as one big AND statement
  */
-private String conjoined(Collection<String> stack) {
+String conjoinedFacts() {
   final String andWithParens = ") "+and+" (";
-  if (stack.isEmpty())
-    return "true";
-  else
-    return parens(stack.stream().collect(Collectors.joining(andWithParens)));
+  String theseFacts = hasFacts()
+                        ? parens(facts.stream().collect(Collectors.joining(andWithParens)))
+                        : "true";
+  String contextFacts = hasParent() ? parentKB.conjoinedFacts() : "true";
+  return theseFacts + and + contextFacts;
+
+
+
+//  final String andWithParens = ") "+and+" (";
+//  if (stack.isEmpty())
+//    return "true";
+//  else
+//    return parens(stack.stream().collect(Collectors.joining(andWithParens)));
 
   // TODO: explore if method is ever used when stack.isEmpty(). Why would that be?
 }
@@ -579,19 +619,22 @@ static private void ensurePrologEngine() {
       e.printStackTrace();
     }
     engine.addOutputListener(  new OutputListener()
-      { @Override public void onOutput(OutputEvent e) {
+      { @Override
+      public void onOutput(OutputEvent e) {
           postToStdOut("\n"+ e.getMsg(), isDebugging);
         }
       }
     );
     engine.addExceptionListener(new ExceptionListener()
-      { @Override public void onException(ExceptionEvent e) {
+      { @Override
+      public void onException(ExceptionEvent e) {
           postToStdOut("\n***** EXCEPTION: "+ e.getMsg(), isDebugging);
         }
       }
     );
     engine.addWarningListener(new WarningListener()
-      { @Override public void onWarning(WarningEvent e) {
+      { @Override
+      public void onWarning(WarningEvent e) {
           postToStdOut("\n"+ e.getMsg(), isDebugging);
         }
       }
@@ -614,6 +657,8 @@ private static void setTheories() {
   } catch (InvalidTheoryException iT) {
     iT.printStackTrace();
   } catch (IOException io) {
+    String relativePathName = Paths.get(relativeDir).toAbsolutePath().toString();
+    System.out.println("/nThe execution environment pathname is "+ relativePathName);
     io.printStackTrace();
   }
 }
@@ -653,6 +698,22 @@ private static void setATheory(Theory th, File thFile) throws InvalidTheoryExcep
         + e.getLocalizedMessage();
     throw new InvalidTheoryException(msg);
   }
+}
+
+public boolean equals(KnowledgeBase otherKB) {
+  if (this == otherKB)
+    return true;
+
+  if (this.parentKB != otherKB.parentKB || this.facts.size() != otherKB.facts.size())
+    return false;
+
+  String[] thisFacts = this.facts.toArray(new String[this.facts.size()]);
+  String[] otherFacts = otherKB.facts.toArray(new String[otherKB.facts.size()]);
+  for (int i = 0; i < thisFacts.length; i++)
+    if (thisFacts[i] != otherFacts[i])
+      return false;
+
+  return true;
 }
 
 }

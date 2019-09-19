@@ -25,7 +25,7 @@ Scenario: Values have names
   # model the T code for the syntax on the code in
   # javax.lang.model.SourceVersion.isName(CharSequence name)
 
-  When a valid T Language run unit is
+  When a valid run unit is
     """
     class Swapper {
 
@@ -320,7 +320,7 @@ Scenario: Values have block scoping
     If a value is reused, then we generate code saving the value at the end of
     the line preceding the line where it is overwritten.
 
-  When a valid T Language run unit is
+  When a valid run unit is
     """
     class Swapper2 {
 
@@ -354,7 +354,7 @@ Scenario: Intermediate value names use middle decoration
     The whole decorator that is used to transform a variable name into a value name is commented out
     in the generated code.
 
-  When a valid T Language run unit is
+  When a valid run unit is
     """
     class AllTrue {
 
@@ -442,7 +442,7 @@ Scenario: Assignments with no operational effect are commented out in Java
 
   If the current value of a variable is assigned to an new value name of the same variable, the assignment is translated to a Java comment. This does not affect the reusability of value names or the use of the value names in logic.
 
-  When a valid T Language run unit is
+  When a valid run unit is
     """
     class Assignment1 {
     int 'a = 1;

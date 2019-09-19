@@ -129,7 +129,7 @@ Scenario: The string of characters $T$ is not allowed in identifiers
 
 Scenario: A reused intermediate value is saved immediately before reuse
 
-  When a valid T Language run unit is
+  When a valid run unit is
     """
     class Swapper2 {
 
@@ -332,7 +332,7 @@ Scenario: Insertion of T runtime import relative to comments
     the Java compiler's error messages so that they refer exactly to the T
     language code.
 
-  When a valid T Language run unit is
+  When a valid run unit is
   """
   /**
    * A class to demonstrate value names
@@ -375,7 +375,7 @@ Scenario: Insertion of T runtime import relative to comments
 
 Scenario: Insertion of T runtime import relative to package
 
-  When a valid T Language run unit is
+  When a valid run unit is
     """
     package ttestclass;
     class Swapper {
@@ -414,7 +414,7 @@ Scenario: Insertion of T runtime import relative to package
 
 Scenario: Insertion of T runtime import relative to other imports
 
-  When a valid T Language run unit is
+  When a valid run unit is
     """
     import tlang.runtime.* /*ORIGINAL*/;
     class Swapper {
@@ -453,7 +453,7 @@ Scenario: Insertion of T runtime import relative to other imports
 
 Scenario: Insertion of T runtime import relative to other imports and package
 
-  When a valid T Language run unit is
+  When a valid run unit is
     """
     package ttestclass;
 
@@ -599,7 +599,7 @@ Scenario: Comments inside code that is commented out are adjusted
     Java by simply doing the reverse any time those odd strings of characters
     are found.
 
-  When a valid T Language run unit is
+  When a valid run unit is
     """
     class SwapSomeMore {
 
@@ -646,7 +646,7 @@ Scenario: Comments inside code that is commented out are adjusted
 
 Scenario: A single valid literal can be proven
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class SwapAgain1 {
 
@@ -695,7 +695,7 @@ Scenario: Nested && and || translate to the Prover correctly
     semantics of the code remains the same. We must either code the provers operator priority for /\
     and \/ carefully or insert extra parentheses before sending code to the prover.
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class SwapAgain3 {
 

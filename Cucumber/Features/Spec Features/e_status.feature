@@ -33,46 +33,67 @@ Scenario: A block forgets operations from before a means statement
 
 Scenario: The compiler remembers facts from surrounding blocks after a means statement
 
-Scenario: The compiler remembers types after a means statement
+  * a valid run unit is
+    """
+    class BlockMeaning5 {
+
+    int a, b;
+
+    void swap() {
+      int startingA' = 'a;
+      { int startingB' = 'b;
+        a' = startingB';
+        means (a' = 'b);
+        b' = startingA';
+        means (a' = 'b & b' = 'a);
+      }
+    }
+
+    } // end class
+    """
+
+Scenario: Object fields that are modified must have a final value for security
 
 Scenario:
 
   If a field of an object is modified anywhere in a block, the code must define a final value for the field that is part of the meaning of the block. This is a security feature to prevent the code from hiding changes to a field. Sometimes a field has no security implications, such as a usage counter or log, and it can be marked with the lenient modifier to avoid the need for including it in the meaning of a block.
 
-  When an invalid run unit is **** CODE NOT CHANGED YET ****
-    """
-    class BlockMeaning3 {
-
-    int a, b;
-
-    void swap() {
-      int startingA' = 'a;
-      a' = 'b;
-      means (a' = 'b);          // Oops, we are now forgetting that startingA' = 'a
-      b' = startingA';          // We generate code, but we don't know what that code means
-      means(a' = 'b & b' = 'a); // So we can't see that    b'=startingA'  ==>  b'='a
-    }
-
-    } // end class
-    """
-  Then an error message contains
-    """
-    The code does not support the proof of the statement: b' = 'a
-    """
-
-  * a valid run unit is     **** CODE NOT CHANGED YET ****
-    """
-    class BlockMeaning2 {
-
-    int a, b;
-
-    void swap() {
-      int startingA' = 'a;
-      a' = 'b;
-      b' = startingA';
-      means(a' = 'b & b' = 'a);
-    }
-
-    } // end class
-    """
+# **** CODE NOT CHANGED YET ****
+#  When an invalid run unit is
+#    """
+#    class BlockMeaning3 {
+#
+#    int a, b;
+#
+#    void swap() {
+#      int startingA' = 'a;
+#      a' = 'b;
+#      means (a' = 'b);          // Oops, we are now forgetting that startingA' = 'a
+#      b' = startingA';          // We generate code, but we don't know what that code means
+#      means(a' = 'b & b' = 'a); // So we can't see that    b'=startingA'  ==>  b'='a
+#    }
+#
+#    } // end class
+#    """
+#  Then an error message contains
+#    """
+#    The code does not support the proof of the statement: b' = 'a
+#    """
+#
+# **** CODE NOT CHANGED YET ****
+#  * a valid run unit is
+#    """
+#    class BlockMeaning2 {
+#
+#    int a, b;
+#
+#    void swap() {
+#      int startingA' = 'a;
+#      a' = 'b;
+#      b' = startingA';
+#      means(a' = 'b & b' = 'a);
+#    }
+#
+#    } // end class
+#    """
 

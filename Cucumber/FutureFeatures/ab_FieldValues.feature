@@ -1,9 +1,9 @@
 Feature: Class field names have class scope
 
-  In the T language, as in Java, variables declared as class-level components 
-  are called fields. Components use fields to change states, query state, or 
-  make claims about the state of an object; actually, in the T language, it is 
-  always the field value names and not the names of the field variables that are 
+  In the T language, as in Java, variables declared as class-level components
+  are called fields. Components use fields to change states, query state, or
+  make claims about the state of an object; actually, in the T language, it is
+  always the field value names and not the names of the field variables that are
   referenced by other components.
 
   At the start of a process, such as a method, constructor, or initializer
@@ -11,7 +11,7 @@ Feature: Class field names have class scope
   variable name with an apostrophe, e.g., 'var. And at the finish of the
   process, by post-decorating, e.g., var'. If the variable also receives
   intermediate values during the process, the variable name is mid-decorated by
-  appending an apostrophe and a distinguishing sequence of identifier 
+  appending an apostrophe and a distinguishing sequence of identifier
   continuation characters, e.g., ranking'1stPeriod.
 
   Some object components do not change the value of a field they reference, but
@@ -28,7 +28,7 @@ Scenario: Collect field variable names.
   Field names must be collected for a class in a form that will be used by a
   the semantics checker.
 
-  Given the T Language run unit "Swapper" is
+  Given the run unit "Swapper" is
     """
     class Swapper {
 
@@ -70,7 +70,7 @@ Scenario: Collect field variable names for enum classes.
   representation of enumerations as singletob classes is very elegant, but it
   leads to a lot of capability that is seldom used. We check those details here.
 
-  Given the T Language run unit "Swapper" is
+  Given the run unit "Swapper" is
     """
 	public enum EnumA {
 	  A1 {

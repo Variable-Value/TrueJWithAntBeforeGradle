@@ -5,7 +5,7 @@ Scenario: The if statement with empty branches
 
   Empty branches do not accomplish anything, of course. And apparently, the meaning of a program that accomplishes nothing is "true". This makes sense if you think of computational work as shaving off more and more things that you don't want until you have what you do want, that is restricting the possibilities more and more until you have the one you desire.
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class EmptyBranches1 {
 
@@ -36,7 +36,7 @@ Scenario: The if statement with empty branches
 
 Scenario: The if statement with nested empty branches
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class NestedEmptyBranches1 {
 
@@ -73,7 +73,7 @@ Scenario: The if statement with nested empty branches
 
 Scenario: The if statement with one variable
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class Rates1 {
 
@@ -99,7 +99,7 @@ Scenario: The if statement with one variable
 
 Scenario: Two-deep if-statement
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class TwoDeepIfNull_1 {
       Object a;
@@ -120,7 +120,7 @@ Scenario: Two-deep if-statement
     }
     """
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class TwoDeepIfNull_2 {
       Object a;
@@ -146,7 +146,7 @@ Scenario: Two-deep if-statement
 
 Scenario: Three-deep if-statement
 
-  * A valid T Language run unit is
+  * A valid run unit is
     """
     class ThreeDeepIfNull {
       Object a;
@@ -224,7 +224,7 @@ Scenario: Defining a value name on all branches of a conditional
   If a value name is defined on all branches of a conditional, then it can be referenced in the
   code following the conditional.
 
-  * A valid T Language run unit is
+  * A valid run unit is
   """
     class valueNameOnAllPaths {
       int a;
@@ -247,7 +247,7 @@ Scenario: The condition is available inside the branches of an if-statement
 
   We make various condition checks and make sure that we have access to them with means statements.
 
-  * A valid T Language run unit is
+  * A valid run unit is
   """
   class ConditionAvailablity {
     int a, b, c;
