@@ -147,10 +147,10 @@ private static final String relativeDir = "./";
 public static final String and = " /\\ ";
 /** The logical disjunction operator, OR, is written as <code>\/</code> in the first-order predicate
  * language for the KnowledgeBase and the Prolog prover. */
-public static final String or = "\\/";
+public static final String or = " \\/ ";
 /** The logical negation operator, NOT, is written as <code>-</code> in the first-order predicate
  * language for the KnowledgeBase and the Prolog prover */
-public static final String not = "-";
+public static final String not = " -";
 
 
 /** The result of an attempted proof will be one of:
