@@ -666,7 +666,7 @@ t_arguments
   ;
 
 t_means
-  : MEANS '(' t_expression ')' ';'
+  : MEANS t_expression ';'
   ;
 
 t_idDeclaration [String idType]
