@@ -683,7 +683,7 @@ Scenario: The prover detects a single invalid literal
 
   Then an error message contains
     """
-    The code does not support the proof of the statement: b' = 'a
+    The code does not support the proof of the statement: ( b' = 'a )
     """
 
 
