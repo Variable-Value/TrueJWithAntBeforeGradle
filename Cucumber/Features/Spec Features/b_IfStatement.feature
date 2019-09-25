@@ -1,15 +1,11 @@
 Feature: The if statement
 
-  The if-control-structure provides us with the ability to program conditional operations. Later we
-  will cover the switch/case statement, but we postpone that until we have introduced the basics of
-  the TrueJ language.
+  The if-control-structure provides conditional operations. We postpone the switch/case statement until we have introduced the basics of the TrueJ language.
 
 Scenario: The if-statement allows alternative definitions for values
 
     A value name has only one value for the whole range of its scope, but that value may be selected
     from different options, depending upon the runtime conditions of the state.
-
-  #  * using feature "***** b_IfStatement.feature - allows alternative definitions - first test *****\n"
 
   * A valid run unit is
     """
@@ -25,10 +21,11 @@ Scenario: The if-statement allows alternative definitions for values
     void setRate() {
       if ('hasDiscount) rate' = discountRate';
                    else rate' = standardRate';
-    // a natural logic for if-then-else statements
-    means ( (   'hasDiscount ==> rate' = discountRate' )
-          & ( ! 'hasDiscount ==> rate' = standardRate' )
-          );
+
+      // a natural logic for if-then-else statements
+      means ( (   'hasDiscount ==> rate' = discountRate' )
+            & ( ! 'hasDiscount ==> rate' = standardRate' )
+            );
     }
     // an equivalent logic
     means ( (   'hasDiscount & rate' = discountRate')
