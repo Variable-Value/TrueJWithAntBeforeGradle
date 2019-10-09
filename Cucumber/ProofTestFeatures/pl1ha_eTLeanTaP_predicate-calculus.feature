@@ -135,6 +135,22 @@ Scenario Outline: Simple Examples
 
   # TODO: enter tests for the rest of the G&S predicate calculus theorems
 
+Scenario: Logical quantifiers distribute over their base operators
+
+  Forall distributes over /\ and forsome distributes over \/. Note that both /\ and \/ are
+  symetric (commutative) and associative with an identity element. So distributing the forall quantifier over /\ is just rearranging the order of its base operator /\, and likewise for the forsome quantifier.
+
+  This is Axiom 8.15 of Gries & Schneider as applied to the logical quantifiers.
+
+  *   Formula "all(X, p(X) /\ q(X) ) === all(X, p(X)) /\ all(X, q(X))" is a theorem
+  And Formula "all(X, p(X) /\ q(X) ) === all(Y, p(Y)) /\ all(Z, q(Z))" is a theorem
+
+  And Formula "ex(X, p(X) \/ q(X) ) === ex(X, p(X)) \/ ex(X, q(X))" is a theorem
+  And Formula "ex(X, p(X) \/ q(X) ) === ex(Y, p(Y)) \/ ex(Z, q(Z))" is a theorem
+
+  But Formula "all(X, p(X) /\ q(X) ) === all(X, p(X)) \/ all(X, q(X))" is not a theorem
+  And Formula  "ex(X, p(X) \/ q(X) ) ===  ex(X, p(X)) /\  ex(X, q(X))" is not a theorem
+
 Scenario: A difficult example for some provers
 
   A Smullyan tree proof has difficulty with for-all-statements because they are

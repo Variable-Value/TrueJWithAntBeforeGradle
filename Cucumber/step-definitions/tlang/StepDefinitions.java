@@ -101,19 +101,37 @@ public void the_error_messages_are(String expected) {
   assertEquals(expected, errs.toString());
 }
 
+/** There is no error message containing the given string. Assumes a compile unit has already
+ * been processed, probably by <code>an_invalid_run_unit_is(String tCode)</code> */
 @Then("^an error message contains$")
 public void an_error_message_contains(String uniquePartOfErr) {
   an_error_message_contains__(uniquePartOfErr);
 }
 
+/** There is no error message containing the given string. Assumes a compile unit has already
+ * been processed, probably by <code>an_invalid_run_unit_is(String tCode)</code> */
 @Then("^an error message contains \"([^\"]*)\"$")
 public void an_error_message_contains__(String uniquePartOfErr) {
-  // Assumes a compile unit has already been processed, probably by
-  //     an_invalid_run_unit_is(String tCode)
-  boolean foundMsg = findMsg(uniquePartOfErr);
-  if ( ! foundMsg) {
+  if ( ! findMsg(uniquePartOfErr))
     reportMissingMsg(uniquePartOfErr);
-  }
+}
+
+/** There is a single error message containing the given string. Assumes a compile unit has already
+ * been processed, probably by <code>an_invalid_run_unit_is(String tCode)</code> */
+@Then("^the only error message contains$")
+public void the_only_error_message_contains(String uniquePartOfErr) throws Throwable {
+  the_only_error_message_contains__(uniquePartOfErr);
+}
+
+/** There is a single error message containing the given string. Assumes a compile unit has already
+ * been processed, probably by <code>an_invalid_run_unit_is(String tCode)</code> */
+@Then("^the only error message contains \"([^\"]*)\"$")
+public void the_only_error_message_contains__(String uniquePartOfErr) {
+  if (errs.errCount() != 1)
+    reportNotSingleMsg(uniquePartOfErr);
+
+  if ( ! findMsg(uniquePartOfErr))
+    reportMissingMsg(uniquePartOfErr);
 }
 
 @Then("^[Tt]he parse tree is$")
@@ -234,6 +252,18 @@ private static String stripWhiteSpace(String formatted) {
  */
 private void reportMissingMsg(String keyPartOfErr) {
   assertTrue(   "No message was found containing <"+ keyPartOfErr +">"
+              + "\nHere are the error messages:\n"+ errs.toString()
+            , false
+            );
+}
+
+/**
+ * Report complete information to show that there was not a single error message.
+ *
+ * @param keyPartOfErr The important part of the expected error message
+ */
+private void reportNotSingleMsg(String keyPartOfErr) {
+  assertTrue(   "Expected only one error containing <"+ keyPartOfErr +">"
               + "\nHere are the error messages:\n"+ errs.toString()
             , false
             );

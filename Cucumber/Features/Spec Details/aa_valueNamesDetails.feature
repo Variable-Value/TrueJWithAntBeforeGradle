@@ -683,7 +683,7 @@ Scenario: The prover detects a single invalid literal
 
   Then an error message contains
     """
-    The code does not support the proof of the statement: ( b' = 'a )
+    The code does not support the proof of the statement: b' = 'a
     """
 
 
@@ -738,7 +738,7 @@ Scenario: Assignment is right-associative while equality is left-associative
     } // end class
     """
 
-  Then an error message contains
+  Then the only error message contains
     """
     The code does not support the proof of the statement: fact2' = 'a = 'b
     """
