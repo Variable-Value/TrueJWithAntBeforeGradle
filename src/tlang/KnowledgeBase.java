@@ -267,8 +267,8 @@ public void assumeType(String variableType, String valueName) {
  * @param fact
  */
 public void assume(String fact) {
-  System.out.println("New KB fact assumed: "+ fact);
   facts.push(fact);
+  System.out.println("New KB fact assumed: "+ fact);
 }
 
 /** Checks whether a statement is consistent with the {@link KnowledgeBase} facts and adds it

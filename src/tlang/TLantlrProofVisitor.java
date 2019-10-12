@@ -198,27 +198,10 @@ public Void visitT_literal(T_literalContext literalCtx) {
 public Void visitInitializedVariable(InitializedVariableContext ctx) {
   visitChildren(ctx);
 
-  System.out.println("Incoming transformed source: "+ rewriter.source(ctx));
-  String rhs = rewriter.source(ctx.t_initializedVariableDeclaratorId());
-  String op = needsEquivalenceForBooleanTarget(ctx) ? "===" : " = ";
-  String lhs = parenthesize(rewriter.source(ctx.t_variableInitializer().t_expression()));
-  if (lhs == null)
-    lhs = parenthesize(rewriter.source(ctx.t_variableInitializer().t_arrayInitializer()));
-  String src = parenthesize(rhs + op + lhs);
-  System.out.println("Outgoing transformed source: "+ src);
-  rewriter.substituteText(ctx, src);
-  kb.assume(src);
+  String translatedOp = needsEquivalenceForBooleanTarget(ctx) ? " === " : " = ";
+  rewriter.replace(ctx.op, translatedOp);
+  kb.assume(rewriter.source(ctx));
   return null;
-
-//  visitChildren(ctx);
-//
-//  String rhs = rewriter.source(ctx.t_assignable());
-//  String op = needsEquivalenceForBooleanTarget(ctx) ? "===" : " = ";
-//  String lhs = parenthesize(rewriter.source(ctx.t_expression()));
-//  String src = parenthesize(rhs + op + lhs);
-//  rewriter.substituteText(ctx, src);
-//  kb.assume(src);
-//  return null;
 }
 
 /** Submit the assignment to the prover. TODO: provide the useful type information for the new value
@@ -270,7 +253,7 @@ public boolean isBooleanValue(String targetName) {
   String targetVarName = TUtil.variableName(targetName);
   String varType = currentScope.getExistingVarInfo(targetVarName).getType();
   System.out.println("Type of variable: "+ varType);
-  return varType.equals("boolean");
+  return varType.equals("boolean") || varType.equals("Boolean");
 }
 
 private String withoutSemicolon(String code) {
@@ -337,10 +320,11 @@ private String withoutSemicolon(String code) {
           } else { // initialization instanceof InitializedVariableContext
             InitializedVariableContext initStatement = (InitializedVariableContext)initialization;
             String valueName = rewriter.source(initStatement.t_initializedVariableDeclaratorId());
-            String value = rewriter.source(initStatement.t_variableInitializer());
             types += and + " type("+ type +","+ valueName +")";
             if (statementsAreActive) {
-              meaning += and + valueName + " = " + value;
+              System.out.println("Value name: "+ valueName);
+              meaning += and + parenthesize(rewriter.source(initStatement));
+              System.out.println("Meaning after init: "+ meaning);
             }
           }
         }
@@ -355,6 +339,7 @@ private String withoutSemicolon(String code) {
     }
   }
 
+  System.out.println("Block meaning: "+ meaning);
   rewriter.substituteText(ctx, meaning);
   kb.assume(meaning);
 

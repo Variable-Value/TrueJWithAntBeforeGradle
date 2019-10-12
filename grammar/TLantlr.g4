@@ -207,7 +207,7 @@ t_fieldDeclaration
     awkwardness in the FieldVistor.
  */
 t_fieldDeclarator[String idType]
-  : t_idDeclaration[$idType] '=' t_variableInitializer   #InitializedField
+  : t_idDeclaration[$idType] op='=' t_variableInitializer   #InitializedField
   | t_idDeclaration[$idType]                             #UninitializedField
   ;
 
@@ -231,7 +231,7 @@ t_constDeclaration
   ;
 
 t_constantDeclarator [String idType]
-  : t_idDeclaration[$idType] '=' t_variableInitializer
+  : t_idDeclaration[$idType] op='=' t_variableInitializer
   ;
 
 // see matching of [] comment in methodDeclaratorRest
@@ -250,7 +250,7 @@ t_annotationVariableDeclarator
   ;
 
 t_variableDeclarator [String idType]
-  : t_initializedVariableDeclaratorId[$idType] '=' t_variableInitializer #InitializedVariable
+  : t_initializedVariableDeclaratorId[$idType] op='=' t_variableInitializer #InitializedVariable
   | t_uninitializedVariableDeclaratorId[$idType]                         #UninitializedVariable
   ;
 
@@ -455,7 +455,7 @@ t_statement
   | 'break' UndecoratedIdentifier? ';'                                           # BreakStmt
   | 'continue' UndecoratedIdentifier? ';'                                        # ContinueStmt
   | ';'                                                                          # EmptyStmt
-	| t_assignable '=' t_expression ';'                                            # AssignStmt
+	| t_assignable op='=' t_expression ';'                                            # AssignStmt
   | t_expression '(' t_expressionList? ')' ';'                                   # CallStmt
   | t_expression '.' 'new' t_nonWildcardTypeArguments? t_innerCreator            # CreationStmt
   | UndecoratedIdentifier ':' t_statement                                        # LabelStmt

@@ -2155,6 +2155,7 @@ public class TLantlrParser extends Parser {
 		}
 	}
 	public static class InitializedFieldContext extends T_fieldDeclaratorContext {
+		public Token op;
 		public T_idDeclarationContext t_idDeclaration() {
 			return getRuleContext(T_idDeclarationContext.class,0);
 		}
@@ -2183,7 +2184,7 @@ public class TLantlrParser extends Parser {
 				setState(705);
 				t_idDeclaration(_localctx.idType);
 				setState(706);
-				match(ASSIGN);
+				((InitializedFieldContext)_localctx).op = match(ASSIGN);
 				setState(707);
 				t_variableInitializer();
 				}
@@ -2475,6 +2476,7 @@ public class TLantlrParser extends Parser {
 
 	public static class T_constantDeclaratorContext extends ParserRuleContext {
 		public String idType;
+		public Token op;
 		public T_idDeclarationContext t_idDeclaration() {
 			return getRuleContext(T_idDeclarationContext.class,0);
 		}
@@ -2503,7 +2505,7 @@ public class TLantlrParser extends Parser {
 			setState(742);
 			t_idDeclaration(_localctx.idType);
 			setState(743);
-			match(ASSIGN);
+			((T_constantDeclaratorContext)_localctx).op = match(ASSIGN);
 			setState(744);
 			t_variableInitializer();
 			}
@@ -2730,6 +2732,7 @@ public class TLantlrParser extends Parser {
 		}
 	}
 	public static class InitializedVariableContext extends T_variableDeclaratorContext {
+		public Token op;
 		public T_initializedVariableDeclaratorIdContext t_initializedVariableDeclaratorId() {
 			return getRuleContext(T_initializedVariableDeclaratorIdContext.class,0);
 		}
@@ -2758,7 +2761,7 @@ public class TLantlrParser extends Parser {
 				setState(772);
 				t_initializedVariableDeclaratorId(_localctx.idType);
 				setState(773);
-				match(ASSIGN);
+				((InitializedVariableContext)_localctx).op = match(ASSIGN);
 				setState(774);
 				t_variableInitializer();
 				}
@@ -5108,6 +5111,7 @@ public class TLantlrParser extends Parser {
 		}
 	}
 	public static class AssignStmtContext extends T_statementContext {
+		public Token op;
 		public T_assignableContext t_assignable() {
 			return getRuleContext(T_assignableContext.class,0);
 		}
@@ -5651,7 +5655,7 @@ public class TLantlrParser extends Parser {
 				setState(1172);
 				t_assignable();
 				setState(1173);
-				match(ASSIGN);
+				((AssignStmtContext)_localctx).op = match(ASSIGN);
 				setState(1174);
 				t_expression();
 				setState(1175);
