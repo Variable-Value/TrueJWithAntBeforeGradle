@@ -9,9 +9,8 @@
  * <code>phrase <></code> clause provides a facility that is similar to overloading
  * but it is restricted to use within a scope.
  *
- * Note that the interval maximum and minimum restrictions on the results of operations means that
- * axioms and theorems do not apply when those restrictions are violated, keeping them simple and
- * similar to the axioms of mathematical integers. */
+ * A phrase is used to define the abbreviation "I" for "IntegerInterval".
+ */
 public abstract class IntegerInterval phrase <I> {
 
 exemplars I   i', j', k', n';
@@ -32,8 +31,8 @@ public abstract static  I  one() phrase <1>;
 /** The maximum integer allowed for the implementation. Each implementation defines a constant for
  * this value that is named MAX_VALUE for consistency. As the maximum of a twos-complement
  * implementation, this will have a value of 2<sup>n</sup>-1; for instance, for integers stored in
- * bytes, the value of n will be 8 so the result of both Byte.maxValue() and Byte.MAX_VALUE will be
- * 127. */
+ * a Byte, the value of n will be 8 so the Byte.maxValue() = Byte.MAX_VALUE = 127.
+ */
 public abstract static I maxValue();
 
 /** The minimum integer allowed for the implementation. Each implementation defines a constant for
@@ -43,7 +42,11 @@ public abstract static I maxValue();
  * -128. */
 public abstract static I minValue();
 
-IntegerBounds: axiom minValue() <= i' <= maxValue;
+/** Note that the interval maximum and minimum restrictions on the results of operations means that
+ * axioms and theorems do not apply when those restrictions are violated, keeping them simple and
+ * similar to the axioms of mathematical integers.
+ */
+ IntegerBounds: axiom minValue() <= i' <= maxValue;
 
 /** Addition is the plus(a,b) method. This is a method corresponding to the implemented addition
  * operation for each subclass. The system maps addition to the binary operator <code> + </code> for

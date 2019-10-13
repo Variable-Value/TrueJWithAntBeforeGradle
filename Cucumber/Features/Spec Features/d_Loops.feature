@@ -53,6 +53,8 @@ Scenario: In a status statement, each conjunct of a top-level forall is checked 
     before burrowing down to the next level in order to give the programmer a clear context at each
     stage.
 
+    I think I like the following even better: When there is an error, display the top level conjunct while highlighting the lowest level phrase discovered thru parity-driven conjunct checking.
+
 # TODO:
 #  When an invalid run unit is
 #    """
