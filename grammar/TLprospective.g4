@@ -711,8 +711,8 @@ labeledExpresion
 
 priorLabel : Identifier;
 
-t_primary
-  : '(' t_expression ')'
+t_primary // any changes must coordinate with TLantlrProofVisitor.isBooleanPrimary()
+  : t_parExpression
   | 'this'
   | 'super'
   | t_literal
@@ -780,7 +780,7 @@ t_arguments
   ;
 
 t_means
-  : MEANS '(' t_expression ')' ';'
+  : MEANS t_expression ';'
   ;
 
 t_idDeclaration [String idType]
@@ -809,7 +809,7 @@ t_valueName
       Lexer section
 *******************************************************************************/
 
-// ง3.9 Keywords ( Java keywords are also listed here to keep from having them
+// ยง3.9 Keywords ( Java keywords are also listed here to keep from having them
 //                 overridden by other lexer rules in the T language)
 
 ABSTRACT      : 'abstract';
@@ -876,12 +876,12 @@ VOID          : 'void';
 VOLATILE      : 'volatile';
 WHILE         : 'while';
 
-// ง3.11 Separators
+// ยง3.11 Separators
 
 BECOMES       : '-->';
 DOLLAR        : '$'  ;
 
-// ง3.12 Operators
+// ยง3.12 Operators
 
 // Conjunctive Boolean Operators
 
@@ -890,7 +890,7 @@ CONJUNCTIVE_IMPLIES       : '==>';
 CONJUNCTIVE_CONSEQUENCE   : '<==';
 CONJUNCTIVE_NOT_EQUAL     : '=!=';
 
-// ง3.8 Identifiers (must appear after all keywords in the grammar)
+// ยง3.8 Identifiers (must appear after all keywords in the grammar)
 //      but valueNames are OK because none of the keywords contain apostrophe
 
 PreValueName

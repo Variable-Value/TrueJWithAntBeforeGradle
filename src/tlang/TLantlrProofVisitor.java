@@ -18,6 +18,7 @@ import tlang.TLantlrParser.T_expressionDetailContext;
 import tlang.TLantlrParser.T_localVariableDeclarationContext;
 import tlang.TLantlrParser.T_methodDeclarationContext;
 import tlang.TLantlrParser.T_parExpressionContext;
+import tlang.TLantlrParser.T_primaryContext;
 import tlang.TLantlrParser.T_statementContext;
 import tlang.TLantlrParser.T_typeDeclarationContext;
 import static tlang.TUtil.*;
@@ -196,6 +197,9 @@ public Void visitT_literal(T_literalContext literalCtx) {
 @Override
 public Void visitInitializedVariable(InitializedVariableContext ctx) {
   visitChildren(ctx);
+
+  String translatedOp = needsEquivalenceForBooleanTarget(ctx) ? " === " : " = ";
+  rewriter.replace(ctx.op, translatedOp);
   kb.assume(rewriter.source(ctx));
   return null;
 }
@@ -215,9 +219,11 @@ public Void visitAssignStmt(AssignStmtContext ctx) {
 //    rewriter.replace(op,"===");
 //    assignmentCode = assignmentCode.replaceFirst("=", "===");
 //  }
+  System.out.println("Rewritten assignment operator: "+ op);
   String lhs = parenthesize(rewriter.source(ctx.t_expression()));
 //  String src  = withoutSemicolon(rewriter.source(ctx));
   String src = parenthesize(rhs + op + lhs);
+  System.out.println("Rewritten for Prolog: "+ src);
   rewriter.substituteText(ctx, src);
   kb.assume(src);
   return null;
@@ -233,10 +239,21 @@ private boolean needsEquivalenceForBooleanTarget(AssignStmtContext ctx) {
   return result;
 }
 
+private boolean needsEquivalenceForBooleanTarget(InitializedVariableContext ctx) {
+  boolean result = false;
+  var targetCtx = ctx.t_initializedVariableDeclaratorId().t_idDeclaration().t_identifier();
+  if (targetCtx != null) {
+    String targetName = targetCtx.getText();
+    result = isBooleanValue(targetName);
+  }
+  return result;
+}
+
 public boolean isBooleanValue(String targetName) {
   String targetVarName = TUtil.variableName(targetName);
   String varType = currentScope.getExistingVarInfo(targetVarName).getType();
-  return varType.equals("boolean");
+  System.out.println("Type of variable: "+ varType);
+  return varType.equals("boolean") || varType.equals("Boolean");
 }
 
 private String withoutSemicolon(String code) {
@@ -285,7 +302,7 @@ private String withoutSemicolon(String code) {
       if (statementsAreActive) {
         if (statement instanceof MeansStmtContext) {
           statementsAreActive = false;
-          meaning += and + rewriter.source(meansExpressionCtx(statement));
+          meaning += and + rewriter.source(getExpressionCtx(statement));
         } else {
           meaning += and + rewriter.source(statement);
         }
@@ -303,10 +320,11 @@ private String withoutSemicolon(String code) {
           } else { // initialization instanceof InitializedVariableContext
             InitializedVariableContext initStatement = (InitializedVariableContext)initialization;
             String valueName = rewriter.source(initStatement.t_initializedVariableDeclaratorId());
-            String value = rewriter.source(initStatement.t_variableInitializer());
             types += and + " type("+ type +","+ valueName +")";
             if (statementsAreActive) {
-              meaning += and + valueName + " = " + value;
+              System.out.println("Value name: "+ valueName);
+              meaning += and + parenthesize(rewriter.source(initStatement));
+              System.out.println("Meaning after init: "+ meaning);
             }
           }
         }
@@ -321,13 +339,14 @@ private String withoutSemicolon(String code) {
     }
   }
 
+  System.out.println("Block meaning: "+ meaning);
   rewriter.substituteText(ctx, meaning);
   kb.assume(meaning);
 
   return null;
 }
 
-private T_expressionContext meansExpressionCtx(T_statementContext statement) {
+private T_expressionContext getExpressionCtx(T_statementContext statement) {
   return ((MeansStmtContext)statement).t_means().t_expression();
 }
 
@@ -471,8 +490,12 @@ public boolean isBooleanDotExpr(DotExprContext ctx) {
 
 public boolean isBooleanPrimary(T_expressionDetailContext ctx) {
   T_primaryContext pCtx = ((PrimaryExprContext)ctx).t_primary();
-  if (pCtx.start.getText() == "(") // i.e., '(' t_expression ')'
-    return hasBooleanTerms(pCtx.t_expression().t_expressionDetail());
+//  if (pCtx.start.getText() == "(") // i.e., '(' t_expression ')'
+//    return hasBooleanTerms(pCtx.t_expression().t_expressionDetail());
+  if (pCtx.getChild(0) instanceof T_parExpressionContext) {
+    var parenthesizedExpr = (T_parExpressionContext)pCtx.getChild(0);
+    return hasBooleanTerms(parenthesizedExpr.t_expression().t_expressionDetail());
+  }
   String text = pCtx.getText();
   if (text == "true")
     return true;
@@ -559,12 +582,13 @@ public Void visitConjunctiveBoolExpr(ConjunctiveBoolExprContext ctx) {
  * @return a null */
 @Override
 public Void visitT_means(T_meansContext ctx) {
-//  System.out.println("Mean pre: "+ kb.getMeaning());
   visitChildren(ctx); // rewrite code into the KnowledgeBase language
-//  System.out.println("Mean post: "+ kb.getMeaning());
 
   T_expressionDetailContext predicate = ctx.t_expression().t_expressionDetail();
   String meansStatementForProver = prologCode(predicate);
+  System.out.println("theory:");
+  System.out.println(kb.conjoinedFacts());
+  System.out.println("prologCode: "+ meansStatementForProver);
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
   if ( result != ProofResult.provenTrue)
     result = proveEachConjunct(predicate);
@@ -573,6 +597,7 @@ public Void visitT_means(T_meansContext ctx) {
 }
 
 private ProofResult proveEachConjunct(T_expressionDetailContext conjunction) {
+  conjunction = removeAnyParentheses(conjunction);
   if (isSingleConjunct(conjunction)) {
     ProofResult result = kb.assumeIfProven(prologCode(conjunction));
     reportAnyError(conjunction, result);
@@ -588,6 +613,19 @@ private ProofResult proveEachConjunct(T_expressionDetailContext conjunction) {
     }
   }
   return ProofResult.provenTrue;
+}
+
+private T_expressionDetailContext removeAnyParentheses(T_expressionDetailContext conjunction) {
+  if ( ! (conjunction instanceof PrimaryExprContext))
+    return conjunction;
+
+  final var primary = ((PrimaryExprContext)conjunction).t_primary();
+  final var parens = primary.t_parExpression();
+  if (parens == null)
+    return conjunction;
+
+  final var innerExpression = parens.t_expression().t_expressionDetail();
+  return removeAnyParentheses(innerExpression);
 }
 
 private boolean isSingleConjunct(T_expressionDetailContext expressionDetail) {

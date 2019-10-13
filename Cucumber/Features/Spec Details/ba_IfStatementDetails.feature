@@ -28,7 +28,7 @@ Scenario: The if statement with empty branches
       if (true) ;
       else ;
     }
-    means ('a = 'b);
+    means 'a = 'b;
 
     } // end class
     """
@@ -65,7 +65,7 @@ Scenario: The if statement with nested empty branches
       else if (true) ;
       else ;
     }
-    means ('a != 'b);
+    means 'a != 'b;
 
     } // end class
     """
