@@ -12,4 +12,38 @@ Scenario: The general form for a loop
 
 
 
-  # When ...
+Scenario: In a status statement, each conjunct of a top-level forall is checked separately
+
+    We make use of the fact that
+
+      forall(X:SetOfX) (p(X) & q(X)) === forall(X:SetOfX) p(X) & forall(X:SetOfX) q(X)
+
+    and evaluate each conjunct of the right-hand side separately.
+
+    TODO: We also might split an implication with a conjunctive RHS or a disjunctive LHS. And, we
+    could check all resulting statements from universal quantification and implication for whether
+    they are conjunctive. And we have disjunctions under negations. We are essentially keeping track
+    of parity, splitting anything that is equivalent to a non-negated conjunction. But what kinds
+    and levels of splits will help the programmer see the error, and what splitting makes the error
+    more difficult to understand? This will become even more of an issue when method meanings are
+    allowed in status statements. Perhaps we should check and report each error in its own syntax
+    before burrowing down to the next level in order to give the programmer a clear context at each
+    stage.
+
+    I think I like the following even better: When there is an error, display the top level conjunct while highlighting the lowest level phrase discovered thru parity-driven conjunct checking.
+
+# TODO:
+#  When an invalid run unit is
+#    """
+#    class ForallWithConjunction {
+#
+#      void checkTruth() {
+#        for(t' : tests'.indices) {
+#          result'[t'] = 'result[t'] || tests'[t'];
+#        }
+#        means forall (t' : tests'.indices) ( (result'[t'] ==> 'result[t'])
+#                                          /\ (result'[t'] ==>  tests'[t']) );
+#          // the programmer has accidentally reversed the implications
+#      }
+#
+#    }
