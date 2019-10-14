@@ -306,19 +306,18 @@ private String withoutSemicolon(String code) {
         } else {
           meaning += and + rewriter.source(statement);
         }
-      } else
-        ;
+      }
     } else {
       T_localVariableDeclarationContext localDeclaration = bStCtx.t_localVariableDeclaration();
       if (localDeclaration != null) {
         String type = localDeclaration.t_type().getText();
-        for (T_variableDeclaratorContext initialization : localDeclaration.t_variableDeclarator()) {
-          if (initialization instanceof UninitializedVariableContext) {
-            InitializedVariableContext uninitStatement = (InitializedVariableContext)initialization;
-            String valueName = rewriter.source(uninitStatement.t_initializedVariableDeclaratorId());
+        for (T_variableDeclaratorContext declarator : localDeclaration.t_variableDeclarator()) {
+          if (declarator instanceof UninitializedVariableContext) {
+            var uninitStatement = (UninitializedVariableContext)declarator;
+            String valueName = rewriter.source(uninitStatement.t_uninitializedVariableDeclaratorId());
             types += and + " type("+ type +","+ valueName +")";
           } else { // initialization instanceof InitializedVariableContext
-            InitializedVariableContext initStatement = (InitializedVariableContext)initialization;
+            InitializedVariableContext initStatement = (InitializedVariableContext)declarator;
             String valueName = rewriter.source(initStatement.t_initializedVariableDeclaratorId());
             types += and + " type("+ type +","+ valueName +")";
             if (statementsAreActive) {
