@@ -207,7 +207,7 @@ t_fieldDeclaration
     awkwardness in the FieldVistor.
  */
 t_fieldDeclarator[String idType]
-  : t_idDeclaration[$idType] '=' t_variableInitializer   #InitializedField
+  : t_idDeclaration[$idType] op='=' t_variableInitializer   #InitializedField
   | t_idDeclaration[$idType]                             #UninitializedField
   ;
 
@@ -231,7 +231,7 @@ t_constDeclaration
   ;
 
 t_constantDeclarator [String idType]
-  : t_idDeclaration[$idType] '=' t_variableInitializer
+  : t_idDeclaration[$idType] op='=' t_variableInitializer
   ;
 
 // see matching of [] comment in methodDeclaratorRest
@@ -250,7 +250,7 @@ t_annotationVariableDeclarator
   ;
 
 t_variableDeclarator [String idType]
-  : t_initializedVariableDeclaratorId[$idType] '=' t_variableInitializer #InitializedVariable
+  : t_initializedVariableDeclaratorId[$idType] op='=' t_variableInitializer #InitializedVariable
   | t_uninitializedVariableDeclaratorId[$idType]                         #UninitializedVariable
   ;
 
@@ -455,7 +455,7 @@ t_statement
   | 'break' UndecoratedIdentifier? ';'                                           # BreakStmt
   | 'continue' UndecoratedIdentifier? ';'                                        # ContinueStmt
   | ';'                                                                          # EmptyStmt
-	| t_assignable '=' t_expression ';'                                            # AssignStmt
+	| t_assignable op='=' t_expression ';'                                            # AssignStmt
   | t_expression '(' t_expressionList? ')' ';'                                   # CallStmt
   | t_expression '.' 'new' t_nonWildcardTypeArguments? t_innerCreator            # CreationStmt
   | UndecoratedIdentifier ':' t_statement                                        # LabelStmt
@@ -598,7 +598,7 @@ t_expressionDetail // in order of most sticky to least sticky
   ;
 
 t_primary // any changes must coordinate with TLantlrProofVisitor.isBooleanPrimary()
-  : '(' t_expression ')'
+  : t_parExpression
   | 'this'
   | 'super'
   | t_literal
@@ -666,7 +666,7 @@ t_arguments
   ;
 
 t_means
-  : MEANS '(' t_expression ')' ';'
+  : MEANS t_expression ';'
   ;
 
 t_idDeclaration [String idType]
@@ -702,7 +702,7 @@ t_valueName
       Lexer section
 *******************************************************************************/
 
-// ง3.9 Keywords ( Java keywords are also listed here to keep from having them
+// ยง3.9 Keywords ( Java keywords are also listed here to keep from having them
 //                 overridden by other lexer rules in the T language)
 
 ABSTRACT      : 'abstract';
@@ -757,7 +757,7 @@ VOID          : 'void';
 VOLATILE      : 'volatile';
 WHILE         : 'while';
 
-// ง3.10.3 Boolean Literals
+// ยง3.10.3 Boolean Literals
 
 // Repeated here (from TJava.g4) because definition of UndecoratedIdentifier
 //   would subsume true and false
@@ -766,13 +766,13 @@ BooleanLiteral
     |   'false'
     ;
 
-// ง3.10.7 The Null Literal
+// ยง3.10.7 The Null Literal
 
 NullLiteral
     :   'null'
     ;
 
-// ง3.12 Operators
+// ยง3.12 Operators
 
 // Conjunctive Boolean Operators
 
@@ -782,7 +782,7 @@ CONJUNCTIVE_CONSEQUENCE   : '<==';
 CONJUNCTIVE_NOT_EQUAL     : '=!=';
 
 
-/* ง3.8 Identifiers (this definition must appear after all keywords and alphabetic
+/* ยง3.8 Identifiers (this definition must appear after all keywords and alphabetic
                      literals in the grammar because they would be subsumed by
                      the definition of Identifier)
 */
