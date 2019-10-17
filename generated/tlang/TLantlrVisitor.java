@@ -193,36 +193,6 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitT_interfaceBodyDeclaration(TLantlrParser.T_interfaceBodyDeclarationContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link TLantlrParser#t_interfaceMemberDeclaration}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitT_interfaceMemberDeclaration(TLantlrParser.T_interfaceMemberDeclarationContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link TLantlrParser#t_constDeclaration}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitT_constDeclaration(TLantlrParser.T_constDeclarationContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link TLantlrParser#t_constantDeclarator}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitT_constantDeclarator(TLantlrParser.T_constantDeclaratorContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link TLantlrParser#t_interfaceMethodDeclaration}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitT_interfaceMethodDeclaration(TLantlrParser.T_interfaceMethodDeclarationContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link TLantlrParser#t_genericInterfaceMethodDeclaration}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitT_genericInterfaceMethodDeclaration(TLantlrParser.T_genericInterfaceMethodDeclarationContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link TLantlrParser#t_annotationVariableDeclarator}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

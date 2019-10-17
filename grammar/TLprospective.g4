@@ -70,6 +70,7 @@ t_typeDeclaration
   | ';'
   ;
 
+// The Context checker must prohibit certain modifiers, e.g., private constants in an interface.
 t_modifier
   : t_classOrInterfaceModifier
   | ( 'native'
@@ -86,6 +87,7 @@ t_classOrInterfaceModifier
     | 'private'    // class or interface
     | 'static'     // class or interface
     | 'abstract'   // class or interface
+    | 'default'    // interface only
     | 'transient'  // class only -- does not apply to interfaces
     | 'sequential' // class only -- does not apply to interfaces
     | 'final'      // class only -- does not apply to interfaces
@@ -99,7 +101,7 @@ t_variableModifier
   ;
 
 t_classDeclaration
-  : 'class' Identifier t_typeParameters?
+  : 'class' UndecoratedIdentifier t_typeParameters?
       ('extends' t_type)?
       ('implements' t_typeList)?
       t_classBody
@@ -110,7 +112,7 @@ t_typeParameters
   ;
 
 t_typeParameter
-  : Identifier ('extends' t_typeBound)?
+  : UndecoratedIdentifier ('extends' t_typeBound)?
   ;
 
 t_typeBound
@@ -118,7 +120,7 @@ t_typeBound
   ;
 
 t_enumDeclaration
-  : ENUM Identifier ('implements' t_typeList)?
+  : ENUM UndecoratedIdentifier ('implements' t_typeList)?
       '{' t_enumConstants? ','? t_enumBodyDeclarations? '}'
   ;
 
@@ -220,7 +222,7 @@ expense: FloatingPointLiteral ; // 0.0 (always) =< expense =< 1.0 (never)
    for invalid return type after parsing.
  */
 t_methodDeclaration
-  : (t_type|'void') Identifier t_formalParameters ('[' ']')*
+  :   (t_type|'void') UndecoratedIdentifier t_formalParameters ('[' ']')*
       ('throws' t_qualifiedNameList)?
       (   t_methodBody
       | ';'
@@ -233,7 +235,7 @@ t_genericMethodDeclaration
   ;
 
 t_constructorDeclaration
-  : Identifier t_formalParameters ('throws' t_qualifiedNameList)?
+  : UndecoratedIdentifier t_formalParameters ('throws' t_qualifiedNameList)?
       t_constructorBody
   ;
 
@@ -245,56 +247,55 @@ t_fieldDeclaration
   : ty=t_type t_fieldDeclarator[$ty.text] (',' t_fieldDeclarator[$ty.text])* ';'
   ;
 
+/** Implementation note: separate processing is required for initialized and
+    uninitialized fields in the SemanticsCheckVisitor, but this causes a little
+    awkwardness in the FieldVistor.
+ */
 t_fieldDeclarator[String idType]
-  : t_idDeclaration[$idType] '=' t_variableInitializer   #InitializedField
-  | t_idDeclaration[$idType]                             #UninitializedField
+  : t_idDeclaration[$idType] op='=' t_variableInitializer   #InitializedField
+  | t_idDeclaration[$idType]                                #UninitializedField
   ;
 
 t_interfaceBodyDeclaration
-  : t_modifier* t_interfaceMemberDeclaration
-  | ';'
+  : ';'
+  | t_modifier* t_memberDeclaration // certain members are prohibited or have restricted modifiers
   ;
 
-t_interfaceMemberDeclaration
-  : t_constDeclaration
-  | t_interfaceMethodDeclaration
-  | t_genericInterfaceMethodDeclaration
-  | t_interfaceDeclaration
-  | t_annotationTypeDeclaration
-  | t_classDeclaration
-  | t_enumDeclaration
-  ;
-
-t_constDeclaration
-  : ty=t_type t_constantDeclarator[$ty.text] (',' t_constantDeclarator[$ty.text])* ';'
-  ;
-
-t_constantDeclarator [String idType]
-  : t_idDeclaration[$idType] '=' t_variableInitializer
-  ;
-
+// t_interfaceMemberDeclaration
+//   : t_constDeclaration
+//   | t_interfaceMethodDeclaration
+//   | t_genericInterfaceMethodDeclaration
+//   | t_interfaceDeclaration
+//   | t_annotationTypeDeclaration
+//   | t_classDeclaration
+//   | t_enumDeclaration
+//   ;
+//
+// t_constDeclaration
+//   : ty=t_type t_constantDeclarator[$ty.text] (',' t_constantDeclarator[$ty.text])* ';'
+//   ;
+//
+// t_constantDeclarator [String idType]
+//   : t_idDeclaration[$idType] op='=' t_variableInitializer
+//   ;
+//
+// Requires much work for default, static, and private methods in interface
 // see matching of [] comment in methodDeclaratorRest
-t_interfaceMethodDeclaration
-  : (t_type|'void') Identifier t_formalParameters ('[' ']')*
-      ('throws' t_qualifiedNameList)?
-      ';'
-  ;
-
-t_genericInterfaceMethodDeclaration
-  : t_typeParameters t_interfaceMethodDeclaration
-  ;
+// t_interfaceMethodDeclaration
+//   : t_methodDeclaration
+//   ;
+//
+// t_genericInterfaceMethodDeclaration
+//   : t_typeParameters t_interfaceMethodDeclaration
+//   ;
 
 t_annotationVariableDeclarator
   : t_annotationVariableDeclaratorId '=' t_variableInitializer
   ;
 
-t_variableDeclarators [String idType]
-  : t_variableDeclarator[$idType] (',' t_variableDeclarator[$idType])*
-  ;
-
 t_variableDeclarator [String idType]
-  : t_initializedVariableDeclaratorId[$idType] '=' t_variableInitializer
-  | t_uninitializedVariableDeclaratorId[$idType]
+  : t_initializedVariableDeclaratorId[$idType] op='=' t_variableInitializer #InitializedVariable
+  | t_uninitializedVariableDeclaratorId[$idType]                            #UninitializedVariable
   ;
 
 t_initializedVariableDeclaratorId [String idType]
@@ -323,7 +324,7 @@ t_packageOrTypeName
   ;
 
 t_enumConstantName
-  : Identifier
+  : UndecoratedIdentifier
   ;
 
 t_typeName
@@ -336,7 +337,7 @@ t_type
   ;
 
 t_classOrInterfaceType
-  : Identifier t_typeArguments? ('.' Identifier t_typeArguments? )*
+  : UndecoratedIdentifier t_typeArguments? ('.' UndecoratedIdentifier t_typeArguments? )*
   ;
 
 t_primitiveType
@@ -414,7 +415,7 @@ t_elementValuePairs
   ;
 
 t_elementValuePair
-  : Identifier '=' t_elementValue
+  : UndecoratedIdentifier '=' t_elementValue
   ;
 
 t_elementValue
@@ -428,7 +429,7 @@ t_elementValueArrayInitializer
   ;
 
 t_annotationTypeDeclaration
-  : '@' 'interface' Identifier t_annotationTypeBody
+  : '@' 'interface' UndecoratedIdentifier t_annotationTypeBody
   ;
 
 t_annotationTypeBody
@@ -448,7 +449,7 @@ t_annotationTypeElementDeclaration
   ;
 
 t_annotationMethodRest
-  : Identifier '(' ')' t_defaultValue?
+  : UndecoratedIdentifier '(' ')' t_defaultValue?
   ;
 
 t_annotationConstantRest
@@ -462,51 +463,46 @@ t_defaultValue
 // STATEMENTS / BLOCKS
 
 t_block
-  : '{' t_blockStatement* '}'
+  : openBrace='{'  t_blockStatement*  closeBrace='}'
   ;
 
 t_blockStatement
-  : t_localVariableDeclarationStatement
+  : t_localVariableDeclaration ';'
   | t_statement
   | t_typeDeclaration
   ;
 
-t_localVariableDeclarationStatement
-  :  t_localVariableDeclaration ';'
-  ;
-
 t_localVariableDeclaration
-  : t_variableModifier* ty=t_type t_variableDeclarators[$ty.text]
+  : t_variableModifier* ty=t_type
+        t_variableDeclarator[$ty.text] (',' t_variableDeclarator[$ty.text])*
   ;
 
 t_statement
   : t_block                                                                      # BlockStmt
   | ASSERT t_expression (':' t_expression)? ';'                                  # AssertStmt
   | 'if' t_parExpression t_statement ('else' t_statement)?                       # IfStmt
-  | 'for' '(' t_forControl ')' t_statement                                       # Forstmt
-  | 'while' t_parExpression t_statement                                          # Whilestmt
-  | 'do' t_statement 'while' t_parExpression ';'                                 # Dostmt
-  | 'try' t_block (t_catchClause+ t_finallyBlock? | t_finallyBlock)              # Trystmt
-  | 'try' t_resourceSpecification t_block t_catchClause* t_finallyBlock?         # Trystmt
-  | 'switch' t_parExpression '{' t_switchBlockStatementGroup* t_switchLabel* '}' # Switchstmt
-  | 'synchronized' t_parExpression t_block                                       # Syncstmt
-  | 'return' t_expression? ';'                                                   # Returnstmt
-  | 'throw' t_expression ';'                                                     # Throwstmt
-  | 'break' Identifier? ';'                                                      # Breakstmt
-  | 'continue' Identifier? ';'                                                   # Continuestmt
-  | ';'                                                                          # Emptystmt
-	| t_assignment ';'                                                             # Assignstmt
-  | t_methodCallStatement ';'                                                    # Callstmt
-  | Identifier ':' t_statement                                                   # Labelstmt
-  | t_means                                                                      # Meansstmt
-  ;
-
-t_assignment
-  : t_assignable '=' t_expression
+  | 'for' '(' t_forControl ')' t_statement                                       # ForStmt
+  | 'while' t_parExpression t_statement                                          # WhileStmt
+  | 'do' t_statement 'while' t_parExpression ';'                                 # DoStmt
+  | 'try' t_block (t_catchClause+ t_finallyBlock? | t_finallyBlock)              # TryStmt
+  | 'try' t_resourceSpecification t_block t_catchClause* t_finallyBlock?         # TryStmt
+  | 'switch' t_parExpression '{' t_switchBlockStatementGroup* t_switchLabel* '}' # SwitchStmt
+  | 'synchronized' t_parExpression t_block                                       # SyncStmt
+  | 'return' t_expression? ';'                                                   # ReturnStmt
+  | 'throw' t_expression ';'                                                     # ThrowStmt
+  | 'break' UndecoratedIdentifier? ';'                                           # BreakStmt
+  | 'continue' UndecoratedIdentifier? ';'                                        # ContinueStmt
+  | ';'                                                                          # EmptyStmt
+	| t_assignable op='=' t_expression ';'                                         # AssignStmt
+  | t_expression '(' t_expressionList? ')' ';'                                   # CallStmt
+  | t_expression '.' 'new' t_nonWildcardTypeArguments? t_innerCreator            # CreationStmt
+  | UndecoratedIdentifier ':' t_statement                                        # LabelStmt
+  | t_means                                                                      # MeansStmt
 	;
 
-t_assignable
-  : (Identifier '.')* t_valueName ('.' Identifier)* // value name must be new
+t_assignable // left hand side or method argument referring to a modified object
+  : t_expression '[' t_expression ']'
+  : (Identifier '.')* t_valueName ('.' Identifier)* // value name must be fresh
 	;
 
 t_locator

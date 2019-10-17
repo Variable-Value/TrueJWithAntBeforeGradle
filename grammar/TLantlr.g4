@@ -70,6 +70,7 @@ t_typeDeclaration
   | ';'
   ;
 
+// The Context checker must prohibit certain modifiers, e.g., private constants in an interface.
 t_modifier
   : t_classOrInterfaceModifier
   | ( 'native'
@@ -80,12 +81,13 @@ t_modifier
   ;
 
 t_classOrInterfaceModifier
-  : t_annotation       // class or interface
-  | (   'public'     // class or interface
+  : t_annotation   // class or interface
+  | (   'public'   // class or interface
     | 'protected'  // class or interface
     | 'private'    // class or interface
     | 'static'     // class or interface
     | 'abstract'   // class or interface
+    | 'default'    // interface only
     | 'transient'  // class only -- does not apply to interfaces
     | 'final'      // class only -- does not apply to interfaces
     | 'strictfp'   // class or interface
@@ -208,42 +210,41 @@ t_fieldDeclaration
  */
 t_fieldDeclarator[String idType]
   : t_idDeclaration[$idType] op='=' t_variableInitializer   #InitializedField
-  | t_idDeclaration[$idType]                             #UninitializedField
+  | t_idDeclaration[$idType]                                #UninitializedField
   ;
 
 t_interfaceBodyDeclaration
-  : t_modifier* t_interfaceMemberDeclaration
-  | ';'
+  : ';'
+  | t_modifier* t_memberDeclaration // certain members are prohibited or have restricted modifiers
   ;
 
-t_interfaceMemberDeclaration
-  : t_constDeclaration
-  | t_interfaceMethodDeclaration
-  | t_genericInterfaceMethodDeclaration
-  | t_interfaceDeclaration
-  | t_annotationTypeDeclaration
-  | t_classDeclaration
-  | t_enumDeclaration
-  ;
-
-t_constDeclaration
-  : ty=t_type t_constantDeclarator[$ty.text] (',' t_constantDeclarator[$ty.text])* ';'
-  ;
-
-t_constantDeclarator [String idType]
-  : t_idDeclaration[$idType] op='=' t_variableInitializer
-  ;
-
+// t_interfaceMemberDeclaration
+//   : t_constDeclaration
+//   | t_interfaceMethodDeclaration
+//   | t_genericInterfaceMethodDeclaration
+//   | t_interfaceDeclaration
+//   | t_annotationTypeDeclaration
+//   | t_classDeclaration
+//   | t_enumDeclaration
+//   ;
+//
+// t_constDeclaration
+//   : ty=t_type t_constantDeclarator[$ty.text] (',' t_constantDeclarator[$ty.text])* ';'
+//   ;
+//
+// t_constantDeclarator [String idType]
+//   : t_idDeclaration[$idType] op='=' t_variableInitializer
+//   ;
+//
+// Requires much work for default, static, and private methods in interface
 // see matching of [] comment in methodDeclaratorRest
-t_interfaceMethodDeclaration
-  : (t_type|'void') UndecoratedIdentifier t_formalParameters ('[' ']')*
-      ('throws' t_qualifiedNameList)?
-      ';'
-  ;
-
-t_genericInterfaceMethodDeclaration
-  : t_typeParameters t_interfaceMethodDeclaration
-  ;
+// t_interfaceMethodDeclaration
+//   : t_methodDeclaration
+//   ;
+//
+// t_genericInterfaceMethodDeclaration
+//   : t_typeParameters t_interfaceMethodDeclaration
+//   ;
 
 t_annotationVariableDeclarator
   : t_annotationVariableDeclaratorId '=' t_variableInitializer
@@ -251,7 +252,7 @@ t_annotationVariableDeclarator
 
 t_variableDeclarator [String idType]
   : t_initializedVariableDeclaratorId[$idType] op='=' t_variableInitializer #InitializedVariable
-  | t_uninitializedVariableDeclaratorId[$idType]                         #UninitializedVariable
+  | t_uninitializedVariableDeclaratorId[$idType]                            #UninitializedVariable
   ;
 
 t_initializedVariableDeclaratorId [String idType]
@@ -423,11 +424,6 @@ t_block
   : openBrace='{'  t_blockStatement*  closeBrace='}'
   ;
 
-// t_nestedStatement
-//   : t_block
-//   | t_statement { ! getText().startsWith("{") }?
-//   ;
-
 t_blockStatement
   : t_localVariableDeclaration ';'
   | t_statement
@@ -455,7 +451,7 @@ t_statement
   | 'break' UndecoratedIdentifier? ';'                                           # BreakStmt
   | 'continue' UndecoratedIdentifier? ';'                                        # ContinueStmt
   | ';'                                                                          # EmptyStmt
-	| t_assignable op='=' t_expression ';'                                            # AssignStmt
+	| t_assignable op='=' t_expression ';'                                         # AssignStmt
   | t_expression '(' t_expressionList? ')' ';'                                   # CallStmt
   | t_expression '.' 'new' t_nonWildcardTypeArguments? t_innerCreator            # CreationStmt
   | UndecoratedIdentifier ':' t_statement                                        # LabelStmt
