@@ -213,15 +213,9 @@ public Void visitAssignStmt(AssignStmtContext ctx) {
   visitChildren(ctx);
 
   String rhs = rewriter.source(ctx.t_assignable());
-  String op = needsEquivalenceForBooleanTarget(ctx) ? "===" : " = ";
-//  if (needsEquivalenceForBooleanTarget(ctx)) {
-//    Token op = (Token)ctx.getChild(1).getPayload();
-//    rewriter.replace(op,"===");
-//    assignmentCode = assignmentCode.replaceFirst("=", "===");
-//  }
+  String op = isBooleanIdentifier(ctx.t_assignable().t_identifier()) ? "===" : " = ";
   System.out.println("Rewritten assignment operator: "+ op);
   String lhs = parenthesize(rewriter.source(ctx.t_expression()));
-//  String src  = withoutSemicolon(rewriter.source(ctx));
   String src = parenthesize(rhs + op + lhs);
   System.out.println("Rewritten for Prolog: "+ src);
   rewriter.substituteText(ctx, src);
@@ -229,36 +223,16 @@ public Void visitAssignStmt(AssignStmtContext ctx) {
   return null;
 }
 
-private boolean needsEquivalenceForBooleanTarget(AssignStmtContext ctx) {
-  boolean result = false;
-  T_identifierContext targetCtx = ctx.t_assignable().t_identifier();
-  if (targetCtx != null) {
-    String targetName = targetCtx.getText();
-    result = isBooleanValue(targetName);
-  }
-  return result;
-}
-
 private boolean needsEquivalenceForBooleanTarget(InitializedVariableContext ctx) {
-  boolean result = false;
   var targetCtx = ctx.t_initializedVariableDeclaratorId().t_idDeclaration().t_identifier();
-  if (targetCtx != null) {
-    String targetName = targetCtx.getText();
-    result = isBooleanValue(targetName);
-  }
-  return result;
+  return isBooleanIdentifier(targetCtx);
 }
 
-public boolean isBooleanValue(String targetName) {
-  String targetVarName = TUtil.variableName(targetName);
+private boolean isBooleanIdentifier(T_identifierContext targetCtx) {
+  String targetVarName = TUtil.variableName(targetCtx.getText());
   String varType = currentScope.getExistingVarInfo(targetVarName).getType();
   System.out.println("Type of variable: "+ varType);
   return varType.equals("boolean") || varType.equals("Boolean");
-}
-
-private String withoutSemicolon(String code) {
-  int semicolonPosition = code.lastIndexOf(';');
-  return code.substring(0, semicolonPosition) + code.substring(semicolonPosition + 1);
 }
 
 /**
@@ -441,7 +415,7 @@ private boolean hasBooleanTerms(T_expressionDetailContext ctx) {
   if (ctx instanceof ConjRelationExprContext)
     return true;
   if (ctx instanceof PrimaryExprContext)
-    return isBooleanPrimary(ctx);
+    return isBooleanPrimary(((PrimaryExprContext)ctx).t_primary());
   if (ctx instanceof NotExprContext)
     return true;
 //    if (ctx instanceof FuncCallExprContext) {
@@ -480,31 +454,24 @@ private boolean hasBooleanTerms(T_expressionDetailContext ctx) {
 
 public boolean isBooleanDotExpr(DotExprContext ctx) {
   if ("this".equals(rewriter.source(ctx.t_expressionDetail()))
-      && isBooleanValue(ctx.t_identifier().getText()))
+      && isBooleanIdentifier(ctx.t_identifier()))
     return true;
   // TODO: return true if other (non-this) object component identifier is boolean
   // otherwise
   return false;
 }
 
-public boolean isBooleanPrimary(T_expressionDetailContext ctx) {
-  T_primaryContext pCtx = ((PrimaryExprContext)ctx).t_primary();
-//  if (pCtx.start.getText() == "(") // i.e., '(' t_expression ')'
-//    return hasBooleanTerms(pCtx.t_expression().t_expressionDetail());
-  if (pCtx.getChild(0) instanceof T_parExpressionContext) {
-    var parenthesizedExpr = (T_parExpressionContext)pCtx.getChild(0);
-    return hasBooleanTerms(parenthesizedExpr.t_expression().t_expressionDetail());
-  }
-  String text = pCtx.getText();
-  if (text == "true")
-    return true;
-  if (text == "false")
-    return true;
-  if (pCtx.t_identifier() != null)
-    return isBooleanValue(pCtx.t_identifier().getText());
-  // This is all the possible booleans in the parse rule t_primary in the TLantlr.g4 grammar
-  // as of 2019 Jan 16
-  return false;
+/** Check all possible booleans in the parse rule t_primary in the TLantlr.g4 grammar
+ * as of 2019 Jan 16
+ */
+public boolean isBooleanPrimary(T_primaryContext ctx) {
+  if (ctx.getChild(0) instanceof T_parExpressionContext)
+    return hasBooleanTerms(((T_parExpressionContext)ctx.getChild(0)).t_expression()
+                                                                    .t_expressionDetail());
+  if (ctx.t_identifier() != null)
+    return isBooleanIdentifier(ctx.t_identifier());
+
+  return(ctx.getText().equals("true") || ctx.getText().equals("false"));
 }
 
 /** Replace the Java OR (|) with the prover OR (\/).
