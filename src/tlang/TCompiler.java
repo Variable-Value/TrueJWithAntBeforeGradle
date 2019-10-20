@@ -245,7 +245,8 @@ AmbiguityDetection(String fileName
     tree = parser.t_compilationUnit();
     counts.incTCodeCount();
   }
-  if (msgCollector.hasErrs()) counts.incErrorCount();
+  if (msgCollector.hasErrs())
+    counts.incErrorCount();
   System.out.println(msgCollector.toString());
 }
 

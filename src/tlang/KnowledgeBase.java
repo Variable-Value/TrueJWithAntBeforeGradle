@@ -268,7 +268,6 @@ public void assumeType(String variableType, String valueName) {
  */
 public void assume(String fact) {
   facts.push(fact);
-  System.out.println("New KB fact assumed: "+ fact);
 }
 
 /** Checks whether a statement is consistent with the {@link KnowledgeBase} facts and adds it
@@ -452,7 +451,6 @@ private SolveInfo checkForConsistency(String testString) {
   try {
     info = engine.solve(Term.createTerm(prologCommand(testString), engine.getOperatorManager()));
   } catch (InvalidTermException iTE) {
-    System.out.println("****** INVALID TERM EXCEPTION: "+ iTE.getMessage());
     throw iTE;
   }
 

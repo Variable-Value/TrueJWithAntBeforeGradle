@@ -214,10 +214,8 @@ public Void visitAssignStmt(AssignStmtContext ctx) {
 
   String rhs = rewriter.source(ctx.t_assignable());
   String op = isBooleanIdentifier(ctx.t_assignable().t_identifier()) ? "===" : " = ";
-  System.out.println("Rewritten assignment operator: "+ op);
   String lhs = parenthesize(rewriter.source(ctx.t_expression()));
   String src = parenthesize(rhs + op + lhs);
-  System.out.println("Rewritten for Prolog: "+ src);
   rewriter.substituteText(ctx, src);
   kb.assume(src);
   return null;
@@ -231,7 +229,6 @@ private boolean needsEquivalenceForBooleanTarget(InitializedVariableContext ctx)
 private boolean isBooleanIdentifier(T_identifierContext targetCtx) {
   String targetVarName = TUtil.variableName(targetCtx.getText());
   String varType = currentScope.getExistingVarInfo(targetVarName).getType();
-  System.out.println("Type of variable: "+ varType);
   return varType.equals("boolean") || varType.equals("Boolean");
 }
 
@@ -294,11 +291,8 @@ private boolean isBooleanIdentifier(T_identifierContext targetCtx) {
             InitializedVariableContext initStatement = (InitializedVariableContext)declarator;
             String valueName = rewriter.source(initStatement.t_initializedVariableDeclaratorId());
             types += and + " type("+ type +","+ valueName +")";
-            if (statementsAreActive) {
-              System.out.println("Value name: "+ valueName);
+            if (statementsAreActive)
               meaning += and + parenthesize(rewriter.source(initStatement));
-              System.out.println("Meaning after init: "+ meaning);
-            }
           }
         }
       } else {
@@ -312,7 +306,6 @@ private boolean isBooleanIdentifier(T_identifierContext targetCtx) {
     }
   }
 
-  System.out.println("Block meaning: "+ meaning);
   rewriter.substituteText(ctx, meaning);
   kb.assume(meaning);
 
@@ -552,9 +545,6 @@ public Void visitT_means(T_meansContext ctx) {
 
   T_expressionDetailContext predicate = ctx.t_expression().t_expressionDetail();
   String meansStatementForProver = prologCode(predicate);
-  System.out.println("theory:");
-  System.out.println(kb.conjoinedFacts());
-  System.out.println("prologCode: "+ meansStatementForProver);
   ProofResult result = kb.substituteIfProven(meansStatementForProver);
   if ( result != ProofResult.provenTrue)
     result = proveEachConjunct(predicate);
