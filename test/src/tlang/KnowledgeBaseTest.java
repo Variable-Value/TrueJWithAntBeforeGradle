@@ -9,13 +9,15 @@ import org.junit.Test;
 
 public class KnowledgeBaseTest {
 
+private static final String and = KnowledgeBase.and;
+
 @Test
 public void test_child_KB_empty() throws Exception {
   KnowledgeBase parent = new KnowledgeBase();
   parent.assume("fact 1");
   KnowledgeBase child = new KnowledgeBase(parent);
   assertTrue(child.hasNoFacts());
-  String expected = parent.conjoinedFacts();
+  String expected = "true" + and + parent.conjoinedFacts();
   String actual   = child .conjoinedFacts();
   if ( expected.equals(actual))
     assertTrue(true);
