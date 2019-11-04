@@ -4,16 +4,16 @@ Feature: Value names are decorated variable names (TrueJ 0.1)
   statement is executed. In procedural and object oriented languages like Java*, variables hold the
   state, but the particular state held by those variables is never made explicit. So an important
   difference between TrueJ and Java is that we add a way for each state contained in the variables
-  to be explicitly represented. And we need to make as few other changes from Java as possible
-  because we want programmers to easily make the transition to focusing more on the state and less
-  on the variables that hold the state.
+  to be explicitly represented. And because we want programmers to easily make the transition to
+  focusing more on the state and less on the variables that hold the state, we need to resist most
+  of the temptations to make other changes.
 
 
 Scenario: Values have names
 
     TrueJ represents state by adding a syntax for naming the values
     that are held by variables. We add a distinct decoration to a variable's
-    name for each of the values that it stores, keeping the variable name as
+    name for each of the values that it stores, keeping the variable's name as
     part of the value name to allow the programmer to control details of the
     procedural programming. Within the scope of each executable, The name of the
     initial value that a variable holds is the variable name pre-decorated with
@@ -123,7 +123,7 @@ Scenario: Values have names
     """
 
 
-Scenario: The scope of a Value name
+Scenario: The scope of a value name ends with the scope of its variable
 
     Normally in a procedural language, the value held by a variable disappears
     when you overwrite it with a new value, but not in TrueJ. If you need a value
@@ -147,8 +147,8 @@ Scenario: The scope of a Value name
     This feature embarasses me a little because, above, I was fussy over the conceptual distance of
     functional and logic languages from the procedural nature of the computer, and here we are,
     hiding a variable to hold the copy of the overwritten value and hiding the copy operation
-    itself. My only defense is that it seems the best compromise if our primary goal is to give
-    equal attention to state and process.
+    itself. My only defense is that it seems the best compromise if our primary goal is to integrate
+    state and process.
 
     The ability to refer back to values that have been overwritten will only simplify program code a
     little, but the readability of programs is so important that this bit of simplification is still
