@@ -6,7 +6,6 @@ Feature: Value names - end to end details test (T Language 0.1)
   tests that clarify more of the details of the way things will and will not
   work.
 
-
 Scenario: The string of characters $T$ is not allowed in identifiers
 
     In order to translate the T language to Java, we must have the ability to
@@ -89,93 +88,13 @@ Scenario: The string of characters $T$ is not allowed in identifiers
 
     """
 
-# TODO: implement the $T$ prohibition in comments
+Scenario: A Type name cannot be decorated when it is declared
 
-#Scenario: Back translation of comments requires absence of reserved characters
-  #
-  #  Generation of executable Java from the T language requires translating all
-  #  non-command statements to comments. Although we have not implemented a
-  #  back-translator from the generated Java to the T language that would generate
-  #  it, we hope that these special comments will allow such a translator to be
-  #  built, especially for back-translating Java error messages into T language
-  #  error messages. In order to mark parts of a generated comment that need to be
-  #  uncommented or not, the character string $T$ is used. To avoid confusing any
-  #  attempt at back-translation, that string needs to be prohibited within the
-  #  original T language comments.
-  #
-  #  When an invalid run unit is
-  #    """
-  #    class SwapError5 {
-  #
-  #    /* no comment may contain $T$, like this one does */
-  #
-  #    int a, b;
-  #
-  #    void swap() {
-  #      int startingA' = 'a;
-  #      a' = 'b;
-  #      b' = startingA';
-  #    }
-  #    means(a' = 'b && b' = 'a);
-  #
-  #    } // end class
-  #    """
-  #
-  #  Then an error message contains
-  #  """
-  #  ???
-  #  """
-
-
-Scenario: A reused intermediate value is saved immediately before reuse
-
-  When a valid run unit is
-    """
-    class Swapper2 {
-
-    int a, b;
-
-    void swap() {
-      b'temp = 'a;
-      a'temp = 'b; // reuseing 'b that was overwritten as b'temp
-      a' = b'temp;
-      b' = a'temp; // reusing a'temp that was overwritten as a'
-    }
-
-    } // end class Swapper2
-    """
-
-  Then the Java operational run unit is
-    """
-    import tlang.runtime.*; @TType class Swapper2 {
-
-    int a, b;
-
-    void swap() { int a$T$temp; int $T$b = /*'*/b;
-      b/*'temp*/ = /*'*/a;
-      a/*'temp*/ = $T$b; a$T$temp = a/*'temp*/; // reuseing 'b that was overwritten as b'temp
-      a/*'*/ = b/*'temp*/;
-      b/*'*/ = a$T$temp; // reusing a'temp that was overwritten as a'
-    }
-
-    } // end class Swapper2
-    """
-
-
-Scenario: A Type name cannot be decorated when it's class is declared
-
-    Declaration of classes and other forms of types must be in the usual Java
-    form and not decorated.
-
-    This all gets confusing because in Java, the class name is used for both the
-    type that the class declares and the static object that is associated with
-    the class. When we refer to the static object of a class, we will need to
-    indicate its state with a decoration; one possibility is
-
-      Employee'.salary = 'Employee.salary + 1_000;
-
-    # Should we use final decoration to declare classes with immutable static
-    # objects?
+    Declaration of classes and other types must not be decorated. All static fields must be final.
+    This is because all instances of a class can access its static fields, making a classes mutable
+    static fields a part of the state of its instances. In the future, we might make allowance for
+    mutable static fields that are "virtually immutable", with only non-functional or operational
+    purposes, such as reordering items or logging.
 
   When an invalid run unit is
   """
@@ -205,93 +124,89 @@ Scenario: A Type name cannot be decorated when it's class is declared
     #    """
 
 
-Scenario: Initial and final values of a variable must be correctly decorated
+Scenario: Initial values of a variable must be correctly decorated
 
     In order to provide consistency throughout the various places that methods may be declared and
-    defined, the initial value of any fields that the method modifies must be pre-decorated and the
-    final value must be post-decorated. Even if a method does not have an explicit
-    final-means-statement, one might be added later, and that would require using initial and final
-    value decorations. Note that an object's fields always have values, so when a new value is
-    assigned to them in a method, they will always be middle- or post-decorated.
+    defined, the initial value of any fields must be pre-decorated. Note that objects are always
+    created as consistent so its fields always have values; even optional fields have a null value.
+    That means that even if a new value is assigned to one of them before the value at entry is
+    used, the assigned value will always be middle- or post-decorated. (When we get to construtors,
+    we will even insist on this when setting the value of a final field.)
 
   When an invalid run unit is
-  """
-  class SwapError3 {
+    """
+    class SwapError3 {
 
-  int a, b;
+    int a, b;
 
-  void swap() {
-    int startingA' = a'current; // invalid because the initial value of a is 'a
-    b' = startingA';
-    a' = 'a;
-    means(startingA' = 'a && a' = 'b && b' = startingA');
-  }
-  means(a' = 'b && b' = 'a);
+    void swap() {
+      int startingA' = a'current; // invalid because the initial value of a is 'a
+      b' = startingA';
+      a' = 'a;
+      means(startingA' = 'a && a' = 'b && b' = startingA');
+    }
+    means(a' = 'b && b' = 'a);
 
-  } // end class
+    } // end class
 
-  """
-
+    """
   Then an error message contains
-  """
-  Value a'current has not been defined
-  """
+    """
+    Value a'current has not been defined
+    """
 
   When an invalid run unit is
-  """
-  class SwapError3 {
+    """
+    class SwapError3 {
 
-  int a, b;
+    int a, b;
 
-  void swap() {
-    int startingA' = 'a;
-    'a = 'b; // cannot change initial value 'a because fields already have a value
-    b' = startingA';
-    means(startingA' = 'a && a' = 'b && b' = startingA');
-  }
-  means(a' = 'b && b' = 'a);
+    void swap() {
+      int startingA' = 'a;
+      'a = 'b; // cannot change initial value 'a because fields already have a value
+      b' = startingA';
+      means(startingA' = 'a && a' = 'b && b' = startingA');
+    }
+    means(a' = 'b && b' = 'a);
 
-  } // end class
+    } // end class
 
-  """
-
+    """
   Then an error message contains
-  """
-  The value 'a has already been defined on line 3
-  """
+    """
+    The value 'a has already been defined on line 3
+    """
 
-### TODO: reactivate this test
-#Scenario: The final value name of all fields must be final-decorated
-#
-#  To ensure that a method's final meaning can be used in calling programs and consistently compared
-#  against requirements imposed in super classes and interfaces, we insist that all field value names
-#  be final-decorated at the end of the method. To be more specific, every field must have a
-#  final-decorated value name by the termination point of every path through the program unless an
-#  Exception is thrown.
-#
-#  When an invalid run unit is
-#  """
-#  class SwapError4 {
-#
-#  int a, b;
-#
-#  void swap() {
-#    int startingA' = 'a;
-#    a' = 'b;
-#    b'last = startingA';
-#    means(startingA' = 'a && a' = 'b && b'last = startingA');
-#  }
-#  means(a' = 'b && b'last = 'a);
-#
-#  } // end class
-#
-#  """
-#  ### TODO: RED/GREEN TEST
-#    Then an error message contains
-#    """
-#    The final value of field b must be b'
-#  """
-
+### TODO: Scenario: The final value name of all fields must be final-decorated
+  #
+  #  To ensure that a method's final meaning can be used in calling programs and consistently compared
+  #  against requirements imposed in super classes and interfaces, we insist that all field value names
+  #  be final-decorated at the end of the method. To be more specific, every field must have a
+  #  final-decorated value name by the termination point of every path through the program unless an
+  #  Exception is thrown.
+  #
+  #  When an invalid run unit is
+  #  """
+  #  class SwapError4 {
+  #
+  #  int a, b;
+  #
+  #  void swap() {
+  #    int startingA' = 'a;
+  #    a' = 'b;
+  #    b'last = startingA';
+  #    means(startingA' = 'a && a' = 'b && b'last = startingA');
+  #  }
+  #  means(a' = 'b && b'last = 'a);
+  #
+  #  } // end class
+  #
+  #  """
+  #  ### TODO: RED/GREEN TEST
+  #    Then an error message contains
+  #    """
+  #    The final value of field b must be b'
+  #  """
 
 Scenario: Value names may only refer to one value within their scope
 
@@ -319,330 +234,6 @@ Scenario: Value names may only refer to one value within their scope
     """
 
   Then an error message contains "allTrue'temp has already been defined"
-
-
-Scenario: Insertion of T runtime import relative to comments
-
-    The tlang.runtime import is inserted before any class JavaDoc, being careful
-    to preserve line numbers to help associate Java compile errors with the
-    original T Language code. The @TType annotation is inserted after the
-    JavaDoc, before and on the same line as the class keyword.
-
-    In a future version we may adjust the character positions and other info in
-    the Java compiler's error messages so that they refer exactly to the T
-    language code.
-
-  When a valid run unit is
-  """
-  /**
-   * A class to demonstrate value names
-   */
-  class Swapper {
-
-  int a, b;
-
-  void swap() {
-    int startingA' = 'a;
-    a' = 'b;
-    b' = startingA';
-    means(startingA' = 'a && a' = 'b && b' = startingA');
-  }
-  means(a' = 'b && b' = 'a);
-
-  } // end class
-    """
-
-  Then the Java operational run unit is
-    """
-    import tlang.runtime.*; /**
-     * A class to demonstrate value names
-     */
-    @TType class Swapper {
-
-    int a, b;
-
-    void swap() {
-      int startingA/*'*/ = /*'*/a;
-      a/*'*/ = /*'*/b;
-      b/*'*/ = startingA/*'*/;
-      /*$T$* means(startingA' = 'a && a' = 'b && b' = startingA'); *$T$*/
-    }
-    /*$T$* means(a' = 'b && b' = 'a); *$T$*/
-
-    } // end class
-    """
-
-
-Scenario: Insertion of T runtime import relative to package
-
-  When a valid run unit is
-    """
-    package ttestclass;
-    class Swapper {
-
-    int a, b;
-
-    void swap() {
-      int startingA' = 'a;
-      a' = 'b;
-      b' = startingA';
-      means(startingA' = 'a && a' = 'b && b' = startingA');
-    }
-    means(a' = 'b && b' = 'a);
-
-    } // end class
-    """
-
-  Then the Java operational run unit is
-    """
-    package ttestclass; import tlang.runtime.*;
-    @TType class Swapper {
-
-    int a, b;
-
-    void swap() {
-      int startingA/*'*/ = /*'*/a;
-      a/*'*/ = /*'*/b;
-      b/*'*/ = startingA/*'*/;
-      /*$T$* means(startingA' = 'a && a' = 'b && b' = startingA'); *$T$*/
-    }
-    /*$T$* means(a' = 'b && b' = 'a); *$T$*/
-
-    } // end class
-    """
-
-
-Scenario: Insertion of T runtime import relative to other imports
-
-  When a valid run unit is
-    """
-    import tlang.runtime.* /*ORIGINAL*/;
-    class Swapper {
-
-    int a, b;
-
-    void swap() {
-      int startingA' = 'a;
-      a' = 'b;
-      b' = startingA';
-      means(startingA' = 'a && a' = 'b && b' = startingA');
-    }
-    means(a' = 'b && b' = 'a);
-
-    } // end class
-    """
-
-  Then the Java operational run unit is
-    """
-    import tlang.runtime.*; import tlang.runtime.* /*ORIGINAL*/;
-    @TType class Swapper {
-
-    int a, b;
-
-    void swap() {
-      int startingA/*'*/ = /*'*/a;
-      a/*'*/ = /*'*/b;
-      b/*'*/ = startingA/*'*/;
-      /*$T$* means(startingA' = 'a && a' = 'b && b' = startingA'); *$T$*/
-    }
-    /*$T$* means(a' = 'b && b' = 'a); *$T$*/
-
-    } // end class
-    """
-
-
-Scenario: Insertion of T runtime import relative to other imports and package
-
-  When a valid run unit is
-    """
-    package ttestclass;
-
-    import tlang.runtime.* /*ORIGINAL*/;
-    class Swapper {
-
-    int a, b;
-
-    void swap() {
-      int startingA' = 'a;
-      a' = 'b;
-      b' = startingA';
-      means(startingA' = 'a && a' = 'b && b' = startingA');
-    }
-    means(a' = 'b && b' = 'a);
-
-    //test swapAandB {
-    //  a = 0;
-    //  b = 2;
-    //  swap();
-    //  assertEqual("A has been swapped", 2, a);
-    //  assertEqual("B has been swapped", 0, b); // green test
-    //}
-    //
-    //test swapAgain {
-    //  a = 1;
-    //  b = 2;
-    //  swap();
-    //  assertEqual("A has been swapped", 2, a);
-    //  assertEqual("B has been swapped", 0, b); // red test
-    //}
-
-    } // end class
-    """
-
-  Then the Java operational run unit is
-    """
-    package ttestclass;
-
-    import tlang.runtime.*; import tlang.runtime.* /*ORIGINAL*/;
-    @TType class Swapper {
-
-    int a, b;
-
-    void swap() {
-      int startingA/*'*/ = /*'*/a;
-      a/*'*/ = /*'*/b;
-      b/*'*/ = startingA/*'*/;
-      /*$T$* means(startingA' = 'a && a' = 'b && b' = startingA'); *$T$*/
-    }
-    /*$T$* means(a' = 'b && b' = 'a); *$T$*/
-
-    //test swapAandB {
-    //  a = 0;
-    //  b = 2;
-    //  swap();
-    //  assertEqual("A has been swapped", 2, a);
-    //  assertEqual("B has been swapped", 0, b); // green test
-    //}
-    //
-    //test swapAgain {
-    //  a = 1;
-    //  b = 2;
-    //  swap();
-    //  assertEqual("A has been swapped", 2, a);
-    //  assertEqual("B has been swapped", 0, b); // red test
-    //}
-
-    } // end class
-    """
-
-  #TODO: import the above Java Swapper class and instantiate it instead of this
-  #      class in the @Test run methods
-  #      Also, make sure that the compiler specifies class file output locations
-  #      for both production and test classes
-  #  And the test code is
-  #    """
-  #    import org.junit.After;
-  #    import org.junit.AfterClass;
-  #    import org.junit.Before;
-  #    import org.junit.BeforeClass;
-  #    import org.junit.Test;
-  #    import static org.junit.Assert.*;
-  #    import static org.hamcrest.CoreMatchers.*;
-  #    // import static org.junit.matchers.JUnitMatchers.*;
-  #    import static org.junit.experimental.theories.Theories.*;
-  #    import org.hamcrest.core.CombinableMatcher;
-  #
-  #    public class SwapperTest {
-  #
-  #
-  #    int a, b;
-  #
-  #    void swap() {
-  #      int startingA/*'*/ = /*'*/a;
-  #      a/*'*/ = /*'*/b;
-  #      b/*'*/ = startingA/*'*/;
-  #      /*$T$* means(startingA = 'a && a' = 'b && b' = startingA'); *$T$*/
-  #    }
-  #    /* means(a' = 'b && b' = 'a); */
-  #
-  #    /*test*/ void swapAandB() throws Exception {
-  #      a = 1;
-  #      b = 2;
-  #      swap();
-  #      assertEquals("A has been swapped", 2, a);
-  #      assertEquals("B has been swapped", 1, b); // green test
-  #    }
-  #
-  #    @Test
-  #    public void $T$test_swapAandB() throws Exception {
-  #      (new SwapperTest()).swapAandB();
-  #    }
-  #
-  #    /*test*/ void swapAgain() throws Exception {
-  #      a = 1;
-  #      b = 2;
-  #      swap();
-  #      assertEquals("A has been swapped", 2, a);
-  #      assertEquals("B has been swapped", 9999, b); // red test
-  #    }
-  #
-  #    @Test
-  #    public void $T$test_swapAgain() throws Exception {
-  #      (new SwapperTest()).swapAgain();
-  #    }
-  #
-  #    } // end class
-  #    """
-  #
-  #    And the test result is OK
-
-  # The above test code is what would be generated from T code that
-  # contains the corresponding tests. Testing will be included in
-  # a future version.
-
-
-Scenario: Comments inside code that is commented out are adjusted
-
-    For comments that will end up nested inside the comments that the compiler
-    generates, "(*$T$*" is substituted for "/*" and "*$T$*)" is substituted for
-    "*/". This will allow reconstruction of the T language from the generated
-    Java by simply doing the reverse any time those odd strings of characters
-    are found.
-
-  When a valid run unit is
-    """
-    class SwapSomeMore {
-
-    int a, b;
-
-    void swap() {
-      int startingA' = 'a;
-      a' = 'b;
-      b' = startingA';
-      means( startingA' = 'a  // an end of line comment
-           & a' = 'b          // does not cause a problem
-           & b' = startingA'  // nor does this
-           );                 // no problem here, either
-    }
-    means( a' = /* a comment right in the middle of things */ 'b
-         & b' = 'a /* a comment at the end causes no problem */
-         ); /* a comment after the means causes no problem */
-
-    } // end class
-    """
-
-  Then the Java operational run unit is
-    """
-    import tlang.runtime.*; @TType class SwapSomeMore {
-
-    int a, b;
-
-    void swap() {
-      int startingA/*'*/ = /*'*/a;
-      a/*'*/ = /*'*/b;
-      b/*'*/ = startingA/*'*/;
-      /*$T$* means( startingA' = 'a  // an end of line comment
-           & a' = 'b          // does not cause a problem
-           & b' = startingA'  // nor does this
-           ); *$T$*/                 // no problem here, either
-    }
-    /*$T$* means( a' = (*$T$* a comment right in the middle of things *$T$*) 'b
-         & b' = 'a (*$T$* a comment at the end causes no problem *$T$*)
-         ); *$T$*/ /* a comment after the means causes no problem */
-
-    } // end class
-    """
-
 
 Scenario: A single valid literal can be proven
 
@@ -687,7 +278,7 @@ Scenario: The prover detects a single invalid literal
     """
 
 
-Scenario: Nested && and || translate to the Prover correctly
+Scenario: Priority (stikiness) of && and || translate to the Prover correctly
 
     Make sure that the need for parentheses for conjunctions and disjunctions do not cause any
     problems when sending code to the prover. Because the prover is written in Prolog and the
@@ -717,9 +308,20 @@ Scenario: Nested && and || translate to the Prover correctly
     } // end class
     """
 
-Scenario: Assignment is right-associative while equality is left-associative
+Scenario: TODO: Assignment of an equality test requires the equality test to be parenthesized
 
-  The use of the equality symbol = for both assignment and equality testing is normally clear, but we include here a short exploration of the differences.
+  The use of the equality symbol = for both assignment and equality testing is normally clear, but
+  because assignment is right-associative and equality is left-associative there is a possibility
+  for confusion when assigning the result of an equality test.
+
+      boolean a = b = c    could be misinterpreted as chained assignment
+      boolean a = (b = c)  is required in this case
+
+  Presently equality is treated as left associative, but we will require parenthesization in order
+  to avoid confusion with conjunctive use. Later we hope to introduce conjunctive relational
+  expressions such as "if (a = b = c) ..." testing for the equality of all of the operands. Then we
+  will relax the constraint on parenthesizing equality tests, but still keep the parenthese for the
+  equalities on the right-hand-side of assignment statements.
 
   When an invalid run unit is
     """
@@ -731,14 +333,60 @@ Scenario: Assignment is right-associative while equality is left-associative
       boolean fact1' = ('a = 'b);
       means  (fact1' = ('a = 'b)); // Proven successfully
 
-      boolean fact2' = 'a = 'b;    // parsed as fact' = ('a = 'b);
-      means  (fact2' = 'a = 'b);   // error because parses as (fact' = 'a) = 'b
+      boolean fact2' = 'a = 'b;    // would be parsed as fact' = ('a = 'b) so parens are required
+      means  (fact2' = 'a = 'b);   // is also a syntax error, currently
     }
 
     } // end class
     """
 
-  Then the only error message contains
-    """
-    The code does not support the proof of the statement: fact2' = 'a = 'b
-    """
+  # TODO: uncomment these messages and implement them
+  #  Then an error message contains
+  #    """
+  #    The equality test 'a = 'b must be parenthesized before assignment to avoid confusion
+  #    """
+  #
+  # TODO: but remove this test once conjunctive relations are implemented
+  #  And an error message contains
+  #    """
+  #    Each equality expression must be parenthsized to avoid confusion with conjunctive equality
+  #    """
+
+Scenario: TODO: Back translation of comments requires absence of reserved characters
+
+  Generation of executable Java from the T language requires translating all
+  non-command statements to comments. Although we have not implemented a
+  back-translator from the generated Java to the T language that would generate
+  it, we hope that these special comments will allow such a translator to be
+  built, especially for back-translating Java error messages into T language
+  error messages. In order to mark parts of a generated comment that need to be
+  uncommented or not, the character string $T$ is used. To avoid confusing any
+  attempt at back-translation, that string needs to be prohibited within the
+  original T language comments.
+
+  Also, we must prohibit the comment /*'*/ because it is used is used to mark decorators in
+  generated code, e.g., value' is translated into value/*'*/.
+
+  # TODO: implement the $T$ and /*'*/ prohibition in comments
+    #  When an invalid run unit is
+    #    """
+    #    class SwapError5 {
+    #
+    #    /* no comment may contain $T$, like this one does */
+    #
+    #    int a, b;
+    #
+    #    void swap() {
+    #      int startingA' = 'a;
+    #      a' = 'b;
+    #      b' = startingA';
+    #    }
+    #    means(a' = 'b && b' = 'a);
+    #
+    #    } // end class
+    #    """
+    #
+    #  Then an error message contains
+    #  """
+    #  ???
+    #  """

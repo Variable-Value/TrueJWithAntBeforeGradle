@@ -1,4 +1,4 @@
-Feature: Value names - end to end test (T Language 0.1)
+Feature: Value names - end to end test (TrueJ 0.1)
 
   This feature specification is for the end to end testing of the features
   specified in the file aa_valueNames.feature. That file specifies the visible
@@ -7,22 +7,286 @@ Feature: Value names - end to end test (T Language 0.1)
   code that is sent to the prover.
 
 
-#Background: The theorem prover is loaded into a tuProlog engine
-#  Given a Prolog engine
-#  And the eTLeanTap theory is loaded
-#  And Java debugging
-#  And using feature "aa1_valueNamesEndToEnd.feature"
+  #Background: The theorem prover is loaded into a tuProlog engine
+  #  Given a Prolog engine
+  #  And the eTLeanTap theory is loaded
+  #  And Java debugging
+  #  And using feature "aa1_valueNamesEndToEnd.feature"
 
+Scenario: Insertion of TrueJ runtime import relative to comments
+
+    The tlang.runtime import is inserted before any class JavaDoc, being careful
+    to preserve line numbers to help associate Java compile errors with the
+    original TrueJ code. The @TType annotation is inserted after the
+    JavaDoc, before and on the same line as the class keyword.
+
+    We avoid creating new lines when translating in order to help programmers (or a future version
+    of TrueJ) identify the TrueJ code resposible for generating Java compiler error messages.
+
+  When a valid run unit is
+  """
+  /**
+   * A class to demonstrate value names
+   */
+  class Swapper {
+
+  int a, b;
+
+  void swap() {
+    int startingA' = 'a;
+    a' = 'b;
+    b' = startingA';
+    means(startingA' = 'a && a' = 'b && b' = startingA');
+  }
+  means(a' = 'b && b' = 'a);
+
+  } // end class
+    """
+
+  Then the Java operational run unit is
+    """
+    import tlang.runtime.*; /**
+     * A class to demonstrate value names
+     */
+    @TType class Swapper {
+
+    int a, b;
+
+    void swap() {
+      int startingA/*'*/ = /*'*/a;
+      a/*'*/ = /*'*/b;
+      b/*'*/ = startingA/*'*/;
+      /*$T$* means(startingA' = 'a && a' = 'b && b' = startingA'); *$T$*/
+    }
+    /*$T$* means(a' = 'b && b' = 'a); *$T$*/
+
+    } // end class
+    """
+
+Scenario: Insertion of TrueJ runtime import relative to package
+
+  When a valid run unit is
+    """
+    package ttestclass;
+    class Swapper {
+
+    int a, b;
+
+    void swap() {
+      int startingA' = 'a;
+      a' = 'b;
+      b' = startingA';
+      means(startingA' = 'a && a' = 'b && b' = startingA');
+    }
+    means(a' = 'b && b' = 'a);
+
+    } // end class
+    """
+
+  Then the Java operational run unit is
+    """
+    package ttestclass; import tlang.runtime.*;
+    @TType class Swapper {
+
+    int a, b;
+
+    void swap() {
+      int startingA/*'*/ = /*'*/a;
+      a/*'*/ = /*'*/b;
+      b/*'*/ = startingA/*'*/;
+      /*$T$* means(startingA' = 'a && a' = 'b && b' = startingA'); *$T$*/
+    }
+    /*$T$* means(a' = 'b && b' = 'a); *$T$*/
+
+    } // end class
+    """
+
+Scenario: Insertion of TrueJ runtime import relative to other imports
+
+  When a valid run unit is
+    """
+    import tlang.runtime.* /*ORIGINAL*/;
+    class Swapper {
+
+    int a, b;
+
+    void swap() {
+      int startingA' = 'a;
+      a' = 'b;
+      b' = startingA';
+      means(startingA' = 'a && a' = 'b && b' = startingA');
+    }
+    means(a' = 'b && b' = 'a);
+
+    } // end class
+    """
+
+  Then the Java operational run unit is
+    """
+    import tlang.runtime.*; import tlang.runtime.* /*ORIGINAL*/;
+    @TType class Swapper {
+
+    int a, b;
+
+    void swap() {
+      int startingA/*'*/ = /*'*/a;
+      a/*'*/ = /*'*/b;
+      b/*'*/ = startingA/*'*/;
+      /*$T$* means(startingA' = 'a && a' = 'b && b' = startingA'); *$T$*/
+    }
+    /*$T$* means(a' = 'b && b' = 'a); *$T$*/
+
+    } // end class
+    """
+
+Scenario: Insertion of TrueJ runtime import relative to other imports and package
+
+  When a valid run unit is
+    """
+    package ttestclass;
+
+    import tlang.runtime.* /*ORIGINAL*/;
+    class Swapper {
+
+    int a, b;
+
+    void swap() {
+      int startingA' = 'a;
+      a' = 'b;
+      b' = startingA';
+      means(startingA' = 'a && a' = 'b && b' = startingA');
+    }
+    means(a' = 'b && b' = 'a);
+
+    //test swapAandB {
+    //  a = 0;
+    //  b = 2;
+    //  swap();
+    //  assertEqual("A has been swapped", 2, a);
+    //  assertEqual("B has been swapped", 0, b); // green test
+    //}
+    //
+    //test swapAgain {
+    //  a = 1;
+    //  b = 2;
+    //  swap();
+    //  assertEqual("A has been swapped", 2, a);
+    //  assertEqual("B has been swapped", 0, b); // red test
+    //}
+
+    } // end class
+    """
+
+  Then the Java operational run unit is
+    """
+    package ttestclass;
+
+    import tlang.runtime.*; import tlang.runtime.* /*ORIGINAL*/;
+    @TType class Swapper {
+
+    int a, b;
+
+    void swap() {
+      int startingA/*'*/ = /*'*/a;
+      a/*'*/ = /*'*/b;
+      b/*'*/ = startingA/*'*/;
+      /*$T$* means(startingA' = 'a && a' = 'b && b' = startingA'); *$T$*/
+    }
+    /*$T$* means(a' = 'b && b' = 'a); *$T$*/
+
+    //test swapAandB {
+    //  a = 0;
+    //  b = 2;
+    //  swap();
+    //  assertEqual("A has been swapped", 2, a);
+    //  assertEqual("B has been swapped", 0, b); // green test
+    //}
+    //
+    //test swapAgain {
+    //  a = 1;
+    //  b = 2;
+    //  swap();
+    //  assertEqual("A has been swapped", 2, a);
+    //  assertEqual("B has been swapped", 0, b); // red test
+    //}
+
+    } // end class
+    """
+
+  #TODO: import the above Java Swapper class and instantiate it instead of this
+  #      class in the @Test run methods
+  #      Also, make sure that the compiler specifies class file output locations
+  #      for both production and test classes
+  #  And the test code is
+  #    """
+  #    import org.junit.After;
+  #    import org.junit.AfterClass;
+  #    import org.junit.Before;
+  #    import org.junit.BeforeClass;
+  #    import org.junit.Test;
+  #    import static org.junit.Assert.*;
+  #    import static org.hamcrest.CoreMatchers.*;
+  #    // import static org.junit.matchers.JUnitMatchers.*;
+  #    import static org.junit.experimental.theories.Theories.*;
+  #    import org.hamcrest.core.CombinableMatcher;
+  #
+  #    public class SwapperTest {
+  #
+  #
+  #    int a, b;
+  #
+  #    void swap() {
+  #      int startingA/*'*/ = /*'*/a;
+  #      a/*'*/ = /*'*/b;
+  #      b/*'*/ = startingA/*'*/;
+  #      /*$T$* means(startingA = 'a && a' = 'b && b' = startingA'); *$T$*/
+  #    }
+  #    /* means(a' = 'b && b' = 'a); */
+  #
+  #    /*test*/ void swapAandB() throws Exception {
+  #      a = 1;
+  #      b = 2;
+  #      swap();
+  #      assertEquals("A has been swapped", 2, a);
+  #      assertEquals("B has been swapped", 1, b); // green test
+  #    }
+  #
+  #    @Test
+  #    public void $T$test_swapAandB() throws Exception {
+  #      (new SwapperTest()).swapAandB();
+  #    }
+  #
+  #    /*test*/ void swapAgain() throws Exception {
+  #      a = 1;
+  #      b = 2;
+  #      swap();
+  #      assertEquals("A has been swapped", 2, a);
+  #      assertEquals("B has been swapped", 9999, b); // red test
+  #    }
+  #
+  #    @Test
+  #    public void $T$test_swapAgain() throws Exception {
+  #      (new SwapperTest()).swapAgain();
+  #    }
+  #
+  #    } // end class
+  #    """
+  #
+  #    And the test result is OK
+
+  # The above test code is what would be generated from TrueJ code that
+  # contains the corresponding tests. Testing will be included in
+  # a future version.
 
 Scenario: Values have names
 
     Decorators that modify a variable name into a value name are surrounded by
     comments in the generated Java code. Also, non-Java statements like the
     means-statement are embedded in special comments. One principle we follow is
-    that the T language code can be reconstructed from the generated Java.
+    that the TrueJ code can be reconstructed from the generated Java.
 
   # The following do not yet test qualified names; when we get to that, we can
-  # model the T code for the syntax on the code in
+  # model the TrueJ code for the syntax on the code in
   # javax.lang.model.SourceVersion.isName(CharSequence name)
 
   When a valid run unit is
@@ -72,7 +336,7 @@ Scenario: Values have names
   # This will actually be done in TLantlrProofVisitor and KnowledgeBase, not  the Prolog prover
   # -------------------------------------------------------------------------------------------
   #
-  # See TImplementationInJava.md for notes on translating T language to Prolog Theorems for proof.
+  # See TImplementationInJava.md for notes on translating TrueJ to Prolog Theorems for proof.
   # The following commands are taken from there.
 
   # the prolog commands are
@@ -82,148 +346,148 @@ Scenario: Values have names
   #      The caller will check that the result is consistent.
   #  assertKnown(old_state, <single or array of typing, command, or proven>, new_State)
   #    - currently checks for the consistency of the assertion as it adds it to the state,
-  #      but there is no need for that -- T Language code can never be inconsistent with the
+  #      but there is no need for that -- TrueJ code can never be inconsistent with the
   #      previous state
   #  prove(old_state, <single statement to be proven>)
   #    - checks that the negative of the statement is inconsistent, which is equivalent to
   #      checking that the statement has supporting statements from which it can be proven.
   #  checkConsistent(old_state, <single statement to be checked>)
 
-#  And the prolog call to the prover ignoring whitespace is
-#    """
-#    %% validate class Swapper
-#    new_state(S)
-#    % sequentially collect static variable types, with final constant initial values
-#      % , assertKnown(S,[<types | constants>],Static1) % needed later
-#    % sequentially collect static variable default values (even if initialized)
-#    %   allowing null default values for even non-null objects
-#      % , assertKnown(Static1,[<variable defaults>],<NextState>)
-#    % in declaration order, for each static initialization block and static variable initializer
-#      % if variable initialzer
-#        % , assertKnown(<LatestState>,[<initializers>],<NextState>)
-#      % if initialization block
-#        % , assertKnown(<LatestState>,[<code>],<NextState>)
-#        % , prove(<LatestState>,<FinalMeans>)
-#        % , assertKnown(<LatestState>,FinalMeans,<NextState>)
-#    % in declaration order, for the initial state of the static object,
-#    %   for each static axiom, lemma, theorem, constraint, and non-optional field type
-#      % , prove(<LatestState>, Assertion)
-#      % , assertKnown(<LatestState>, Assertion, <NextState>)
-#    % construct the general state conditions of the static object for inclusion into each static
-#    % method's given and to initialize instance creation
-#    % (we now think of Static1 as the upcomming LatestState)
-#    % for each static axiom, lemma, theorem, constraint, and non-optional field type
-#      % , assertNew(<LatestState>,Assertion,StaticGeneral2)
-#    % the object constraints to be included into the final means must be built for each method
-#    %   in order to use final decoration for fields that are modified by the method, initial
-#    %   decoration for unmodified fields, and to omit entirely constraints that use only unmodified
-#    %   fields and constants.
-#
-#    % Then do the same thing with instances, adding constructors
-#
-#    % sequentially collect instance variable types, with final constant initial values
-#      , assert(StaticGeneral2
-#              , [ type(int,'this.^a')
-#                , type(int,'this.a^')
-#                , type(int,'this.^b')
-#                , type(int,'this.b^')
-#                ]
-#              ,Instance1
-#              )
-#    % sequentially collect instance variable default values (even if initialized)
-#      , assert( Instance1
-#              , [ 'this.^a' = 0
-#                , 'this.^b' = 0
-#                ]
-#              , Instance2
-#              )
-#    % in declaration order, for each initialization block and variable initializer
-#      % if variable initialzer
-#        % , assert(Instance2,[],Instance4)
-#      % if initialization block
-#        % , assert(Instance2,[],Instance3) % code
-#        % , prove(Instance3,FinalMeans)
-#        % , assert(Instance3,FinalMeans,Instance4)
-#    % for each constructor, start again with the same Instance4 initialization state as a given
-#      % assert its code
-#        % , assert(Instance4,[],Instance5)
-#      % prove its final means
-#        % , prove(Instance5,FinalMeans)
-#        % , assert(Instance5,FinalMeans,Instance6)
-#      % in declaration order, for the initial state of the instance object,
-#      % for each instance axiom, lemma, theorem, constraint, and non-optional
-#        % , prove(Instance6, Assertion)
-#        % , assert(Instance6, Assertion, Instance7)
-#    % construct the general state conditions of the instance object
-#    % (for inclusion into each method's given) (note return to Instance1)
-#    % for each instance axiom, lemma, theorem, constraint, and non-optional
-#      % , assert(Instance1,Assertion,StaticGeneral2)
-#    % the object constraints to be included into the final means must be built for each method
-#    %   in order to use final decoration for fields that are modified by the method, initial
-#    %   decoration for unmodified fields, and to omit entirely constraints that have no modified
-#    %   fields.
-#
-#
-#    % , collectStatic(S, _staticStateChanges, _staticConstraints
-#                     , _staticTypeState)
-#        % constraints in _staticConstraints may have names
-#    % , assertAll(_staticTypeState, _staticStateChanges, _staticInitialState)
-#    % , proveEach(_staticInitialState, _staticConstraints)
-#        % need to prove each conjunct of each constraint separately
-#    , staticCode(S, [], _staticInitialState)
-#        % checks consistency of state and constraints together line by line
-#    , assert(_staticTypes, _staticConstraintsOnly, _staticConstraints)
-#    , code(_staticConstraints
-#      , [ type(int,'this.^a')
-#        , type(int,'this.a^')
-#        , type(int,'this.^b')
-#        , type(int,'this.b^')
-#        ]
-#      , _thisTypes)
-#    , code(_ ????
-#    , code(_staticConstraints, [], _thisInitialState
-#    % each conjunct separately as noted above for static
-#      % , checkConsistent(_thisConstraints,_thisInitialState)
-#      % , prove(_thisInitialState,_thisConstraints)
-#
-#    % Then validate each method (could be done in parallel)
-#
-#    % begin validation of method swap() at line 5 column 5
-#    , code(_this
-#      , []
-#      % parameter types and assume statement have been asserted
-#      % begin validation of block_L5C12
-#        , [ type(int,'block_L5C12.startingA^')
-#          , 'block_L5C12.startingA^' = 'this.^a'
-#          , 'this.a^' = 'this.^b'
-#          , 'this.b^' = 'block_L5C12.startingA^'
-#          ]
-#        , _L9C2)
-#        % prove means at line 9 column 2
-#        , prove(9,13,   'block_L5C12.startingAn' = 'this.^a' )
-#        , assert(_L9C2, 'block_L5C12.startingA^' = 'this.^a' , _L9C24)
-#        % next conjunct
-#        , prove(9,27,    'this.a^' = 'this.^b' )
-#        , assert(_L9C24, 'this.a^' = 'this.^b' , _L9C35)
-#        % next conjunct
-#        , prove(9,38,    'this.b^' = 'block_L5C12.startingA^' )
-#        , assert(_L9C35, 'this.b^' = 'block_L5C12.startingA^' ,_L11C0)
-#        % means validated
-#        % block_L5C12 validated
-#      % method swap validated
-#    % validate final means at line 11 column 0
-#    , prove(11,6,    'this.a^' = 'this.^b' )
-#    , assert(_L11C0, 'this.a^' = 'this.^b' , _L11C14)
-#    % conjunct validated
-#    , prove(11,17,    'this.b^' = 'this.^a' )
-#    % , assert(_L11C14, 'this.b^' = 'this.^a' , _) % not needed for final means
-#    % final means validated
-#    % class Swapper validated
-#
-#
-#    """
+  #  And the prolog call to the prover ignoring whitespace is
+  #    """
+  #    %% validate class Swapper
+  #    new_state(S)
+  #    % sequentially collect static variable types, with final constant initial values
+  #      % , assertKnown(S,[<types | constants>],Static1) % needed later
+  #    % sequentially collect static variable default values (even if initialized)
+  #    %   allowing null default values for even non-null objects
+  #      % , assertKnown(Static1,[<variable defaults>],<NextState>)
+  #    % in declaration order, for each static initialization block and static variable initializer
+  #      % if variable initialzer
+  #        % , assertKnown(<LatestState>,[<initializers>],<NextState>)
+  #      % if initialization block
+  #        % , assertKnown(<LatestState>,[<code>],<NextState>)
+  #        % , prove(<LatestState>,<FinalMeans>)
+  #        % , assertKnown(<LatestState>,FinalMeans,<NextState>)
+  #    % in declaration order, for the initial state of the static object,
+  #    %   for each static axiom, lemma, theorem, constraint, and non-optional field type
+  #      % , prove(<LatestState>, Assertion)
+  #      % , assertKnown(<LatestState>, Assertion, <NextState>)
+  #    % construct the general state conditions of the static object for inclusion into each static
+  #    % method's given and to initialize instance creation
+  #    % (we now think of Static1 as the upcomming LatestState)
+  #    % for each static axiom, lemma, theorem, constraint, and non-optional field type
+  #      % , assertNew(<LatestState>,Assertion,StaticGeneral2)
+  #    % the object constraints to be included into the final means must be built for each method
+  #    %   in order to use final decoration for fields that are modified by the method, initial
+  #    %   decoration for unmodified fields, and to omit entirely constraints that use only unmodified
+  #    %   fields and constants.
+  #
+  #    % Then do the same thing with instances, adding constructors
+  #
+  #    % sequentially collect instance variable types, with final constant initial values
+  #      , assert(StaticGeneral2
+  #              , [ type(int,'this.^a')
+  #                , type(int,'this.a^')
+  #                , type(int,'this.^b')
+  #                , type(int,'this.b^')
+  #                ]
+  #              ,Instance1
+  #              )
+  #    % sequentially collect instance variable default values (even if initialized)
+  #      , assert( Instance1
+  #              , [ 'this.^a' = 0
+  #                , 'this.^b' = 0
+  #                ]
+  #              , Instance2
+  #              )
+  #    % in declaration order, for each initialization block and variable initializer
+  #      % if variable initialzer
+  #        % , assert(Instance2,[],Instance4)
+  #      % if initialization block
+  #        % , assert(Instance2,[],Instance3) % code
+  #        % , prove(Instance3,FinalMeans)
+  #        % , assert(Instance3,FinalMeans,Instance4)
+  #    % for each constructor, start again with the same Instance4 initialization state as a given
+  #      % assert its code
+  #        % , assert(Instance4,[],Instance5)
+  #      % prove its final means
+  #        % , prove(Instance5,FinalMeans)
+  #        % , assert(Instance5,FinalMeans,Instance6)
+  #      % in declaration order, for the initial state of the instance object,
+  #      % for each instance axiom, lemma, theorem, constraint, and non-optional
+  #        % , prove(Instance6, Assertion)
+  #        % , assert(Instance6, Assertion, Instance7)
+  #    % construct the general state conditions of the instance object
+  #    % (for inclusion into each method's given) (note return to Instance1)
+  #    % for each instance axiom, lemma, theorem, constraint, and non-optional
+  #      % , assert(Instance1,Assertion,StaticGeneral2)
+  #    % the object constraints to be included into the final means must be built for each method
+  #    %   in order to use final decoration for fields that are modified by the method, initial
+  #    %   decoration for unmodified fields, and to omit entirely constraints that have no modified
+  #    %   fields.
+  #
+  #
+  #    % , collectStatic(S, _staticStateChanges, _staticConstraints
+  #                     , _staticTypeState)
+  #        % constraints in _staticConstraints may have names
+  #    % , assertAll(_staticTypeState, _staticStateChanges, _staticInitialState)
+  #    % , proveEach(_staticInitialState, _staticConstraints)
+  #        % need to prove each conjunct of each constraint separately
+  #    , staticCode(S, [], _staticInitialState)
+  #        % checks consistency of state and constraints together line by line
+  #    , assert(_staticTypes, _staticConstraintsOnly, _staticConstraints)
+  #    , code(_staticConstraints
+  #      , [ type(int,'this.^a')
+  #        , type(int,'this.a^')
+  #        , type(int,'this.^b')
+  #        , type(int,'this.b^')
+  #        ]
+  #      , _thisTypes)
+  #    , code(_ ????
+  #    , code(_staticConstraints, [], _thisInitialState
+  #    % each conjunct separately as noted above for static
+  #      % , checkConsistent(_thisConstraints,_thisInitialState)
+  #      % , prove(_thisInitialState,_thisConstraints)
+  #
+  #    % Then validate each method (could be done in parallel)
+  #
+  #    % begin validation of method swap() at line 5 column 5
+  #    , code(_this
+  #      , []
+  #      % parameter types and assume statement have been asserted
+  #      % begin validation of block_L5C12
+  #        , [ type(int,'block_L5C12.startingA^')
+  #          , 'block_L5C12.startingA^' = 'this.^a'
+  #          , 'this.a^' = 'this.^b'
+  #          , 'this.b^' = 'block_L5C12.startingA^'
+  #          ]
+  #        , _L9C2)
+  #        % prove means at line 9 column 2
+  #        , prove(9,13,   'block_L5C12.startingAn' = 'this.^a' )
+  #        , assert(_L9C2, 'block_L5C12.startingA^' = 'this.^a' , _L9C24)
+  #        % next conjunct
+  #        , prove(9,27,    'this.a^' = 'this.^b' )
+  #        , assert(_L9C24, 'this.a^' = 'this.^b' , _L9C35)
+  #        % next conjunct
+  #        , prove(9,38,    'this.b^' = 'block_L5C12.startingA^' )
+  #        , assert(_L9C35, 'this.b^' = 'block_L5C12.startingA^' ,_L11C0)
+  #        % means validated
+  #        % block_L5C12 validated
+  #      % method swap validated
+  #    % validate final means at line 11 column 0
+  #    , prove(11,6,    'this.a^' = 'this.^b' )
+  #    , assert(_L11C0, 'this.a^' = 'this.^b' , _L11C14)
+  #    % conjunct validated
+  #    , prove(11,17,    'this.b^' = 'this.^a' )
+  #    % , assert(_L11C14, 'this.b^' = 'this.^a' , _) % not needed for final means
+  #    % final means validated
+  #    % class Swapper validated
+  #
+  #
+  #    """
 
-
+# Prolog code that may be needed later
 * Note
   """
   Here is a note to the programmer that can be removed later:
@@ -243,77 +507,76 @@ Scenario: Values have names
   Similar code can isolate the value name from the contextual information in the
   Prolog name, such as a method name and line and character counts.
   """
-# The assert-statements for the final conjuncts in a means-statement are not
-# necessary. Some other asserts are not necessary because they occur in previous
-# code or asserts. For now, we will leave them in. Later, we will need to define
-# a method for use in other methods, but that will probably be handled in Java
-# rather than the Prolog.
+  # The assert-statements for the final conjuncts in a means-statement are not
+  # necessary. Some other asserts are not necessary because they occur in previous
+  # code or asserts. For now, we will leave them in. Later, we will need to define
+  # a method for use in other methods, but that will probably be handled in Java
+  # rather than the Prolog.
 
-# The code for a following method would back up to the _this_ state of the
-# class. In this example it would start with:
-#
-#   method_header(_this ...
-#
-# Local variables in separate blocks may have the same name without confusing
-# the prover because the names and their types are stored in a Prolog list that
-# is accessed most recent first.
+  # The code for a following method would back up to the _this_ state of the
+  # class. In this example it would start with:
+  #
+  #   method_header(_this ...
+  #
+  # Local variables in separate blocks may have the same name without confusing
+  # the prover because the names and their types are stored in a Prolog list that
+  # is accessed most recent first.
 
-# A block summary is automatically generated for a block that does not have a
-# blocklemma statement.
+  # A block summary is automatically generated for a block that does not have a
+  # blocklemma statement.
 
-# A method call uses the given-statement and means-statement of the called
-# method with variables renamed for the calling context. The called method's
-# assumptions are stated in its given-statement, and if it cannot be proven in
-# the calling context an error is generated. The called method's side effects
-# and any returned result are stated in the methods final means-statement, which
-# is then assumed in the calling context for use in any following proofs.
+  # A method call uses the given-statement and means-statement of the called
+  # method with variables renamed for the calling context. The called method's
+  # assumptions are stated in its given-statement, and if it cannot be proven in
+  # the calling context an error is generated. The called method's side effects
+  # and any returned result are stated in the methods final means-statement, which
+  # is then assumed in the calling context for use in any following proofs.
 
 
 
-# Note that it is the responsibility of the T compiler to reorder the fields,
-# class constraints, and methods to eliminate forward references. Mutual
-# recursions must have one involved method that is marked as
-#   recursive(<grounded-order-expression>) ( ?? multiple recursions ??)
-# and provides a final-means statement; it also provides a block marked as
-#   base { ... }
-# that is one branch of a conditional statement and does not use any recursion.
+  # Note that it is the responsibility of the TrueJ compiler to reorder the fields,
+  # class constraints, and methods to eliminate forward references. Mutual
+  # recursions must have one involved method that is marked as
+  #   recursive(<grounded-order-expression>) ( ?? multiple recursions ??)
+  # and provides a final-means statement; it also provides a block marked as
+  #   base { ... }
+  # that is one branch of a conditional statement and does not use any recursion.
 
-#TODO
-#  And the test code is
-#    """
-#    import org.tlanguage.test.*;
-#    import org.junit.*;
-#    import static org.junit.Assert.*;
-#    import static org.hamcrest.CoreMatchers.*;
-#    import org.hamcrest.core.CombinableMatcher;
-#
-#    class SwapperTest {
-#
-#    int a, b;
-#
-#    void swap() {
-#      int startingA/*'*/ = /*'*/a;
-#      a/*'*/ = /*'*/b;
-#      b/*'*/ = startingA/*'*/;
-#      /* means(startingA = 'a && a' = 'b && b' = startingA'); */
-#    }
-#    /* means(a' = 'b && b' = 'a); */
-#
-#    @test
-#    public void swapAandB() throws Exception {
-#      Swapper 'sw = new Swapper();
-#      sw'a.a = 1;
-#      sw'ab.b = 2;
-#      (sw'ab --> sw').swap();
-#      assertEqual("A has been swapped", 2, sw'.a);
-#      assertEqual("B has been swapped", 0, sw'.b); // red test
-#    }
-#
-#    } // end class
-#    """
-#
-#  And the test result is OK
-
+  #TODO
+  #  And the test code is
+  #    """
+  #    import org.tlanguage.test.*;
+  #    import org.junit.*;
+  #    import static org.junit.Assert.*;
+  #    import static org.hamcrest.CoreMatchers.*;
+  #    import org.hamcrest.core.CombinableMatcher;
+  #
+  #    class SwapperTest {
+  #
+  #    int a, b;
+  #
+  #    void swap() {
+  #      int startingA/*'*/ = /*'*/a;
+  #      a/*'*/ = /*'*/b;
+  #      b/*'*/ = startingA/*'*/;
+  #      /* means(startingA = 'a && a' = 'b && b' = startingA'); */
+  #    }
+  #    /* means(a' = 'b && b' = 'a); */
+  #
+  #    @test
+  #    public void swapAandB() throws Exception {
+  #      Swapper 'sw = new Swapper();
+  #      sw'a.a = 1;
+  #      sw'ab.b = 2;
+  #      (sw'ab --> sw').swap();
+  #      assertEqual("A has been swapped", 2, sw'.a);
+  #      assertEqual("B has been swapped", 0, sw'.b); // red test
+  #    }
+  #
+  #    } // end class
+  #    """
+  #
+  #  And the test result is OK
 
 Scenario: Values have block scoping
 
@@ -347,7 +610,6 @@ Scenario: Values have block scoping
 
     } // end class Swapper2
     """
-
 
 Scenario: Intermediate value names use middle decoration
 
@@ -437,7 +699,6 @@ Scenario: Intermediate value names use middle decoration
 
     """
 
-
 Scenario: Assignments with no operational effect are commented out in Java
 
   If the current value of a variable is assigned to an new value name of the same variable, the assignment is translated to a Java comment. This does not affect the reusability of value names or the use of the value names in logic.
@@ -478,4 +739,90 @@ Scenario: Assignments with no operational effect are commented out in Java
     /*$T$* means(a' = 'b & b' = 4); *$T$*/
 
     }
+    """
+
+Scenario: A reused intermediate value is saved immediately before reuse
+
+  When a valid run unit is
+    """
+    class Swapper2 {
+
+    int a, b;
+
+    void swap() {
+      b'temp = 'a;
+      a'temp = 'b; // reusing 'b that was overwritten with b'temp
+      a' = b'temp;
+      b' = a'temp; // reusing a'temp that was overwritten with a'
+    }
+
+    } // end class Swapper2
+    """
+
+  Then the Java operational run unit is
+    """
+    import tlang.runtime.*; @TType class Swapper2 {
+
+    int a, b;
+
+    void swap() { int a$T$temp; int $T$b = /*'*/b;
+      b/*'temp*/ = /*'*/a;
+      a/*'temp*/ = $T$b; a$T$temp = a/*'temp*/; // reusing 'b that was overwritten with b'temp
+      a/*'*/ = b/*'temp*/;
+      b/*'*/ = a$T$temp; // reusing a'temp that was overwritten with a'
+    }
+
+    } // end class Swapper2
+    """
+
+Scenario: Comments inside code that is commented out are adjusted
+
+    For comments that will end up nested inside the comments that the compiler
+    generates, "(*$T$*" is substituted for "/*" and "*$T$*)" is substituted for
+    "*/". This will allow reconstruction of the TrueJ from the generated
+    Java by simply doing the reverse any time those odd strings of characters
+    are found.
+
+  When a valid run unit is
+    """
+    class SwapSomeMore {
+
+    int a, b;
+
+    void swap() {
+      int startingA' = 'a;
+      a' = 'b;
+      b' = startingA';
+      means( startingA' = 'a  // an end of line comment
+           & a' = 'b          // does not cause a problem
+           & b' = startingA'  // nor does this
+           );                 // no problem here, either
+    }
+    means( a' = /* a comment right in the middle of things */ 'b
+         & b' = 'a /* a comment at the end causes no problem */
+         ); /* a comment after the means causes no problem */
+
+    } // end class
+    """
+
+  Then the Java operational run unit is
+    """
+    import tlang.runtime.*; @TType class SwapSomeMore {
+
+    int a, b;
+
+    void swap() {
+      int startingA/*'*/ = /*'*/a;
+      a/*'*/ = /*'*/b;
+      b/*'*/ = startingA/*'*/;
+      /*$T$* means( startingA' = 'a  // an end of line comment
+           & a' = 'b          // does not cause a problem
+           & b' = startingA'  // nor does this
+           ); *$T$*/                 // no problem here, either
+    }
+    /*$T$* means( a' = (*$T$* a comment right in the middle of things *$T$*) 'b
+         & b' = 'a (*$T$* a comment at the end causes no problem *$T$*)
+         ); *$T$*/ /* a comment after the means causes no problem */
+
+    } // end class
     """
