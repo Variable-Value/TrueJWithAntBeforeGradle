@@ -70,7 +70,7 @@ Scenario: The means-statement replaces the meaning of the blocks's preceding sta
     } // end class
     """
 
-  When an invalid run unit is
+  * a valid run unit is
     """
     class BlockMeaning2a {
 
