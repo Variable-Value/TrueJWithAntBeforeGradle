@@ -82,12 +82,10 @@ public void a_valid_run_unit_is(String tSourceCode)
 public void an_invalid_run_unit_is(String tSourceCode)
       throws IOException, InterruptedException {
   runAllSteps(tSourceCode);
-  // assertTrue( "Invalid code must produce error messages.", errs.hasErrs());
-    // The above line would prevent us from seeing an invalid red test on any
-    // of the following tests for the errors in the run unit. See the following
-    // method,
-    //   show_messages_for()
-    // in order to force error messages.
+  if (errs.hasNoErrs())
+    System.out.println("\n\n****** Errors were expected, but none were found! ******\n");
+      /* Cannot use an assertTrue to check for presence of errors because it would prevent us from
+       * seeing the checks for the partiular errors that should be there. */
 }
 
 @Then("^[Ww]e display all the error messages for inspection$")
