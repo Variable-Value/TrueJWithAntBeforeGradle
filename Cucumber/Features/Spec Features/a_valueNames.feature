@@ -239,7 +239,10 @@ Scenario: Intermediate value names use middle decoration
 
 Scenario: Using value names allows proving logical statements
 
-    A means-statement uses value names in fist-order predicate logic statements. It consists of only those things that can be deduced from operational statements and logic statements that occured earlier in the code. From a code execution point of view, by the time that any execution path through the code reaches it, the means-statement must be true.
+    A means-statement uses value names in fist-order predicate logic statements. It consists of only
+    those things that can be deduced from operational statements and logic statements that occured
+    earlier in the code. From a code execution point of view, by the time that any execution path
+    through the code reaches it, the means-statement must be true.
 
     Logic statements are not just for helping programmers understand a program;
     it is a compiler error to have a means-statement that cannot be proven. The

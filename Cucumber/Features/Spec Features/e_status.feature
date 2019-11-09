@@ -11,9 +11,14 @@ Feature: Status Statements for Executable code
 
 Scenario: A block forgets operations from before a means statement
 
-    To ensure that the programmer can rely on the means statement to understand previous code, the compiler forgets all of the block's operations from above the means. The compiler translates all its operational code for execution, of course, but after a means statement it only allows status statements to use the facts extablished by the means statement.
+    To ensure that the programmer can rely on the means statement to understand previous code, the
+    compiler forgets all of the block's operations from above the means. The compiler translates all
+    its operational code for execution, of course, but after a means statement it only allows status
+    statements to use the facts extablished by the means statement.
 
-    There are more issues with means statements that we will discuss along with the other TrueJ status statements. But here is an example that shows an error caused by an attempt to refer back to a forgotten fact.
+    There are more issues with means statements that we will discuss along with the other TrueJ
+    status statements. But here is an example that shows an error caused by an attempt to refer back
+    to a forgotten fact.
 
   When an invalid run unit is
     """
