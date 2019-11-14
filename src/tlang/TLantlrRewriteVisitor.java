@@ -12,7 +12,7 @@ import static tlang.TUtil.*;
 import static tlang.TLantlrParser.*;
 
 /**
- * Translate to Java
+ * Translate TrueJ to Java
  */
 public class TLantlrRewriteVisitor extends RewriteVisitor {
 
@@ -197,12 +197,23 @@ private boolean sameVariable(String varName, T_expressionContext t_expression) {
     return false;
 }
 
+
 private boolean isReusedAfterOverwrite(String assignedValueName, VarInfo varInfo) {
   return varInfo != null && varInfo.reusedValueNames.contains(assignedValueName);
 }
 
 private String saveOriginalValue(String assignedValueName, VarInfo varInfo) {
   return " "+ newID(assignedValueName) +" = "+ dedecorate(assignedValueName) +";";
+}
+
+@Override
+public Void visitConjRelationExpr(ConjRelationExprContext ctx) {
+  visitChildren(ctx);
+
+  if (ctx.op.getText().equals("="))
+    rewriter.replace(ctx.op, "==");
+
+  return null;
 }
 
 /**

@@ -329,7 +329,7 @@ public Void visitIfStmt(IfStmtContext ctx) {
   else
     elseMeaning = checkBranch(negate(condition), elseContext);
 
-  rewriter.substituteText(ctx, thenMeaning + or + elseMeaning);
+  rewriter.substituteText(ctx, parenthesize(thenMeaning + or + elseMeaning));
   kb.assume(rewriter.source(ctx));
   return null;
 }
@@ -338,10 +338,10 @@ private String negate(String condition) {
   return parenthesize(not + condition);
 }
 
-private String translateCondition(T_parExpressionContext conditionCtx) {
-  visit(conditionCtx);
-  String condition = rewriter.source(conditionCtx);
-  return parenthesize(condition);
+private String translateCondition(T_parExpressionContext parenthesizedExpressionCtx) {
+  visit(parenthesizedExpressionCtx);
+  String condition = rewriter.source(parenthesizedExpressionCtx);
+  return condition;
 }
 
 /** A branch is a scope, but since it is also a single statement, it doesn't require the
