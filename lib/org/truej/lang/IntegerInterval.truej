@@ -1,136 +1,227 @@
-/** The mathematical integers, but restricted to an interval for twos-complement computation.
- * Therefore, there is a maximum and minimum for the IntegerInterval and no operation may have a
- * result outside the interval. The twos-complement results in half of the interval
- * being negative and the other half zero or positive.
+/** The mathematical integers, but restricted to an interval.
+ *
+ * No operation may have a result outside the interval. Therefore, every operation that returns a
+ * BoundedInteger has an implicit given statement that checks that the result will be within the
+ * interval and, if not, prevents the compiler from allowing the operation.
  *
  * We define methods that serve as a foundational definition of TrueJ integer operators.
- * Although TrueJ does not allow operator overloading, we use the Groovy function names for
- * overloading operators in an attempt to provide consistency across the field of programming. The
- * <code>phrase <></code> clause provides a facility that is similar to overloading
- * but it is restricted to use within a scope.
- *
- * A phrase is used to define the abbreviation "I" for "IntegerInterval".
+ * Although TrueJ has phrases instead of operator overloading, we use the Groovy function names for
+ * overloading operators in an attempt to provide consistency across the field of programming.
  */
-public abstract class IntegerInterval phrase <I> {
+public abstract class BoundedInteger phrase <I> {
 
-exemplars I   i', j', k', n';
+exemplar I   i', j', k', n';
 
-/** Zero is a member of the IntegerInterval. Each integer implementation uses the numeral 0 for its
- * implementation of this value.
+/** Zero is a member of a BoundedInteger. Each implementation returns its representation of zero.
  * We include a phrase for the numeral 0 so that when we use an expression like <code> 1 + 0 </code>
- * here in the definition of IntegerInterval, we are referring to the method zero().
- * and not any particular implementation's 0. */
+ * here in the definition of BoundedInteger, we are referring to the method zero()
+ * and not any particular implementation's 0.
+ */
 public abstract static  I  zero() phrase <0>;
 
-/** One is an a member of the IntegerInterval. Each implementation uses the numeral 1 for this value.
- * We include a phrase for the numeral 1 so that when we use an expression like <code> 1 + 0 </code>
- * here in the definition of IntegerInterval, we are referring to the method one().
- * and not any particular implementation's 1. */
-public abstract static  I  one() phrase <1>;
-
-/** The maximum integer allowed for the implementation. Each implementation defines a constant for
- * this value that is named MAX_VALUE for consistency. As the maximum of a twos-complement
- * implementation, this will have a value of 2<sup>n</sup>-1; for instance, for integers stored in
- * a Byte, the value of n will be 8 so the Byte.maxValue() = Byte.MAX_VALUE = 127.
+/** One is an a member of the BoundedInteger. Each implementation uses the numeral 1 for this value.
+  We include a phrase for the numeral 1 so that when we use an expression like
+  <code> 1 + a' </code> here in the definition of BoundedInteger, we are referring to the method
+  one() and not any particular implementation's 1.
  */
-public abstract static I maxValue();
+public abstract static  I  one() phrase <1>;
+  public axiom 0 < 1;
 
-/** The minimum integer allowed for the implementation. Each implementation defines a constant for
- * this value that is named MIN_VALUE for consistency. As the minimum of a twos-complement
- * implementation, this will have a value of -2<sup>n</sup>; for instance, for integers stored in
- * bytes, the value of n will be 8 so the result of both Byte.minValue() and Byte.MIN_VALUE will be
- * -128. */
-public abstract static I minValue();
+/* This is a theorem if we have the Well-ordering Principle as an axiom. */
+public axiom i' > 0  ==> i' >= 1;
+
+private theorem  ~(0 < i' < 1);
+
+/** The maximum integer allowed for the implementation. Because a BoundedInteger is required to
+ * contain one, maxValue() >= 1. Each implementation defines a constant for
+ * this value that is named MAX_VALUE for consistency. In a twos-complement
+ * implementation, this will have a value of 2<sup>n</sup>-1; for instance, for the class Byte,
+ * the value of n will be 8 so Byte.maxValue() = Byte.MAX_VALUE = 127.
+ */
+public abstract static I maxValue() phase <m>;
+  public axiom 1 <= M;
+
+/** The minimum integer allowed for the implementation. Because a BoundedInteger is required to
+ * contain zero, minxValue() <= 0. Each implementation defines a constant for
+ * this value that is named MIN_VALUE for consistency. In a twos-complement
+ * implementation, this will have a value of -2<sup>n</sup>; for instance, for the class Byte,
+ * the value of n will be 8 so Byte.minValue() = Byte.MIN_VALUE = -128.
+ */
+public abstract static I minValue() phrase <M>;
+  public axiom 1 <= M;
+
+private theorem m <= 0 <= 1 <= M;
 
 /** Note that the interval maximum and minimum restrictions on the results of operations means that
  * axioms and theorems do not apply when those restrictions are violated, keeping them simple and
  * similar to the axioms of mathematical integers.
  */
- IntegerBounds: axiom minValue() <= i' <= maxValue;
+ IntegerBounds: axiom m <= i' <= M;
 
-/** Addition is the plus(a,b) method. This is a method corresponding to the implemented addition
- * operation for each subclass. The system maps addition to the binary operator <code> + </code> for
- * each subclass implementation, but those are not available to us in this abstract superclass. To
- * make the code readable, we provide a phrase that lets us refer to the plus() method here in the
- * definition of IntegerInterval with <code> + </code>.
- * <p>
- * Usage: <code>a' + b'</code> or <code>plus(a',b')</code> */
-public abstract static I plus(I a', I b') phrase <a' + b'>;
-  given minValue() <= a' + b' <= maxValue();
-  /* Note that the IntegerBounds axiom ensures that the return value of plus(a',b') is in the valid
-   * interval. So the <code>given</code> statement is redundant, but we state it to make clear that
-   * the parameters a' and b' are constrained. */
+/** Addition. The <code> plus(a',b') </code> function is the backing definition of the TrueJ
+    <code> + </code> operator. It is kept in sync but it is not used for implementation, other than that it tells the compiler about the given statement that is to be used before any use of the plus operator. The fact that it is a function establishes the uniqueness axiom for addition. There is no closure axiom because we do not require that m = -M, and we cannot if we wish to use BoundedInteger for defining 2's-complement implementations. The TrueJ compiler requires any method's given statement and code to establish its return value's type, and for the plus(a',b') method that means that it will need a given statement that requires:
+    <pre><code>
+        given m <= a' + b' <= M;
+    </code></pre>
 
-/** Addition of integers is associative so there is no mathematical need to parenthesize them.
+    Usage:
+      <code>a' + b'</code> or <code>plus(a',b')</code>
+ */
+public abstract static function I plus(I a', I b');
+  phrase <a' + b'>;
+  given exists a' + b';
+
+/**
+    Test that the result of an addition will be a valid BoundedInteger. Establish that
+        <code> m <= a' + b' <= M
+    but without having any subexpressions that are outside of the interval. We do not have to test
+    any of the other axioms because all sub-class implementations will already have them.
+
+      TODO: I believe we cannot use an equivalent simpler statement (using implication) because we
+      need to consider the behavior of the prover when the antecedent is false but causes the prover
+      to reach its limit -- though that needs to be traced out again with care. Add a prover test
+      for an implication that has an antecedent which causes the prover to reach its limit. The
+      result should be reachedLimit, not true, and the consequent should never be tested. If there is no simple way to protect addition in the prover, think about including the following test there, but having it here should be sufficient.
+ */
+private static condition sumExists(I a', I b') phrase <exists a + b>
+  ( // prohibit a' + b' < m
+    ( a' >= 0 & b' >= 0
+    | a' < 0  & m - a' <= b'
+    | b' < 0  & m - b' <= b'
+    )
+  & // prohibit M < a' + b'
+    ( a' <= 0 & b' <= 0
+    | a' > 0  & b' <= M - a'
+    | b' > 0  & a' <= M - b'
+    )
+  );
+
+/**
+  Equals can be added or subtracted to both sides of an equation. This subsumes both the axiom:
+  uniqueness of addition, and the theorem: cancellation of addition, that occur in definitions of
+  the integer domain. An axiom covering cancellation of addition is needed because its proof
+  requires an axiom for the existence of an additive inverse, and we cannot count on that. For
+  instance in 2's-complement implementations we do not always have an additive inverse because we do
+  not have m = -M.
+ */
+UniquenessOfAddition:
+  public axiom i' = j' & k' = n'  ===  i' + k' = j' + n';
+
+CancelationOfAddition:
+  public theorem k' + i' = k' + j'  ===  i' = j';
+
+/** Addition of integers is associative so there is no mathematical need to parenthesize a sequence
+  * of additions.
   * <p>
   * Once this is established we can consider the operational order of additions. All subclasses,
-  * that is, all implementations of integers, use a right to left order of operations for addition,
-  * so the expression <code>i' + j' + k</code> is operationally eqivalent to
-  * <code>(i' + j') + k</code>. But because that is mathematically equivalent to
-  * <code>i' + (j' + k)</code>, they are all operationally eqivalent, too. In fact, parentheses for
-  * ordering additions are a syntax issue and the system never sees them. */
-AssociativityOfAdditon: axiom (i' + j') + k' = i' + (j' + k') = i' + j' + k';
+  * treat addition as right-associative, so the expression <code>i' + j' + k</code> is operationally
+  * eqivalent to<code>(i' + j') + k</code>. But because overflows are never allowed, that will give
+  * the same result as <code>i' + (j' + k)</code>, so they are operationally eqivalent, too.
+  */
+AssociativityOfAdditon:
+  axiom (i' + j') + k' = i' + (j' + k') = i' + j' + k';
+  private theorem  i' + j' + k' + n' = i' + (j' + k') + n' = (i' + j') + (k' + n');
 
-private theorem  i' + j' + k' + n' = i' + (j' + k') + n' = (i' + j') + (k' + n');
+SymmetryOfAddition:
+  axiom i' + j' = j' + i';
+  private theorem  i' + j' + k' = k' + j' + i';
 
-SymmetryOfAddition: axiom i' + j' = j' + i';
+AdditiveIdentity:
+  axiom i' + 0 = i';
+  public theorem  0 + i' = i';
 
-private theorem  i' + j' + k' = k' + j' + i';
+/**
+    Multiplication. The <code> multiply(a',b') </code> function is the backing definition of the
+    TrueJ <code> * </code> operator. The fact that it is a function establishes the uniqueness axiom
+    for multiplication and the fact that it returns a BoundedInteger is in fact the closure axiom
+    for multiplication ("optional": would indicate a partial function). The TrueJ compiler requires
+    any method's given statement and code to establish its return value's type, and for the
+    multiply(a',b') method that means that it will need a given statement that requires:
+    <pre><code>
+        given m <= a' * b' <= M;
+    </code></pre>
+    <p>Although that risks the prover attempting to compute a' * b' when it is not within the
+    bounds, so the implementation will probably use something like the following given statement. (I
+    believe we cannot use a simpler form with implication because we need to consider the behavior
+    of the prover when the antecedent is unsupported but false -- though that needs to be traced out
+    again with care.)
 
-AdditiveIdentity: axiom i' + 0 = i';
+      given ( // prohibit a' * b' < minValue()
+              ( a' = 0 | a' = 1 | b' = 0 | b' = 1
+              | sign(a') = sign(b')
+              | a' < 0 & m div a' <= b'
+              | b' < 0 & m div b' <= a'
+              )
+            & // prohibit maxValue() < a' * b'
+              ( a' = 0 | a' = 1 | b' = 0 | b' = 1
+              | sign(a') != sign(b')
+              | a' > 0  & b' <= M div a'
+              | b' > 0  & a' <= M div b'
+              )
+            )
 
-public theorem  0 + i' = i';
+    <p> Usage:
+      <code>a' * b'</code> or <code>multiply(a',b')</code>
+ */
+public abstract static function I multiply(I a', I b');
+  phrase <a' * b'>;
 
-/** Integer multiplication.
-   <p> Usage: a + b or multiply(a,b) */
-public abstract static I multiply(I a', I b') private phrase <a' * b'>;
-  given minValue() <= a' * b' <= maxValue();
+/** Equals can multiply both sides of an equation. */
+UniquenessOfAddition:
+  public axiom i' = j' & k' = n'  ==>  i' * k' = j' * n';
 
-AssociativityOfMultiplication: axiom (i' * j') * k' = i' * (j' * k');
+AssociativityOfMultiplication:
+  public axiom (i' * j') * k' = i' * (j' * k');
 
-SymmetryOfMultiplication: axiom i' * j' = j' * i';
+SymmetryOfMultiplication:
+  public axiom i' * j' = j' * i';
 
-MultiplicativeIdentity: axiom i' * 1 = i';
+MultiplicativeIdentity:
+  public axiom   i' * 1  = i';
+  public theorem 1  * i' = i';
 
-public theorem 1 * i' = i';
-
-/** Multiplication * is stickier than + in the way that the syntax is processed so parentheses can
- * be omitted when adding multiplication expressions, though not when multiplying addition
- * expressions. */
+/**
+  Multiplication * is stickier than addition + in the way that the syntax is processed so parentheses can be omitted when adding multiplication expressions, though not when multiplying addition expressions.
+ */
 DistributionOfMultiplicationOverAddition:
-  axiom  i' * (j' + k') = i'*j' + i'*k';
+  public axiom   i' * (j' + k') = i'*j' + i'*k';
+  public theorem (j' + k') * i' = j'*i' + k'*i';
 
-/** Every member of the IntegerInterval has a negative(), with the exception of minValue(). The
+CancelationOfMultiplication:
+  public axiom   k' != 0  ==> ( k' * i' = k' * j'  ===  i' = j' );
+  public theorem k' != 0  ==> ( i' * k' = j' * k'  ===  i' = j' );
+
+/** Every member of the BoundedInteger has a negative(), with the exception of m. The
  * system uses the prefix operator <code> - </code> for this in each integer implementation. We
  * include a phrase for the operator so that when we use an expression like <code> -a </code>
- * here in the definition of IntegerInterval, we are referring to the method
+ * here in the definition of BoundedInteger, we are referring to the method
  * negative(a) and not any particular implementation's prefix <code> - </code> operator.
    <p> Usage: <code> -a'</code> or <code>negative(a')</code> */
 public abstract static I negative(I a') private phrase <- a'>;
-  given  a' != minValue();
+  given  a' != m;
   means  a' + negative(a') = 0;
 
 /** Subtraction is the minus(a,b) method. This is a method corresponding to the implemented
  * subtraction operation for each subclass. The system maps subtraction to the binary
  * operator <code> - </code> for each subclass implementation, but those are not available to us
  * in this abstract superclass. To make the code readable, we provide a phrase that lets us
- * refer to the minus() method here in the definition of IntegerInterval with <code> - </code>.
+ * refer to the minus() method here in the definition of BoundedInteger with <code> - </code>.
  * <p>
  * Usage: <code>a' - b'</code> or <code>minus(a',b')</code> */
 public abstract static  I minus(I a', I b') private phrase <a' - b'>;
-  given minValue() <= a' - b' <= maxValue();
+  given m <= a' - b' <= M;
   /* Note that the IntegerBounds axiom ensures that the return value of minus(a',b') is in the valid
    * interval. So the <code>given</code> statement is redundant, but we state it to make clear that
    * the parameters a' and b' are constrained. */
   means return = a' + -b';
 
-/** IntegerInterval division, which leaves a remainder. We map the div(n,d) method to the
+/** BoundedInteger division, which leaves a remainder. We map the div(n,d) method to the
  * <code>div</code> operator, saving the operator / for division that does not leave a remainder,
  * as in rational number division.
  * <p> Usage: n div d or div(n,d)
  * @see Definition of integer division in Java Language Specification, Topic 15.17.2 */
 public abstract static  I div(I n', I d') private phrase <n' div d'>;
-  given d' != 0 & !(n' = minValue() & d' = -1);
+  given d' != 0 & !(n' = m & d' = -1);
   means forsome I remainder
       ( n' = return' * d' + remainder'
       &   (sameSignLax(n',d') ==> 0 <= remainder < d')
@@ -168,7 +259,7 @@ theorem  (i div j)*j + (i % j) = i;
    @see mod() */
 public abstract static  I intDiv(I dividend', I divisor', I 'quotient, I 'remainder);
   given divisor' != 0
-      & !(dividend' = minValue() & divisor' = -1);
+      & !(dividend' = m & divisor' = -1);
   means dividend div divisor = quotient
       & dividend  %  divisor = remainder
   ;
