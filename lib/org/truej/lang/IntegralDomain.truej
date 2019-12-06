@@ -1,0 +1,416 @@
+                                        // Copyright George S. Cowan, 2019. MIT open source license.
+/**
+    The mathematical integers. We use the name IntegralDomain here and reserve the name Integer for
+    32-bit 2s-complement integers in order to stay parallel to Java. Because integers have no upper
+    and lower limits, they are technically uncomputable; however an almost complete implementation
+    could be made that only represented the integers needed for a particular computation.
+ */
+public immutable abstract class IntegralDomain implements Comparable phrase <Int> {
+exemplar  Int n', i', j', k';
+
+/** Zero is an integer. The numeral <code>0</code> is a synonym. */
+public static total function Int zero()
+  phrase <0>;
+
+/** One is an integer. The numeral <code>1</code> is a synonym. */
+public static total function Int one()
+  phrase <1>;
+
+axiom 1 != 0;
+
+/**
+  Addition of integers is the <code> plus(addend') </code> method. The system allows the
+  <code> + </code> operator to be used for any type that defines a <code>plus(x')</code> function,
+  which serves as the operator's backing definition.
+  <p>
+  The fact that it is a function establishes the uniqueness axiom for addition, the sum being a
+  function of <code>this</code> and the <code>addend</code>. If <code>plus(addend')</code> were not
+  marked with the <code>function</code> modifier, then we could not count on it being determined by
+  the values of <code>this</code> and <code>addend</code>, and TrueJ would require us to code a new
+  and unique decoration for <code>this</code> or <code>addend</code> every time we added them. This
+  is TrueJ's way of enforcing the higher level Leibnitz axiom, "Equals can always be substituted for
+  equals". For example, <code>Math'.random()</code> always requires a unique decoration on
+  <code>Math</code> to show that its result is not determinate and to help us see that the values
+  are different.
+  <p>
+  The fact that it is a total function establishes the closure axiom for addition. The
+  <code>total</code> modifier prevents any implementation from having given statements or runtime
+  exceptions, ensuring the existence of the result for all but catastrophic circumstances.
+  <p>
+  To establish that plus(addend') is injective, we will provide a cancellation theorem.
+  <p>
+  Usage: <code>a' + b'</code> or <code> a'.plus(b') </code>
+ */
+public total function Int plus(Int addend');
+
+/**
+  Functional form of Uniqueness of addition. Because <code>this'.plus(addend')</code> is a function,
+  the system has already made the following statement an axiom; it corresponds to the Uniqueness
+  Axiom for addition. By coding it here as a theorem, we are verifying that it was implicitly
+  implemented by the system. (A function is not allowed to have a side-effect and its result is
+  determinate.)
+ */
+FunctionPlus: lemma i' = j'  ==>  this'.plus(i') = this'.plus(j');
+
+/**
+  Uniqueness of addition. Equals can be added to or subtracted from both sides of an equation.
+  <p>
+  We restate the Uniqueness Axiom in its more usual form with the easier to read <code>+</code>
+  operator. In actuality, the TrueJ system always obeys the Leibnitz axiom, "Equals can always be
+  substituted for equals".
+ */
+UniquenessOfAddition:
+  theorem i' = j' & k' = n'  ==>  i' + k' = j' + n'
+    (because i' = j' &      k' =      n'
+         ==> i' = j' & i' + k' = i' + n' (because of FunctionPlus)
+         ==>           i' + k' = j' + n' (because of Leibnitz)
+    );
+
+AssociativityOfAddition: axiom (i' + j') + k' = i' + (j' + k');
+
+SymmetryOfAddition: axiom i' + j' = j' + i';
+
+AdditiveIdentity: axiom n' + 0 = n';
+
+UniquenessOfAdditiveIdentity: theorem i' + j' = i'  ===  j' = 0;
+  (because i' + j' = i'
+         = i' + j' = i' + 0 (because of AdditiveIdentity)
+         =      j' =      0 (because of CancelationOfAddition)
+  )
+
+/**
+  Additive Inverse. Every integer has a corresponding additive inverse, its negation. We will show
+  in a theorem that <code>0.negative() = 0</code>. The system allows the unary <code>-</code>
+  operator to be used for any type that defines a <code>negative()</code> function, which serves as
+  the operator's backing definition.
+  <p>
+  The fact that it is a function establishes the uniqueness axiom for the negation. If
+  <code>negative()</code> were not marked with the <code>function</code> modifier, then we could not
+  count on it being determined by the value of <code>this</code>, and TrueJ would require us to code
+  a new and unique decoration for <code>this</code> every time we negated it. This is TrueJ's way of
+  enforcing the higher level Leibnitz axiom, "Equals can always be substituted for equals".
+  <p>
+  The fact that it is a total function establishes the closure axiom for negation; the negation
+  always exists. The <code>total</code> modifier prevents any implementation from having
+  <code>given</code> statements or runtime exceptions, ensuring the existence of the result for all
+  but catastrophic circumstances.
+  <p>
+  Usage: <code>-a'</code> or <code> a'.negative() </code>
+ */
+public total function Int negative();
+means this' + result' = 0;
+
+/**
+  The unary minus can be used for the additive inverse of an Int.
+ */
+AdditiveInverse: theorem k' + -k' = 0;
+
+/** Cancellation Theorem for addition. Equal sums allow cancellation of equal addends. */
+CancellationOfAddition: theorem k' + i' = k' + j'  ===  i' = j'
+  (because        k' + i'  =        k' + j'
+       ==>  -k + (k' + i') =  -k + (k' + j') (because of UniquenessOfAddition)
+       === (-k + k') + i'  = (-k + k') + j'  (because of AssociativityOfAddition)
+       ===         0 + i'  =         0 + j'  (because of AdditiveInverse)
+       ===             i'  =             j'  (because of AdditiveIdentity)
+  );
+// Alternatively,
+//  (because 1. k' + i' = k' + j'  ==>  i' = j' (because
+//           1.1 assuming k' + i' = k' + j';
+//           1.2.            i'
+//              = 0        + i' (because of AdditiveIdentity)
+//              = -k' + k' + i' (because of AdditiveInverse)
+//              = -k' + k' + j' (because of 1.1. & SubstitutionOfEquals)
+//              = 0        + j' (because of AdditiveInverse)
+//              =            j' (because of AdditiveIdentity)
+//           );
+//           2. k' + i' = k' + j' <== i' = j' (because
+//           2.1. assuming i' = j';
+//           2.2. k' + i'
+//              = k' + j' (because of SubstitutionOfEquals)
+//           );
+//           7. k' + i' = k' + j'  ===  i' = j' (because of 1., 2.);
+//           QED
+//  );
+
+/**
+  Multiplication of integers is the <code>multiply(multiplier')</code> method. The system allows the
+  <code>*</code> operator to be used for any type that defines a <code>multiply(x')</code> function,
+  which serves as the operator's backing definition. The <code>*</code> operator binds tighter than
+  <code>+</code>, so <code>i' * j' + n' = (i' * j') + n'</code>.
+  <p>
+  The fact that it is a function establishes the uniqueness axiom for multiplication, the product
+  being a function of <code>this</code> and the <code>multiplier</code>. If
+  <code>multiply(multiplier')</code> were not marked with the <code>function</code> modifier, then
+  we could not count on it being determined by the values of <code>this</code> and
+  <code>multiplier</code>, and TrueJ would require us to code a new and unique decoration for
+  <code>this</code> or <code>multiplier</code> every time we multiplied them. This is TrueJ's way of
+  enforcing the higher level Leibnitz axiom, "Equals can always be substituted for equals".
+  <p>
+  The fact that it is a total function establishes the closure axiom for multiplication. The
+  <code>total</code> modifier prevents any implementation from having given statements or runtime
+  exceptions, ensuring the existence of the result for all but catastrophic circumstances.
+  <p>
+  To establish that <code>multiply(multiplier')</code> is injective, we will provide a cancellation
+  axiom.
+  <p>
+  Usage: a' * b' or a'.multiply(b)
+ */
+public total function Int multiply(Int multiplier') phrase <a' * b'>;
+
+/**
+  Functional form of Uniqueness of multiplication. Because <code>multiply(multiplier')</code> is a
+  function, the system has already made the following statement an axiom; it corresponds to the
+  Uniqueness Axiom for multiplication. By coding it here as a theorem, we are verifying that it was
+  implicitly implemented by the system. (A function is not allowed to have a side-effect and its
+  result is determinate.)
+ */
+FunctionMultiply: lemma i' = j'  ==>  this'.multiply(i') = this'.multiply(j');
+
+/**
+  Uniqueness of multiplication. Equals can multiply both sides of an equation.
+  <p>
+  We restate the Uniqueness Axiom in its more usual form with the easier to read <code>*</code>
+  operator. In actuality, the TrueJ system always obeys the Leibnitz axiom, "Equals can always be
+  substituted for equals".
+ */
+UniquenessOfMultiplication:
+  theorem i' = j' & k' = n'  ==>  i' * k' = j' * n'
+    (because i' = j' &      k' =      n'
+         ==> i' = j' & i' * k' = i' * n' (because of FunctionMultiply)
+         ==>           i' * k' = j' * n' (because of Leibnitz)
+    );
+
+AssociativityOfMultiplication: axiom (i' * j') * k' = i' * (j' * k');
+
+SymmetryOfMultiplication: axiom i' * j' = j' * i';
+
+MultiplicativeIdentity: axiom n' * 1 = n';
+
+MultiplicationDistributesOverAddition: axiom n' * (i' + j') = n'*i' + n'*j';
+
+/**
+  Cancellation Axiom for multiplication. Equal products allow cancellation of equal multipliers.
+  This must be an axiom instead of a theorem because we do not have a guaranteed inverse for
+  multiplication in the integers.
+ */
+CancelationOfMultiplication: axiom k' != 0  ==>  (k' * i' = k' * j'  ===  i' = j');
+
+/**
+  Zero theorem for multiplication.
+ */
+Zero: theorem n' * 0 = 0
+  (because true
+       === n'*n'         = n'*n'
+       === n'*(n' + 0)   = n'*n' + 0 (because of AdditiveIdentity)
+       === n'*n'  + n'*0 = n'*n' + 0 (because of DistributionOfMultiplicationOverAddition)
+       ===          n'*0 =         0 (because of CancellationOfAddition)
+  );
+
+ZeroProduct: theorem i'*j' = 0  ===  i' = 0 | j' = 0
+  (because i'    = 0    | j'    =    0
+       === i'*j' = 0*j' | i'*j' = i'*0 (because of Zero)
+       === i'*j' = 0    | i'*j' =    0 (because of Zero)
+       === i'*j' = 0
+  );
+
+/**
+  <code>i'+n'=0</code> means that <code>i'=-n'</code>, and there is only one additive inverse for
+  <code>n'</code>.
+ */
+UniqueAdditiveInverse: i' + n' = 0 & j' + n' = 0  ==>  i' = j'
+  (because i' + n' = 0 & j' + n' = 0
+       ==> i' + n'     = j' + n'
+       === i'          = j'      (because of CancellationOfAddition)
+  );
+
+/**
+  Subtraction of integers is the <code>minus(subtrahend')</code> method. This Int is the minuend,
+  from which the subtrahend is subtracted. The system allows the <code>-</code> operator to be used
+  for any type that defines a <code>minus(x')</code> function, which serves as the operator's
+  backing definition.
+  <p>
+  The fact that it is a function establishes the uniqueness axiom for subtraction, the result being a
+  function of <code>this</code> and the <code>subtrahend</code>. If <code>minus(subtrahend')</code>
+  were not
+  marked with the <code>function</code> modifier, then we could not count on it being determined by
+  the values of <code>this</code> and <code>subtrahend</code>, and TrueJ would require us to code a new
+  and unique decoration for <code>this</code> or <code>subtrahend</code> every time we added them. This
+  is TrueJ's way of enforcing the higher level Leibnitz axiom, "Equals can always be substituted for
+  equals".
+  <p>
+  The fact that it is a total function establishes the closure axiom for subtraction. The
+  <code>total</code> modifier prevents any implementation from having given statements or runtime
+  exceptions, ensuring the existence of the result for all but catastrophic circumstances.
+  <p>
+  To establish that minus(subtrahend') is injective, we will provide a cancellation theorem.
+  <p>
+  Usage: <code>a' - b'</code> or <code> a'.minus(b') </code>
+  Usage: a - b or minus(a,b)
+  */
+public total function Int minus(Int subtrahend');
+means result' = this' + -subtrahend';
+
+Subtraction: theorem i' - j' = i' + -j';
+
+GS_15_15: theorem i' + n' = 0  ===  i' = -n';
+GS_15_16: theorem -i' = -j'  ===  i' = j';
+GS_15_17: theorem -(-n') = n';
+GS_15_18: theorem -0 = 0;
+GS_15_19: theorem -(i' + j') = -i' + -j';
+GS_15_20: theorem -n' = -1 * n';
+GS_15_21: theorem -i' * j' = i' * -j';
+GS_15_22: theorem i' * -j' = -(i'*j');
+GS_15_23: theorem -i' * -j' = i'*j';
+GS_15_24: theorem n' - 0 = n';
+GS_15_25: theorem (i' - j') + (k' - n') = (i' + k') - (j' + n');
+GS_15_26: theorem (i' - j') - (k' - n') = (i' + n') - (j' + k');
+GS_15_27: theorem (i' - j')*(k' - n') = (i'*k' + j'*n') - (i'*n' + j'*k');
+GS_15_28: theorem i' - j' = k' - n'  ===  i' + n' = j' + k';
+GS_15_29: theorem (i' - j')*k' = i'*k' - j'*k';
+
+/**
+  We use the notion of positive integers to formalize the Integral Domain as an Ordered Domain,
+  following G&S, p. 307.
+ */
+public total function boolean positive() {
+  return this'.compareTo(0) > 0;
+};
+
+AdditionOfPositives:       axiom i'.positive() & j'.positive()  ==>  (i' + j').positive();
+MultiplicationOfPositives: axiom i'.positive() & j'.positive()  ==>  (i'*j').positive();
+ZeroIsNotPositive:         axiom ! 0.positive();
+NegativeIsNotPositive:     axiom i'!=0  ==>  (i'.positive()  ===  ! (-i').positive();
+
+GS_15_34: theorem n'!=0  ==>  (n'*n').positive()
+  (given   1. n'!=0
+   because 2. n'.positive() | ! n'.positive() (because 1.)
+           3. for (n'*n').positive();
+
+           3.1. case n'.positive();
+           3.1.1. (n'*n').positive() (because of MultiplicationOfPositives);
+
+           3.2. case ! n'.positive();
+           3.2.1.   n'.positive() === ! (-n').positive() (because 1., NegativeIsNotPositive);
+           3.2.2. ! n'.positive() ===   (-n').positive();
+           3.2.3.                       (-n').positive() (because 3.2., 3.2.2.);
+           3.2.4. (-n').positive() & (-n').positive();
+           3.2.5. (-n'*-n').positive() (because of MultiplicationOfPositives);
+           3.2.6. ( n'* n').positive() (because -i' * -j' = i'*j')
+
+           4. (n'*n').positive() (because 3.);
+           QED
+  );
+
+GS_15_35: theorem i'.positive()  ==>  (j'.positive()  ===  (i'*j').positive());
+
+theorem 1.positive()
+  (because 1. 1 != 0;
+           2. (1*1).positive() (because n'!=0  ==>  (n'*n').positive());
+           3. 1*1 = 1 (because 1*n' = n');
+           4. 1.positive();
+  );
+
+theorem ! (-1).positive();
+
+/**************** WORKING HERE ***********************/
+// Does equality work differently because of everything being deeply equal?
+// Is equality of Boolean different to map to === ?
+public boolean equals(Object other) { // Leave type of o as Object
+  /* Defines an Equivalence relation
+     Reflexive:  a.equals(a) must return true.
+     Symmetric:  If a.equals(o) then o.equals(a) as well (usually the difficult one).
+     Transitive: If a.equals(b) and b.equals(c), then a.equals(c).
+
+  */
+  if      (other == null)                  { return false; }
+  else if (getClass() != other.getClass()) { return false; }
+  else {
+    return (this.a.equals(other.a));
+  }
+}
+
+//TODO 3 = relations as axioms.
+//     And substitution (at least for fns and boolean relationships),
+//     but as theorems? because the prover assumes them.
+
+public int compareTo(Name other) {
+// required for Comparable objects
+//
+  if      (this.a < other.a)    { return -1; }
+  else if (this.equals(other))  { return  0; }
+  else                          { return +1; }
+}
+
+private static boolean sameSignLax(I a, I b);
+  means return = (a>=0) ? b>=0 : b<=0;
+
+/** Integer division with a remainder. We provide for computing the quotient and remainder in a
+   single operation.
+   @see div()
+   @see mod() */
+static public Int intDiv(Int dividend', Int divisor',
+                                 Int 'quotient, Int 'remainder);
+  means dividend div divisor = quotient
+      & dividend  %  divisor = remainder
+  ;
+
+/** Integer division, which leaves a remainder. We map the div(n,d) method to the <code>div</code>
+   operator, saving the operator / for division that does not leave a remainder, as in rational
+   number division.
+   <p> Usage: n div d or div(n,d)
+   @see Definition of integer division in Java Language Specification, Topic 15.17.2 */
+public static Int div(Int n', Int d') phrase <n' div d'>;
+  given d' != 0;
+  means forsome Int remainder
+      ( n' = return' * d' + remainder'
+      &   (sameSignLax(n',d') ==> 0 <= remainder < d')
+      & ! (sameSignLax(n',d') ==> 0 >= remainder > d')
+      );
+
+/** The remainder of integer division, We map the mod() method to the operator <code> % </code>.
+   <p> Usage: a % b or mod(a,b)
+   @see Definition of the remainder, % (Java Language Specification, Topic 15.17.3)
+   @see intdiv */
+public static Int mod(Int a, Int b) phrase <a % b>;
+  given b != 0;
+  means forsome Int quotient
+      ( a = quotient * b + return
+      &   (sameSignLax(a,b) ==> 0 <= return < b)
+      & ! (sameSignLax(a,b) ==> 0 >= return > b)
+  ;
+
+theorem  j!=0  ==>  (i div j)*j + (i % j) = i;
+
+/** Do the parameters have the same sign? Returns true if either is zero. */
+// ********************
+// *** Constructors ***
+// ********************
+public Int() {
+  // if there is a reasonable default for every field, you can create a default constructor
+}
+
+public Int(Int a) {
+  this.a = new TYPEAAA(a); // copy constructor should create a deep copy
+}
+
+// ******************************
+// *** Consistency components ***
+// ******************************
+public int hashCode() {
+  // Consistent with equals: two "equals" objects should have same hashCode result.
+  return hashCode(a);
+}
+
+public Object clone() { // shallow copy
+  return new Name(a);
+}
+
+public Name deepCopy {
+  return new Name(new Int(a));
+}
+
+public String toString() {
+  return (a.toString);
+}
+
+} // end class IntegerDomain
