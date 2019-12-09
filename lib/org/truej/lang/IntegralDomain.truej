@@ -19,9 +19,7 @@ public static total function Int one()
 axiom 1 != 0;
 
 /**
-  Addition of integers is the <code> plus(addend') </code> method. The system allows the
-  <code> + </code> operator to be used for any type that defines a <code>plus(x')</code> function,
-  which serves as the operator's backing definition.
+  Addition of integers is the <code> plus(addend') </code> method.
   <p>
   The fact that it is a function establishes the uniqueness axiom for addition, the sum being a
   function of <code>this</code> and the <code>addend</code>. If <code>plus(addend')</code> were not
@@ -39,6 +37,9 @@ axiom 1 != 0;
   <p>
   To establish that plus(addend') is injective, we will provide a cancellation theorem.
   <p>
+  The system allows the <code> + </code> operator to be used for any type that defines a
+  <code>plus(x')</code> function, which serves as the operator's backing definition.
+  <p>
   Usage: <code>a' + b'</code> or <code> a'.plus(b') </code>
  */
 public total function Int plus(Int addend');
@@ -46,11 +47,11 @@ public total function Int plus(Int addend');
 /**
   Functional form of Uniqueness of addition. Because <code>this'.plus(addend')</code> is a function,
   the system has already made the following statement an axiom; it corresponds to the Uniqueness
-  Axiom for addition. By coding it here as a theorem, we are verifying that it was implicitly
+  Axiom for addition. By coding it here as a private theorem , we are verifying that it was implicitly
   implemented by the system. (A function is not allowed to have a side-effect and its result is
-  determinate.)
+  determinate.) The prover uses the Leibnitz rule to prove the theorem.
  */
-FunctionPlus: lemma i' = j'  ==>  this'.plus(i') = this'.plus(j');
+FunctionPlus: private theorem  i' = j'  ==>  this'.plus(i') = this'.plus(j');
 
 /**
   Uniqueness of addition. Equals can be added to or subtracted from both sides of an equation.
@@ -59,12 +60,7 @@ FunctionPlus: lemma i' = j'  ==>  this'.plus(i') = this'.plus(j');
   operator. In actuality, the TrueJ system always obeys the Leibnitz axiom, "Equals can always be
   substituted for equals".
  */
-UniquenessOfAddition:
-  theorem i' = j' & k' = n'  ==>  i' + k' = j' + n'
-    (because i' = j' &      k' =      n'
-         ==> i' = j' & i' + k' = i' + n' (because of FunctionPlus)
-         ==>           i' + k' = j' + n' (because of Leibnitz)
-    );
+UniquenessOfAddition: theorem i' = j' & k' = n'  ==>  i' + k' = j' + n';
 
 AssociativityOfAddition: axiom (i' + j') + k' = i' + (j' + k');
 
@@ -80,9 +76,7 @@ UniquenessOfAdditiveIdentity: theorem i' + j' = i'  ===  j' = 0;
 
 /**
   Additive Inverse. Every integer has a corresponding additive inverse, its negation. We will show
-  in a theorem that <code>0.negative() = 0</code>. The system allows the unary <code>-</code>
-  operator to be used for any type that defines a <code>negative()</code> function, which serves as
-  the operator's backing definition.
+  in a theorem that <code>0.negative() = 0</code>.
   <p>
   The fact that it is a function establishes the uniqueness axiom for the negation. If
   <code>negative()</code> were not marked with the <code>function</code> modifier, then we could not
@@ -94,6 +88,9 @@ UniquenessOfAdditiveIdentity: theorem i' + j' = i'  ===  j' = 0;
   always exists. The <code>total</code> modifier prevents any implementation from having
   <code>given</code> statements or runtime exceptions, ensuring the existence of the result for all
   but catastrophic circumstances.
+  <p>
+  The system allows the unary <code>-</code> operator to be used for any type that defines a
+  <code>negative()</code> function, which serves as the operator's backing definition.
   <p>
   Usage: <code>-a'</code> or <code> a'.negative() </code>
  */
@@ -133,10 +130,7 @@ CancellationOfAddition: theorem k' + i' = k' + j'  ===  i' = j'
 //  );
 
 /**
-  Multiplication of integers is the <code>multiply(multiplier')</code> method. The system allows the
-  <code>*</code> operator to be used for any type that defines a <code>multiply(x')</code> function,
-  which serves as the operator's backing definition. The <code>*</code> operator binds tighter than
-  <code>+</code>, so <code>i' * j' + n' = (i' * j') + n'</code>.
+  Multiplication of integers is the <code>multiply(multiplier')</code> method.
   <p>
   The fact that it is a function establishes the uniqueness axiom for multiplication, the product
   being a function of <code>this</code> and the <code>multiplier</code>. If
@@ -153,6 +147,11 @@ CancellationOfAddition: theorem k' + i' = k' + j'  ===  i' = j'
   To establish that <code>multiply(multiplier')</code> is injective, we will provide a cancellation
   axiom.
   <p>
+  The system allows the
+  <code>*</code> operator to be used for any type that defines a <code>multiply(x')</code> function,
+  which serves as the operator's backing definition. The <code>*</code> operator binds tighter than
+  <code>+</code>, so <code>i' * j' + n' = (i' * j') + n'</code>.
+  <p>
   Usage: a' * b' or a'.multiply(b)
  */
 public total function Int multiply(Int multiplier') phrase <a' * b'>;
@@ -164,7 +163,7 @@ public total function Int multiply(Int multiplier') phrase <a' * b'>;
   implicitly implemented by the system. (A function is not allowed to have a side-effect and its
   result is determinate.)
  */
-FunctionMultiply: lemma i' = j'  ==>  this'.multiply(i') = this'.multiply(j');
+FunctionMultiply: private theorem  i' = j'  ==>  this'.multiply(i') = this'.multiply(j');
 
 /**
   Uniqueness of multiplication. Equals can multiply both sides of an equation.
@@ -225,9 +224,7 @@ UniqueAdditiveInverse: i' + n' = 0 & j' + n' = 0  ==>  i' = j'
 
 /**
   Subtraction of integers is the <code>minus(subtrahend')</code> method. This Int is the minuend,
-  from which the subtrahend is subtracted. The system allows the <code>-</code> operator to be used
-  for any type that defines a <code>minus(x')</code> function, which serves as the operator's
-  backing definition.
+  from which the subtrahend is subtracted.
   <p>
   The fact that it is a function establishes the uniqueness axiom for subtraction, the result being a
   function of <code>this</code> and the <code>subtrahend</code>. If <code>minus(subtrahend')</code>
@@ -243,6 +240,9 @@ UniqueAdditiveInverse: i' + n' = 0 & j' + n' = 0  ==>  i' = j'
   exceptions, ensuring the existence of the result for all but catastrophic circumstances.
   <p>
   To establish that minus(subtrahend') is injective, we will provide a cancellation theorem.
+  <p>
+  The system allows the <code>-</code> operator to be used for any type that defines a
+  <code>minus(x')</code> function, which serves as the operator's backing definition.
   <p>
   Usage: <code>a' - b'</code> or <code> a'.minus(b') </code>
   Usage: a - b or minus(a,b)
@@ -312,34 +312,94 @@ theorem 1.positive()
 
 theorem ! (-1).positive();
 
+/**
+    Defines an Equivalence relation; that is, it is reflexive, symmetric, and transitive. Equality
+    also obeys the Leibniz rule: "Two expressions are equal in all states iff replacing one by the
+    other in any expression E does not change the value of E (in any state)" (G&S, p. 12). This
+    cannot be stated as a first order theorem but we can verify that the prover supports this for
+    specific expressions.
+
+    Since equality is reflexive and either of the two equal objects can be substituted for the other
+    in any expression, then we have the corollary that two equal objects must have exactly the same
+    type or be automatically converted.
+
+    TODO: This will require some special thought with numeric types, e.g., <code>1 = 1.0</code>. Is
+          promotion of integer types sufficient? The only problem that I can see at a glance is in
+          assignments (<code>int a = 1;</code> vs. <code>int a = 1.0</code>) and method arguments
+          (<code>anInteger.plus(1)</code> vs. <code>anInteger.plus(1.0)</code>). It may be that we
+          must syntactically prohibit certain automatic casting and require proof that a narrowing
+          conversion will avoid an Exception. (Refer to spec, Chapter 5.)
+
+    If two objects may have different classes, e.g., one is be a subtype of the other, or both are
+    referenced from a supertype variable where it is only the supertype characteristics that are
+    relevant, then the programmer may want to explicitly force them to the same type, e.g.,
+    <code>(Circle)graphicArray[0] = currentCircle</code>.
+
+    A check for parameter <code>other'</code> being null is not required because the parameter is
+    not optional.
+
+    The .equals(other') function serves as the backing function for the operators = and ===, the
+    only difference being that = is syntactically stickier than ===. Note that both are conjunctive,
+    unlike the equivalence operator in G&S (p. 29).
+ */
+public total function boolean equals(Object other');
+
+EqualityIsReflexive:  private theorem n' = n';
+EqualityIsSymmetric:  private theorem i' = j'  ===  j' = i';
+EqualityIsTransitive: private theorem i' = j' & j' = k'  ==>  i' = k';
+
+/**
+  The compareTo(other') function is the basis for less than and greater-than, and is synchronized
+  with equality.
+  <p>
+  The system automatically uses compareTo as the backing function for the ordering relations:
+  <pre>
+    <  is mapped to a result of -1
+    <= is mapped to a result of -1 or 0
+    =  is mapped to this'.equals(other') but that must be equivalent to a result of 0
+    >= is mapped to a result of +1 or 0
+    <  is mapped to a result of +1
+  </pre>
+  <p>
+  @result +1 if this' > other',
+           0 if this' = other',
+          -1 if this' < other'
+ */
+public total function Int compareTo(Name other);
+  means i'.equals(j')  ===  i'.compareTo(j') = 0
+      & i'.positive()  ===  i'.compareTo(j') = 1
+      & ( i'.compareTo('j) = -1
+        | i'.compareTo('j) =  0
+        | i'.compareTo('j) =  1
+        );
+
+LessThan:    theorem i' <  j'  ===  (j' - i').positive();
+GreaterThan: theorem i' >  j'  ===  (i' - j').positive();
+AtMost:      theorem i' <= j'  ===  i' < j' | i' = j';
+AtLeast:     theorem i' >= j'  ===  i' > j' | i' = j';
+
+Positives: theorem i'.positive()  ===  0 < i';
+Transitivity: theorem i' <  j' & j' <  k'  ==>  i' <  k'
+                    & i' <= j' & j' <  k'  ==>  i' <  k'
+                    & i' <  j' & j' <= k'  ==>  i' <  k'
+                    & i' <= j' & j' <= k'  ==>  i' <= k';
+MonotonicityOfAddition: theorem i' < k'  ===  i' + k' < j' + k';
+MonotonicityOfMultiplication: theorem 0 < k'  ==>  (i' < k'  ===  i'*k' = j'*k');
+Trichotomy: theorem ( (i' < k') & ~(k' < i') & k' != i')
+                  | (~(i' < k') &  (k' < i') & k' != i')
+                  | (~(i' < k') & ~(k' < i') & k'  = i');
+// An alternative statement of Trichotomy
+  private theorem (i' < k' | i' > k' | i' = k')
+                & ~(i' < k' & i' > k')
+                & ~(i' < k' & i' = k')
+                & ~(i' > k' & i' = k');
+Antisymmetry: theorem i' <= j' & j' <= i'  ==>  i' = j';
+Reflexivity: theorem n' <= n';
+private theorem i' = j'   ===   (k' <= i'  ===  k' <= j');
+
 /**************** WORKING HERE ***********************/
-// Does equality work differently because of everything being deeply equal?
-// Is equality of Boolean different to map to === ?
-public boolean equals(Object other) { // Leave type of o as Object
-  /* Defines an Equivalence relation
-     Reflexive:  a.equals(a) must return true.
-     Symmetric:  If a.equals(o) then o.equals(a) as well (usually the difficult one).
-     Transitive: If a.equals(b) and b.equals(c), then a.equals(c).
 
-  */
-  if      (other == null)                  { return false; }
-  else if (getClass() != other.getClass()) { return false; }
-  else {
-    return (this.a.equals(other.a));
-  }
-}
 
-//TODO 3 = relations as axioms.
-//     And substitution (at least for fns and boolean relationships),
-//     but as theorems? because the prover assumes them.
-
-public int compareTo(Name other) {
-// required for Comparable objects
-//
-  if      (this.a < other.a)    { return -1; }
-  else if (this.equals(other))  { return  0; }
-  else                          { return +1; }
-}
 
 private static boolean sameSignLax(I a, I b);
   means return = (a>=0) ? b>=0 : b<=0;
