@@ -6,21 +6,19 @@
  * interval and, if not, prevents the compiler from allowing the operation.
  *
  * We define methods that serve as a foundational definition of TrueJ integer operators.
- * Although TrueJ has phrases instead of operator overloading, we use the Groovy function names for
+ *
+ * We use the Groovy function names for
  * overloading operators in an attempt to provide consistency across the field of programming.
+ * TODO: Does TrueJ use operator overloading or does it just use phrases. This assumes operator
+ *       overloading.
  */
-public immutable abstract class BoundedInteger implements IntegralDomain phrase <I> {
+public immutable interface BoundedInteger extends IntegralDomain phrase <Int> {
 
-exemplar I   i', j', k', n';
+exemplars Int i', j', k', n';
 
 phrase <0> means ZERO;
 
 phrase <1> means ONE;
-
-/* This is a theorem if we have the Well-ordering Principle as an axiom. */
-public axiom i' > 0  ==> i' >= 1;
-
-private theorem  ~(0 < i' < 1);
 
 /** The minimum integer allowed for the implementation. Because a BoundedInteger is required to
  * contain zero, minxValue() <= 0. Each implementation defines a constant for
@@ -28,7 +26,7 @@ private theorem  ~(0 < i' < 1);
  * implementation, this will have a value of -2<sup>n</sup>; for instance, for the class Byte,
  * the value of n will be 8 so Byte.minValue() = Byte.MIN_VALUE = -128.
  */
-public abstract static function I minValue() phrase <m>;
+public abstract static function Int minValue() phrase <m>;
   public axiom m <= 0;
 
 /** The maximum integer allowed for the implementation. Because a BoundedInteger is required to
@@ -37,7 +35,7 @@ public abstract static function I minValue() phrase <m>;
  * implementation, this will have a value of 2<sup>n</sup>-1; for instance, for the class Byte,
  * the value of n will be 8 so Byte.maxValue() = Byte.MAX_VALUE = 127.
  */
-public abstract static function  I maxValue() phase <M>;
+public abstract static function  Int maxValue() phase <M>;
   public axiom 1 <= M;
 
 /** Note that the interval maximum and minimum restrictions on the results of operations means that
@@ -56,7 +54,7 @@ private theorem m <= 0 < 1 <= M;
     Usage:
       <code>a' + b'</code> or <code>plus(a',b')</code>
  */
-public abstract partialfunction I plus(I a');
+public abstract partialfunction Int plus(Int a');
   phrase <this' + a'>;
   given exists this' + a';
 
@@ -71,7 +69,7 @@ public abstract partialfunction I plus(I a');
     We suspect that most of the time we will be adding positive numbers, so we attempt to check that condition first.
 
  */
-private static condition sumExists(I a', I b') phrase <exists a' + b'>
+private static condition sumExists(Int a', Int b') phrase <exists a' + b'>
     // show       m      <= a + b  <= M
     ( a' >= 0 & ( b' <= M - a' | b' <= 0 )
     | b' >= 0 & ( a' <= M - b' | a' <= 0 )
@@ -168,7 +166,7 @@ AdditiveIdentity:
     <p> Usage:
       <code>a' * b'</code> or <code>multiply(a',b')</code>
  */
-public abstract static function I multiply(I a', I b');
+public abstract static function Int multiply(Int a', Int b');
   phrase <a' * b'>;
   given exists a' * b';
 
@@ -178,7 +176,7 @@ public abstract static function I multiply(I a', I b');
     axiom. We do not have to evaluate any of the other axioms because all sub-class implementations
     will already have them.
  */
-private static condition productExists(I a', I b') phrase <exists a' * b'>
+private static condition productExists(Int a', Int b') phrase <exists a' * b'>
   ( // prohibit a' * b' < minValue()
     ( a' = 0 | a' = 1 | b' = 0 | b' = 1
     | sign(a') = sign(b') // thus m <= 0 <= a' * b'
@@ -233,13 +231,13 @@ CancelationOfMultiplication:
  * negative(a) and not any particular implementation's prefix <code> - </code> operator.
    <p> Usage: <code> -a'</code> or <code>negative(a')</code>
  */
-public abstract static I negative(I a') private phrase < - a'>;
+public abstract static Int negative(Int a') private phrase < - a'>;
   // if abs(m) <= M then all negatives, and positives up to abs(m), are OK
   // if abs(m) >  M then all positives, and negatives down to -M, are OK
   given exists -a';
   means  a' + negative(a') = 0;
 
-private condition negativeExists(I a') phrase <exists - a'>
+private condition negativeExists(Int a') phrase <exists - a'>
   ( m + M >= 0 & (a' <= 0 | m + a' <= 0)
   | m + M <  0 & (a' >= 0 | M + a' >= 0)
   );
@@ -251,7 +249,7 @@ private condition negativeExists(I a') phrase <exists - a'>
  * refer to the minus() method here in the definition of BoundedInteger with <code> - </code>.
  * <p>
  * Usage: <code>a' - b'</code> or <code>minus(a',b')</code> */
-public abstract static  I minus(I a', I b') private phrase <a' - b'>;
+public abstract static  Int minus(Int a', Int b') private phrase <a' - b'>;
   given exists a' - b';
   means return = a' + -b';
 
@@ -264,7 +262,7 @@ public abstract static  I minus(I a', I b') private phrase <a' - b'>;
        a',-b' both <= 0 means a' - b' <= 0 <= M
     therefore we only need dto test the case bWe do not have to evaluate any of the other axioms because all sub-class implementations will already have them.
  */
-private condition minusExists(I a', I b') phrase <exists a' - b'>
+private condition minusExists(Int a', Int b') phrase <exists a' - b'>
   ( // m <= a - b
     (
       b >= 0 & m + b <= a
@@ -330,14 +328,19 @@ private condition minusExists(I a', I b') phrase <exists a' - b'>
     )
   );
 
+/* This is a theorem if we have the Well-ordering Principle as an axiom. */
+public axiom i' > 0  ==> i' >= 1;
+
+private theorem  ~(0 < i' < 1);
+
 /** BoundedInteger division, which leaves a remainder. We map the div(n,d) method to the
  * <code>div</code> operator, saving the operator / for division that does not leave a remainder,
  * as in rational number division.
  * <p> Usage: n div d or div(n,d)
  * @see Definition of integer division in Java Language Specification, Topic 15.17.2 */
-public abstract static  I div(I n', I d') private phrase <n' div d'>;
+public abstract static  Int div(Int n', Int d') private phrase <n' div d'>;
   given d' != 0 & !(n' = m & d' = -1);
-  means forsome I remainder
+  means forsome Int remainder
       ( n' = return' * d' + remainder'
       &   (sameSignLax(n',d') ==> 0 <= remainder < d')
       & ! (sameSignLax(n',d') ==> 0 >= remainder > d')
@@ -347,16 +350,16 @@ public abstract static  I div(I n', I d') private phrase <n' div d'>;
    <p> Usage: a % b or mod(a,b)
    @see Definition of the remainder, % (Java Language Specification, Topic 15.17.3)
    @see intdiv */
-public abstract static  I mod(I a, I b) private phrase <a % b>;
+public abstract static  Int mod(Int a, Int b) private phrase <a % b>;
   given b != 0;
-  means forsome I quotient
+  means forsome Int quotient
       ( a = quotient * b + return
       &   (sameSignLax(a,b) ==> 0 <= return < b)
       & ! (sameSignLax(a,b) ==> 0 >= return > b)
   ;
 
 /** Do the parameters have the same sign? Returns true if either is zero. */
-public abstract static boolean sameSignLax(I a, I b) {
+public abstract static boolean sameSignLax(Int a, Int b) {
   if (a>=0)
     return = b>=0;
   else
@@ -372,7 +375,7 @@ theorem  (i div j)*j + (i % j) = i;
    single operation.
    @see div()
    @see mod() */
-public abstract static  I intDiv(I dividend', I divisor', I 'quotient, I 'remainder);
+public abstract static  Int intDiv(Int dividend', Int divisor', Int 'quotient, Int 'remainder);
   given divisor' != 0
       & !(dividend' = m & divisor' = -1);
   means dividend div divisor = quotient
