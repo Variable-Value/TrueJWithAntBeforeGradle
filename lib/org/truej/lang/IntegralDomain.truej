@@ -1,20 +1,22 @@
                                         // Copyright George S. Cowan, 2019. MIT open source license.
 /**
-    The mathematical integers. We use the name IntegralDomain here and reserve the name Integer for
-    32-bit, 2s-complement integers in order to stay parallel to Java. Because the mathematical
-    integers have no upper and lower limits, they cannot be implemented in a finite computer (though
-    an almost complete implementation could be made that only represented those integers needed for
-    each finite computation).
+    An element of the integral domain, a mathematical integer. We use the name IntegralElement here
+    and reserve the name Integer for 32-bit, 2s-complement bounded integers in order to stay
+    parallel to Java. Because the mathematical integers have no upper and lower limits, they cannot
+    be implemented in a finite computer (though an almost complete implementation could be made that
+    only represented those integers needed for a finite computation).
     <p>
-    Modifier Terminology:
-      Because TrueJ uses values, the compiler allows us to freely substitute equals for one another
+    Function Modifiers:
+      Many computations produce a single value, and rather than force the programmer to choose a
+      name for that value we can use the computation itself.
+      treat those as a value rather than a statement can . Because TrueJ uses values, the
+      compiler allows us to freely substitute equals for one another
       in logic statements, and the syntax makes it very clear when this helpful property is or is
       not available. When substitution of equals is not available we can fall back on the general
       way that TrueJ makes programming easier, viewing a computation as a statement that relates the
       ending values of the state produced to the beginning values of the state that were used, where
       the "return" value being equal to something is just one small statement that is part of a more
-      complicated logical statement. But many computations produce a single value, and being able to
-      treat those as a value rather than a statement is even simpler.
+      complicated logical statement.
 
       If we can treat a computation as a single value, then the syntax for the computation can be
       used as the notation for the functional relationship between its inputs and its output. We can
@@ -44,29 +46,10 @@
       the object and the method parameters, all of which are decorated to identify a particular
       state.
 
-      METHOD MODIFIERS
 
-      total - prevents given-statements and all non-catastrophic exceptions. The means statement of
-              a total method contains all we need to know about it.
 
-              Otherwise, any exception must be included in the
-              means-statement as a top-level disjunction. However, given-statements do not need to
-              be explicitly stated in the means-statement, instead being treated as an implicit
-              antecedent to the consequent stated in the means-statement.
 
-      source - allows the result to be based on external input or other non-constant data from a
-              mutable object. That is, the method's result cannot be treated as a function of its
-              object and its parameters. The result might be computed from non-final data from a
-              mutable object or from other data, such as user input, the system time, or a souce of
-              random noise. (Note that the source may be actually determinate, but the compiler is
-              being required to treat the result as unpredictable data, as in the generation of
-              random numbers.) All methods that use source methods must be marked as source methods.
-              TrueJ requires the programmer to track the decorations of all future uses of the
-              object name after such a method. The method itself carries the information about
-              whether the object is modified by the method, defining a new object name for its next
-              use, e.g., <code>(aRandom'prev --> aRandom'next).nextInt()</code>
-
-    All the methods of IntegralDomain have the <code>total function</code> modifiers. The
+    All the methods of IntegralElement have the <code>total function</code> modifiers. The
     <code>total</code> modifier prevents given-statements and all but catastrophic exceptions,
     ensuring the existence of the result. This is needed to in order to extablish the (implicit)
     closure axioms for operators. If they were not marked with the <code>function</code> modifier,
@@ -79,16 +62,20 @@
     also prevents the method from having any visible side effects. and allowing us to use
     substitution of equals freely.
  */
-public /*immutable*/ interface IntegralDomain extends Comparable phrase <Int> {
-exemplar Int n', i', j', k';
+public interface IntegralElement extends Comparable {
+exemplar IntegralElement n', i', j', k';
 
-/** Zero is an integer. The numeral <code>0</code> is a synonym. */
-public static total function Int zero()
-  phrase <0>;
+/**
+    Zero is an integer. The <code>zero()</code> method is the backing function for the constant
+    literal <code>0</code>.
+ */
+public static total function IntegralElement zero();
 
-/** One is an integer. The numeral <code>1</code> is a synonym. */
-public static total function Int one()
-  phrase <1>;
+/**
+    One is an integer. The <code>one()</code> method is the backing function for the constant
+    literal <code>1</code>.
+ */
+public static total function IntegralElement one();
 
 axiom 1 != 0;
 
@@ -99,7 +86,7 @@ axiom 1 != 0;
   <p>
   Usage: <code>a' + b'</code> or <code> a'.plus(b') </code>
  */
-public total function Int plus(Int addend');
+public total function IntegralElement plus(IntegralElement addend');
 
 /**
   Functional form of Uniqueness of addition. Because <code>this'.plus(addend')</code> is a function,
@@ -137,11 +124,11 @@ UniquenessOfAdditiveIdentity: theorem i' + j' = i'  ===  j' = 0;
   <p>
   Usage: <code>-n'</code> or <code> n'.negative() </code>
  */
-public total function Int negative();
+public total function IntegralElement negative();
 means this' + return' = 0;
 
 /**
-  The unary minus can be used for the additive inverse of an Int.
+  The unary minus can be used for the additive inverse of an IntegralElement.
  */
 AdditiveInverse: theorem k' + -k' = 0;
 
@@ -181,7 +168,7 @@ CancellationOfAddition: theorem k' + i' = k' + j'  ===  i' = j'
   <p>
   Usage: a' * b' or a'.multiply(b)
  */
-public total function Int multiply(Int multiplier') phrase <a' * b'>;
+public total function IntegralElement multiply(IntegralElement multiplier');
 
 /**
   Functional form of Uniqueness of multiplication. Because <code>multiply(multiplier')</code> is a
@@ -258,7 +245,7 @@ UniqueAdditiveInverse: i' + n' = 0 & j' + n' = 0  ==>  i' = j'
   <p>
   Usage: <code>a' - b'</code> or <code> a'.minus(b') </code>
   */
-public total function Int minus(Int subtrahend');
+public total function IntegralElement minus(IntegralElement subtrahend');
 means return' = this' + -subtrahend';
 
 Subtraction: theorem i' - j' = i' + -j';
@@ -280,8 +267,8 @@ GS_15_28: theorem i' - j' = k' - n'  ===  i' + n' = j' + k';
 GS_15_29: theorem (i' - j')*k' = i'*k' - j'*k';
 
 /**
-  We use the notion of positive integers to formalize the Integral Domain as an Ordered Domain,
-  following G&S, p. 307.
+  We use the notion of positive integers to formalize the domain of IntegralElements as an Ordered
+  Domain, following G&S, p. 307.
  */
 public total function boolean positive() {
   return this'.compareTo(0) > 0;
@@ -383,12 +370,12 @@ EqualityIsTransitive: private theorem i' = j' & j' = k'  ==>  i' = k';
           if this' = other' then 0
           if this' < other' then -1 or other negative number </pre>
  */
-public total function Int compareTo(Name other');
+public total function IntegralElement compareTo(IntegralElement other');
   means ( this'.equals(other')         ===  this'.compareTo(other') = 0 )
       & ( (this' - other').positive()  ===  this'.compareTo(other').positive() )
       & ( (other' - this').positive()  ===  this'.compareTo(other').negative().positive() );
         // note that the the methods .negative() and .positive() are used differently
-        // x.negative() is the Int that is the negation of x
+        // x.negative() is the integer that is the negation of x
         // x.positive() is a true/false test
         // The following theorem is a simpler restatement of the intent of this means-statement
 
@@ -425,26 +412,23 @@ private theorem i' = j'   ===   (k' <= i'  ===  k' <= j');
   The Well-Ordering Priciple for positive integers (natural numbers)
 
   For us to ensure that loops eventually finish, we must be able to count down the number of
-  iterations remaining. The mathematical structure that gives us this property is a well
-  order, a set that is totally ordered set and has a bottom element. We call a set "well
-  founded" if every subset has at least one minimal element. Because the integers are totally
-  ordered, there can be only one minimal element. But the integers are not well founded because there is
-  no minimal element for subsets that contains all the negative integers. The well orderd sets that
-  we can use are the set of positive
-  integers, non-negative integers, and any finite subset of the integers.
+  iterations remaining. One mathematical structure that gives us this property is a well order, a
+  set that is totally ordered set where every subset has a bottom element. The integers almost give
+  us this property because they have a total order to the elements, but the subset of negative
+  elements has no bottom element.The well-ordered sets that we mainly use are the positive integers,
+  the non-negative integers, and any finite subset of the integers.
 
-  We have not
-  defined theoretical sets yet so the following is slightly informal. The IntegralDomain is totally ordered:
+  The Integral Elements are totally ordered:
 
     i' <= j' | j' <= i'
 
-  The
-  non-negative integers, for instance, are well founded because every set that has an element has a
-  least element:
+  so all we need to do is show that our candidate sets are well founded. We have not defined
+  theoretical sets yet so the following is slightly informal. Taking the non-negative integers as an
+  example, they well founded because every set that has an element has a least element:
 
     NonNegativeIntegersAreWellOrdered:
-      forall(TheoreticalSet<Int> S
-        : forall(Int s: S : s>=0)
+      forall(TheoreticalSet<IntegralElement> S
+        : forall(IntegralElement s: S : s>=0)
         : ~S.empty() === exists(int b:S : forall(int c : c < b : ~S.contains(c))
       )
   We also have
@@ -460,16 +444,16 @@ private theorem i' = j'   ===   (k' <= i'  ===  k' <= j');
 public axiom i' > 0  ==> i' >= 1;
 /*
   by contradiction
-    assume  1. ~ forall(Int i' :: i' > 0  ==> i' >= 1) (by contradiction);
-    because 2. exists(Int i' :: ~ (i' > 0  ==> i' >= 1)) (by GeneralizedDeMorgan);
-            3. exists(Int i' :: ~ (i' <= 0 | i' >= 1)) (by DefinitionOfImplication);
-            4. exists(Int i' ::    i' >  0 & i' <  1 ) (by DeMorgan);
-            5. exists(Int i' :: 0 < i' < 1);
-            6. let TheoreticalSet<Int> S = setOf(Int s' :: 0 < s' < 1);
-            7. S != TheoreticalSet<Int>.EMPTY_SET (by 5, 6);
-            8. S.subsetOf(setOf(Int s' : 0 <= s' : true);
+    assume  1. ~ forall(IntegralElement i' :: i' > 0  ==> i' >= 1) (by contradiction);
+    because 2. exists(IntegralElement i' :: ~ (i' > 0  ==> i' >= 1)) (by GeneralizedDeMorgan);
+            3. exists(IntegralElement i' :: ~ (i' <= 0 | i' >= 1)) (by DefinitionOfImplication);
+            4. exists(IntegralElement i' ::    i' >  0 & i' <  1 ) (by DeMorgan);
+            5. exists(IntegralElement i' :: 0 < i' < 1);
+            6. let TheoreticalSet<IntegralElement> S = setOf(IntegralElement s' :: 0 < s' < 1);
+            7. S != TheoreticalSet<IntegralElement>.EMPTY_SET (by 5, 6);
+            8. S.subsetOf(setOf(IntegralElement s' : 0 <= s' : true);
             9. S.leastExists() (by 8, NonNegativeIntegersAreWellOrdered);
-           10. let Int least' = S.least();
+           10. let IntegralElement least' = S.least();
            11. S.contains(least');
            12. 0 < least' < 1 (by 11, 6)
            13. 0 * least' < least' * least' < 1 * least' (by  MonotonicityOfMultiplication);
@@ -480,7 +464,7 @@ public axiom i' > 0  ==> i' >= 1;
                QED
  */
 
-/* There is no Int between 0 and 1 */
+/* There is no IntegralElement between 0 and 1 */
 private theorem  ~(0 < i' < 1);
 
 /**
@@ -499,9 +483,9 @@ private theorem  ~(0 < i' < 1);
     <p> Usage: <code>n' div d'</code> or <code>div(n', d')</code>
     @see Definition of integer division in Java Language Specification, Topic 15.17.2
  */
-public static function Int div(Int n', Int d') phrase <n' div d'>;
+public static function IntegralElement div(IntegralElement n', IntegralElement d');
   given d' != 0;
-  means forsome(Int remainder ::
+  means forsome(IntegralElement remainder ::
       (     n'  =     return'  *     d'  +     remainder'
       & abs(n') = abs(return') * abs(d') + abs(remainder')
       & abs(remainder') < abs(d')
@@ -516,9 +500,9 @@ public static function Int div(Int n', Int d') phrase <n' div d'>;
    <p> Usage: <code>n' % d'</code> or <code>mod(n', d')</code>
    @see Definition of the remainder, % (Java Language Specification, Topic 15.17.3)
  */
-public static Int mod(Int n', Int d');
+public static IntegralElement mod(IntegralElement n', IntegralElement d');
   given d' != 0;
-  means forsome(Int quotient' ::
+  means forsome(IntegralElement quotient' ::
       ( n' = quotient' * d' + return'
       & abs(n') = abs(quotient') * abs(d') + abs(return')
       & abs(return') < abs(d')
@@ -527,4 +511,4 @@ public static Int mod(Int n', Int d');
 
 theorem  j'!=0  ==>  (i' div j')*j' + (i' % j') = i';
 
-} // end interface IntegerDomain
+} // end interface IntegralElements
