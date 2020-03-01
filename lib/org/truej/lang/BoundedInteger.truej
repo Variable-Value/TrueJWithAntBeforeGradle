@@ -1,16 +1,17 @@
                                         // Copyright George S. Cowan, 2009. MIT open source license.
 /** The mathematical integers, but restricted to an interval.
- *
- * No operation may have a result outside the interval. Therefore, every operation that returns a
- * BoundedInteger has an implicit given statement that checks that the result will be within the
- * interval and, if not, prevents the compiler from allowing the operation.
- *
- * We define methods that serve as a foundational definition of TrueJ integer operators.
- *
- * We use the Groovy function names for
- * overloading operators in an attempt to provide consistency across the field of programming.
- * TODO: Does TrueJ use operator overloading or does it just use phrases. This assumes operator
- *       overloading.
+
+    No operation may have a result outside the interval. Therefore, every operation that returns a
+    BoundedInteger has an implicit given statement that checks that the result will be within the
+    interval and, if not, prevents the compiler from allowing the operation.
+
+    We define methods that serve as a foundational definition of TrueJ integer operators.
+
+    We use the Groovy function names for overloading operators in an attempt to provide consistency
+    across the field of programming.
+
+    TODO: Does TrueJ use operator overloading or does it just use phrases. This assumes operator
+          overloading.
  */
 public immutable interface BoundedInteger extends IntegralDomain phrase <Int> {
 
