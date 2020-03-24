@@ -1,12 +1,14 @@
-Feature: TODO: after development of integers - Iteration and complex control statements for loops
+Feature: Iteration with the while statement
 
-  Loops are a block of code that is executed repeatedly until a stopping condition is reached.
+  Iterations loop through a block of code, executing it repeatedly, until a stopping condition is reached. Here we only consider iteration with arithmetic problems, but we will revisit the while statement after we specify the array.
 
-  TODO:
+  TODO: Develop the number theory that the loops depend on, instead of relying on the Java integers.
 
 Scenario: The general form for a loop
 
-  We wish each TrueJ structure to have a clear semantics, and in fact a predicate calculus meaning. Most academic work on iteration semantics features loop variants and invariants. Loop variants are expressions which limit the number of iterations that remain and allow us to show that we do not iterate forever. Loop invariants are predicates that are true before starting a new iteration. A loop condition is tested to see whether to start a new iteration and the and the loop invariant must be true before each of those tests, even the first. The predicate calculus meaning of the iteration statement is then the ending test conjoined with the loop invariant. TrueJ requires an integer loop variant but allows the programmer to choose between providing an invariant or following the iteration statement with a means-statement.
+  We wish each TrueJ structure to have a clear semantics, and in fact a predicate calculus meaning. Most academic work on the semantics of iteration features loop variants and invariants. A loop condition is tested to see whether to start a new iteration and the loop invariant must be true before each of those tests, even the first. The predicate calculus meaning of the iteration statement is then the ending test conjoined with the loop invariant. Loop variants are expressions which show that there is a limit to the number of iterations that remain and we will not iterate forever. In most of the literature, the variant is a positive integer that may only decrease with
+  each iteration, but in TrueJ it is an expression that states that an integer expression is related to a value by <=, >=, <, or >, placing a little more burden on the prover but giving more flexibility to the programmer. Eventually the requirement of an integer expression will be relaxed
+  to any partial-order expression.
 
   Sidebar for academics only:
 
