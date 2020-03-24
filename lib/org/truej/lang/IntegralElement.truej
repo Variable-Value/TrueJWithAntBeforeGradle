@@ -3,8 +3,8 @@
     An element of the integral domain, a mathematical integer. We use the name IntegralElement here
     and reserve the name Integer for 32-bit, 2s-complement bounded integers in order to stay
     parallel to Java. Because the mathematical integers have no upper and lower limits, they cannot
-    be implemented in a finite computer (though an almost complete implementation could be made that
-    only represented those integers needed for a finite computation).
+    be implemented in a finite computer, though an implementation can be made that only represents
+    those integers needed for a finite computation.
     <p>
     Function Modifiers:
       Many computations produce a single value, and rather than force the programmer to choose a
@@ -35,12 +35,17 @@
             system crash, or logical statements including the computation must have a
             disjunction that specifies that the exception is an alternative; for instance an
             alternative to treating the "no division by zero" rule as a precondition would be
-              <code>hourlyRate = totPay/hoursWorked | ArithmethicException
+              <code> hourlyRate = totPay/hoursWorked | ArithmethicException </code>
             or, if possible,
               <pre><code>
                   hourlyRate = totPay/hoursWorked & hoursWorked != 0
                 | ArithmethicException            & hoursWorked  = 0
               </code></pre>
+            If the exception disjunct is not associated with a condition, like
+              <code> hoursWorked  = 0 </code>
+            here, then we cannot prove that it doesn't happen -- which means that we cannot
+            use the method in a status statement to summarize its meaning.
+
 
       Normally in methods with a returned result, that result is determined by the current state of
       the object and the method parameters, all of which are decorated to identify a particular
