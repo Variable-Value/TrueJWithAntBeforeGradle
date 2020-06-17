@@ -14,4 +14,14 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<filteredResources>
+		<filter>
+			<id>1591707273342</id>
+			<name>src/tlang/runtime</name>
+			<type>5</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.andFilterMatcher</id>
+			</matcher>
+		</filter>
+	</filteredResources>
 </projectDescription>
