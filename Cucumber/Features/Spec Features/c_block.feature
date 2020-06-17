@@ -33,7 +33,7 @@ Scenario: The meaning of a block is the conjunction of the meanings of its seque
 Scenario: The means-statement replaces the meaning of the blocks's preceding statements
 
   The means-statement is used to summarize, refactor, or reformulate the meaning of all the
-  preceding statements of the block, replacing them with the means-statement. The compiler will only
+  preceding statements of the block, replacing them with the predicate of the means-statement. The compiler will only
   accept means statements that are logically entailed by the meaning of the statements that it
   summarizes. Thus, a programmer reading the block of code can use the means statement to understand
   the intent of the preceding statements. Also, in order to understand the overall meaning of a
