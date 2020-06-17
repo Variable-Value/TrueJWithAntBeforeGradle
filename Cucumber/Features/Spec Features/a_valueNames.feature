@@ -1,7 +1,7 @@
 Feature: Value names are decorated variable names (TrueJ 0.1)
 
   TrueJ directs the programmer's attention to the changing state of the program's data as each
-  statement is executed. In procedural and object oriented languages like Java*, variables hold the
+  statement is executed. In procedural and object-oriented languages like Java*, variables hold the
   state, but the particular state held by those variables is never made explicit. So an important
   difference between TrueJ and Java is that we add a way for each state contained in the variables
   to be explicitly represented. And because we want programmers to easily make the transition to
@@ -280,21 +280,21 @@ Scenario: Using value names allows proving logical statements
   Previous Research
 
   The use of Tony Hoare's logic (1969) to prove the correctness of programs often uses proof
-  outlines, that is, assertions embedded in code -- not like the Java assert-statement, to check for
-  errors during program execution, but to aid the construction of a proof of correctness and help
-  programmers see the correctness as they read the code. These assertions were used soon after
-  Hoare's logic paper, for instance (Hoare, 1971). The name "proof outline" seems to have been first
-  used in publication by Owicki and Gries (1976). Fred Schneider (1995) gives a thorough explanation
-  of them and summarizes their history. The means-statement of TrueJ was originally developed as a
-  way to include proof outlines as an integral part of a language. This would balance the lopsided
-  view of procedural programming languages as just a sequence of operations and encourage the
-  programmer to focus just as much on the state as on the procedural operations. Because the Java
-  assert-statement has a purely operational meaning, "means" was chosen to name the assertions, to
-  call attention to the semantics of operations as changes to the state.  But it quickly became
-  clear that inserting a means-statement between every pair of operations just repeated the meaning
-  of the operations, and in addition trivially repeated most of the syntax of the operations.
-  Combined with a reading of Hener (1984), this led to thinking of each operation as having a
-  predicate-calculus meaning, which led to backfitting the variable decorators from the
+  outlines, that is, assertions embedded in code -- not to check for errors during program
+  execution, like the Java assert-statement, but to aid the construction of a proof of correctness
+  and help programmers see the correctness as they read the code. These assertions were used soon
+  after Hoare's logic paper, for instance (Hoare, 1971). The name "proof outline" seems to have
+  been first used in publication by Owicki and Gries (1976). Fred Schneider (1995) gives a thorough
+  explanation of them and summarizes their history. The means-statement of TrueJ was originally
+  developed as a way to include proof outlines as an integral part of a language. This would
+  balance the lopsided view of procedural programming languages as just a sequence of operations
+  and encourage the programmer to focus just as much on the state as on the procedural operations.
+  Because the Java assert-statement has a purely operational meaning, "means" was chosen to name
+  the assertions, to call attention to the semantics of operations as changes to the state. But it
+  quickly became clear that inserting a means-statement between every pair of operations just
+  repeated the meaning of the operations, and in addition trivially repeated most of the syntax of
+  the operations. Combined with a reading of Hener (1984), this led to thinking of each operation
+  as having a predicate-calculus meaning, which led to backfitting the variable decorators from the
   means-statements into the operations in order to expose the fact that operations are also
   expressions in the predicate-calculus, which only worked when a naming convention was found that
   completely distinguished value names from variable names. This led to code syntax that encouraged
@@ -351,10 +351,10 @@ Scenario: Using value names allows proving logical statements
   abandoning the complications of programming variables that can change value in the middle of
   solving a problem.
 
-  Hoare logic and the "programs are predicates" approach lay a firm mathematical foundation for
+  Hoare logic and the "programs are predicates" approach provides a firm mathematical foundation for
   understanding programming variables. The tradition in this type of mathematical analysis is to use
   the same name for a variable and for one of its values, which works well for stating predicates
-  that only refer to a single state, but complicates the formalization of assigment and of
+  that only refer to a single state, but complicates the formalization of assignment and of
   sequential composition of separately analyzed program sections. The added complication for
   sequential composition is that renaming is required in order to syncronize the variable/value
   names after one operation with the beginning of the next, which requires additional proof steps.
