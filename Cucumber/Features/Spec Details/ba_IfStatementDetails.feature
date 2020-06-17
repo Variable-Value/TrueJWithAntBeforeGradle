@@ -1,9 +1,12 @@
-Feature: If Statement Details
+Feature: If-Statement Details
 
+  The consideration of both possible paths in an if-statement raises several issues. For instance, we allow the else-branch to be omitted, but the then-branch code cannot set any values. This is because those values would only exist conditionally and could not be counted upon to exist when we wanted to refer to them lateer in the code.
+
+  We allow the programmer to set the condition to be always true or always false, primarily as a testing issue. If they make a mistake in writing the condition so that one branch is never taken, they are likely to have a failing declarative statement to catch the problem.
 
 Scenario: The if statement with empty branches
 
-  Empty branches do not accomplish anything, of course. And apparently, the meaning of a program that accomplishes nothing is "true". This makes sense if you think of computational work as shaving off more and more things that you don't want until you have what you do want, that is restricting the possibilities more and more until you have the one you desire.
+  Empty branches do not accomplish anything, of course. And apparently, the meaning of a program that accomplishes nothing is "true". If you think of computational work as setting more and more facts to be one way and not another until you have what you want, then if you set so many facts that they contradict one another that would mean the whole situation is "false". Setting facts takes you closer to "false" and removing facts takes you closer to "true"; an empty set of conjoined facts means "true".
 
   * A valid run unit is
     """
@@ -187,7 +190,7 @@ Scenario: Three-deep if-statement
     }
     """
 
-Scenario: A reference to a value name from a following branch is to the enclosing scope
+Scenario: A reference to a value name from inside a following branch is to the enclosing scope
 
   The branches of a conditional statement are completely independent because they are paths that are
   executed under different conditions, and therefore the code in one cannot influence the code in
