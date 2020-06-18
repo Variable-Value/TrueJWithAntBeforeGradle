@@ -41,7 +41,7 @@ private static boolean hasContent(String string) {
 
 
 private String                sourceName = "";
-private ArrayList<LineMsg>    msgList = new ArrayList<LineMsg>();
+private ArrayList<LineMsg>    msgList = new ArrayList<>();
 private int                   errorCount = 0;
 private int                   informationCount = 0;
 private int                   traceBackSize = 1; // to report the violated rule
@@ -83,10 +83,6 @@ public void syntaxError( @Nullable Recognizer<?, ?> recognizer
   }
 }
 
-/**
- * @param recognizer
- * @return
- */
 private String programName(Recognizer<?, ?> recognizer) {
   String program;
   if (recognizer instanceof Lexer)  {
@@ -115,7 +111,7 @@ createRuleStack(String recognizerType, @Nullable Recognizer<?, ?> recognizer)
     keepFirstFew(ruleStack, traceBackSize);
     return ruleStack;
   } else {
-    return new ArrayList<@Nullable String>(0);
+    return new ArrayList<>(0);
   }
 }
 
@@ -323,6 +319,15 @@ public void clear() {
   informationCount = 0;
   errorCount = 0;
 }
+
+public boolean hasMsgContaining(String uniquePartOfMsg) {
+  for (LineMsg line : msgList)
+    if (line.msg.contains(uniquePartOfMsg))
+      return true;
+  return false;
+}
+
+
 
 /**
  * Formats the list of messages as a string containing a line for each

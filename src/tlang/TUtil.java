@@ -61,12 +61,12 @@ fileToTokens(String fileToParse, CollectingMsgListener msgCollector)
 }
 
 public static CommonTokenStream
-tStringToTokens(String name, String tStringToParse, CollectingMsgListener msgCollector) {
-  if (tStringToParse == "") {
-    msgCollector.collectError("ERROR: T Language code is empty");
-  }
+truejStringToTokens(String name, String tStringToParse, CollectingMsgListener msgCollector) {
   final ANTLRInputStream inputStream = new ANTLRInputStream(tStringToParse);
   inputStream.name = name;
+  if (tStringToParse == "") {
+    msgCollector.collectError("ERROR: TrueJ Language code is empty for " + name);
+  }
   return charsToTokens(inputStream, msgCollector);
 }
 
@@ -282,12 +282,16 @@ ensureDirExists(String dir) throws IOException {
 }
 
 /** Recursively deletes a directory and everything it contains
- * @param dirPathName Directory to delete
+ * @param dirPathName Directory to delete as a string
  * @throws IOException
  */
 public static void
 deleteDirectory(String dirPathName) throws IOException {
-  Path path = new File(dirPathName).toPath();
+  File dirAsFile = new File(dirPathName);
+  if ( ! dirAsFile.exists() )
+    return;
+
+  Path path = dirAsFile.toPath();
   if (path == null) {
     final String errMsg = "There was a problem with the path name: "+ dirPathName;
     throw new FileNotFoundException(errMsg);
@@ -354,7 +358,7 @@ TCompilerCounts {
   public String toString() {
     StringBuilder msg = new StringBuilder(200);
     if (tCodeCount > 0) {
-      msg.append("Read "+ tCodeCount
+      msg.append("Encountered "+ tCodeCount
                 +" T language files\n");
     }
     if (javaPassThruCount > 0) {

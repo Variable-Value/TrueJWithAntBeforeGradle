@@ -9,7 +9,6 @@ import java.nio.file.*;
 import java.util.*;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RuleContext;
-import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ParseTree;
 import cucumber.api.PendingException;
@@ -33,6 +32,7 @@ private List<String> options = null;
   private String prologCodeFromT = "";
 /** Allows compilation of generated Java in a separate step */
   private String latestJavaExpected;
+
   private String javaCodeFromT = "";
 /** (tcode != null) ==> we are ready to parse */
   private String tCode = null;
@@ -71,6 +71,11 @@ public StepDefinitions() throws IOException {
   javaMgr = new JavaFileHandler(srcPath, options);
 }
 
+@Given("^requiring decorated final value names$")
+public void requiring_decorated_final_value_names() throws Throwable {
+    TCompiler.isDecoratedFinalValueRequired = true;
+}
+
 @Given("^[Aa] valid run unit is$")
 public void a_valid_run_unit_is(String tSourceCode)
       throws IOException, InterruptedException {
@@ -99,14 +104,14 @@ public void the_error_messages_are(String expected) {
   assertEquals(expected, errs.toString());
 }
 
-/** There is no error message containing the given string. Assumes a compile unit has already
+/** There is an error message containing the given string. Assumes a compile unit has already
  * been processed, probably by <code>an_invalid_run_unit_is(String tCode)</code> */
 @Then("^an error message contains$")
 public void an_error_message_contains(String uniquePartOfErr) {
   an_error_message_contains__(uniquePartOfErr);
 }
 
-/** There is no error message containing the given string. Assumes a compile unit has already
+/** There is an error message containing the given string. Assumes a compile unit has already
  * been processed, probably by <code>an_invalid_run_unit_is(String tCode)</code> */
 @Then("^an error message contains \"([^\"]*)\"$")
 public void an_error_message_contains__(String uniquePartOfErr) {
@@ -217,8 +222,9 @@ void runAllSteps(String tSourceCode) throws IOException, InterruptedException {
   parse("", tCode);
   attemptContextCheck();
   attemptJavaCodeGeneration();
-//  attemptCompile(javaCodeFromT);
+  attemptCompile(javaCodeFromT);
   attemptProofs();
+  TCompiler.isDecoratedFinalValueRequired = false;
 }
 
 private void attemptProofs() {
@@ -287,7 +293,7 @@ private boolean findMsg(String uniquePartOfMsg) {
 
 private void parse(String name, String tCode) throws ParseCancellationException {
   errs = new CollectingMsgListener("Test Parse "+ name);
-  tokens = tStringToTokens("T Run test", tCode, errs);
+  tokens = truejStringToTokens("T Run test", tCode, errs);
   parser = new TLantlrParser(tokens);
   counts = new TCompilerCounts();
   tree = fastParse(parser, errs, counts);

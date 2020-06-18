@@ -38,7 +38,7 @@ public BackgroundScope(String backgroundLabel, Scope parent) {
  * variable information that may be shadowed. As a net result, the null return
  * means that the new variable name either is not in a higher scope, or is
  * declared only in a scope that allows the name to be shadowed.
- * @param varName
+ *
  * @return null to indicate that no conflicting information exists
  */
 @Override
