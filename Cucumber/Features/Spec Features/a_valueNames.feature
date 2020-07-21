@@ -37,7 +37,7 @@ Scenario: Values have names
       int startingA' = 'a;
       a' = 'b;
       b' = startingA';
-      means(startingA' = 'a && a' = 'b && b' = startingA');
+      means startingA' = 'a && a' = 'b && b' = startingA';
     }
     means(a' = 'b && b' = 'a);
 
@@ -356,7 +356,7 @@ Scenario: Using value names allows proving logical statements
   the same name for a variable and for one of its values, which works well for stating predicates
   that only refer to a single state, but complicates the formalization of assignment and of
   sequential composition of separately analyzed program sections. The added complication for
-  sequential composition is that renaming is required in order to syncronize the variable/value
+  sequential composition is that renaming is required in order to synchronize the variable/value
   names after one operation with the beginning of the next, which requires additional proof steps.
   The use of value names in TrueJ makes this additional mental baggage disappear. However, as we
   explore more features of TrueJ, we will require the programmer to name the initial and final

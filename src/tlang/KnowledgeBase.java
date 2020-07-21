@@ -434,8 +434,8 @@ private ConsistencyResult prologConsistencyResult(SolveInfo solutionInfo) {
     throw new RuntimeException("A call to the etleantap.pl prover failed to return any result.", e);
   }
   catch (UnknownVarException e) {
-    throw new RuntimeException
-        ("Mismatch with prover code in etleantap.pl. Expected variable '"+ prologConsistencyResult +"'", e);
+    throw new RuntimeException("Mismatch with prover code in etleantap.pl. Expected variable "
+                              +"'"+ prologConsistencyResult +"'", e);
   }
 } // @formatter:on
 
