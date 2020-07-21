@@ -11,6 +11,9 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.eclipse.jdt.annotation.Nullable;
 import tlang.Scope.VarInfo;
+import tlang.TLantlrParser.ConjRelationExprContext;
+import tlang.TLantlrParser.T_expressionContext;
+
 import static tlang.TLantlrParser.*;
 import static tlang.TUtil.*;
 
@@ -66,6 +69,16 @@ private String packageName = ""; // in case there is no package
 private String topTypeName = ""; // "" means thisIsTheTopLevelType()
   public String getTopTypeName() { return topTypeName; }
   private boolean thisIsTheTopLevelType() { return topTypeName.equals(""); }
+
+/**
+ * In case a return value name is used more than once, we store the first one used here, then
+ * insist that the following ones have the same decoration. Reset to "" at beginning of Method. Will
+ * have one of the following values:
+ *   "return"
+ *   "return'"
+ *   ""          to indicate that the first use has not yet been seen
+ */
+private String formerReturnDecoration = "";
 
 //@formatter:on
 
@@ -218,38 +231,44 @@ public Void visitInitializedField(InitializedFieldContext ctx) {
   final Token varOrValueNameToken = ctx.t_idDeclaration().getStart();
   final String varName = TUtil.variableName(varOrValueNameToken);
   VarInfo varInfo = currentScope.varToInfoMap.get(varName);
-  checkForDecorationErrors(varOrValueNameToken);
+  checkForInitializedFieldDecorationErrors(varOrValueNameToken);
   checkForAlreadyDeclared(varOrValueNameToken, varName, varInfo);
+  checkForConfusingRelationalExpression(ctx.t_variableInitializer().t_expression());
   return visitChildren(ctx);
 }
 
+  /**
+   * Initialized Field names must be initial decorated or else correctly decorated final names.
+   */
+  private void checkForInitializedFieldDecorationErrors(final Token valueNameToken) {
+    if (isInitialDecorated(valueNameToken))
+      return;
 
-  private void checkForDecorationErrors(final Token varOrValueNameToken) {
-    if (isMidDecorated(varOrValueNameToken)) {
-      collectErrorForMidDecoratedField(varOrValueNameToken);
-    } else if (isUndecorated(varOrValueNameToken)) {
-      collectErrorForUndecoratedField(varOrValueNameToken);
-      defineValueToMakeFollowingMessagesMoreUseful(varOrValueNameToken);
+    if (isMidDecorated(valueNameToken)) {
+      collectErrorForMidDecoratedField(valueNameToken);
+      return;
     }
+
+    if (hasCorrectFinalDecoration(valueNameToken) )
+      return;
+
+    final String msg = "Must use initial or correct final decoration "
+                     + "if the field is declared with an initial value";
+    errs.collectError(program, valueNameToken, msg);
+    defineValueToMakeFollowingMessagesMoreUseful(valueNameToken);
   }
 
-  private void collectErrorForMidDecoratedField(final Token varOrValueNameToken) {
+  private void collectErrorForMidDecoratedField(final Token valueNameToken) {
     final String msg = String.format
-        ("Field declaration %s cannot be mid-decorated", varOrValueNameToken.getText());
-    errs.collectError(program, varOrValueNameToken, msg);
+        ("Field declaration %s cannot be mid-decorated", valueNameToken.getText());
+    errs.collectError(program, valueNameToken, msg);
   }
 
-private void collectErrorForUndecoratedField(final Token varOrValueNameToken) {
-  final String msg = String.format("Must use a decorated value name if the field %s is initialized",
-                                   varOrValueNameToken.getText());
-  errs.collectError(program, varOrValueNameToken, msg);
-}
-
-  private void defineValueToMakeFollowingMessagesMoreUseful(final Token varOrValueNameToken) {
-    String varOrValueName = varOrValueNameToken.getText();
-    final String varName = variableName(varOrValueName);
-    VarInfo varInfo = currentScope.varToInfoMap.get(varName);
-  varInfo.defineNewValue("'" + varName, varOrValueNameToken.getLine());
+private void defineValueToMakeFollowingMessagesMoreUseful(final Token varOrValueNameToken) {
+  String varOrValueName = varOrValueNameToken.getText();
+  final String varName = variableName(varOrValueName);
+  VarInfo varInfo = currentScope.varToInfoMap.get(varName);
+  varInfo.defineNewValue(decorator + varName, varOrValueNameToken.getLine());
 }
 
 /**
@@ -265,6 +284,15 @@ private void collectErrorForUndecoratedField(final Token varOrValueNameToken) {
   return visitChildren(ctx);
 }
 
+@Override
+public Void visitT_ERROR(TLantlrParser.T_ERRORContext ctx) {
+  Token firstToken = ctx.getStart();
+  errs.collectError(program, firstToken
+                    , "Invalid statement. Perhaps misspelled keyword.");
+  return visitChildren(ctx);
+}
+
+
 private void checkForAlreadyDeclared(Token varOrValueNameToken, String varName, VarInfo varInfo) {
   final int lineOfExistingVar = varInfo.getLineWhereDeclared();
   if (lineOfExistingVar != varOrValueNameToken.getLine()) {
@@ -276,6 +304,7 @@ private void checkForAlreadyDeclared(Token varOrValueNameToken, String varName, 
 
 @Override
 public Void visitT_methodDeclaration(T_methodDeclarationContext ctx) {
+  formerReturnDecoration = "";
   final Token methodNameToken = ctx.UndecoratedIdentifier().getSymbol();
   final String methodId = idWithLC("method", methodNameToken.getText(), methodNameToken);
   executableVisit(methodId, ctx);
@@ -387,7 +416,22 @@ public Void visitAssignStmt(AssignStmtContext ctx) {
    * variable info until the end of the assignment. */
   visit(ctx.t_expression());
   visit(ctx.t_assignable());
+
+  checkForConfusingRelationalExpression(ctx.t_expression());
   return null;
+}
+
+/**
+ * Is the right-hand expression of an assignment a conjunctive relational expression,
+ * like <code>a < b</code> or <code>a = b = c</code>, tempting the
+ * programmer to misread the assignment <code>=</code> as an equality in a chain of relations?
+ * If so issue an error message.
+ */
+private void checkForConfusingRelationalExpression(T_expressionContext expression) {
+  if ((expression.t_expressionDetail() instanceof ConjRelationExprContext))
+    errs.collectError(program, expression.getStart()
+        ,   "The right-hand side must be parenthesized "
+          + "to keep the assignment from looking like a conjunctive relational expression");
 }
 
 /** Translate the expression that names the value that is being calculated, e.g., the right-hand
@@ -406,20 +450,60 @@ public Void visitT_assignable(T_assignableContext ctx) {
 /** {@inheritDoc} */
 @Override
 public Void visitT_initializedVariableDeclaratorId(T_initializedVariableDeclaratorIdContext ctx) {
-  final T_idDeclarationContext declCtx = ctx.t_idDeclaration();
-  final Token valueNameToken = declCtx.getStart();
+  T_idDeclarationContext declCtx = ctx.t_idDeclaration();
+  Token valToken = declCtx.getStart();
+  String valueName = ensureValidValueName(declCtx, valToken);
+
+  String varName = variableName(valueName);
+  var newVarInfo = currentScope.declareNewVariable(valToken, declCtx.idType, varName, valueName);
+  if (newVarInfo.isEmpty())
+    recoverFromRedeclaredVariable(valToken);
+  return null;
+}
+
+private String ensureValidValueName(T_idDeclarationContext declCtx, Token valueNameToken) {
   String valueName = valueNameToken.getText();
+
   if (isMidDecorated(valueNameToken)) {
     errs.collectError(program, valueNameToken, "Variable declarations cannot be mid-decorated");
-  } else if (isUndecorated(valueNameToken)) {
-    errs.collectError(program, valueNameToken,
-                      "Initialized variable declarations must be decorated");
-    // hoping to improve err msgs for following code:
-    valueName = "'" + valueName;
+  } else if (isUndecorated(valueNameToken) && ! hasCorrectFinalDecoration(valueNameToken)) {
+    errs.collectError(program, valueNameToken
+                      ,"Initialized variable declarations must be decorated");
+    valueName = decorator + valueName;   // hoping to improve err msgs for following TrueJ code
   }
-  Optional<VarInfo> newVarInfo = currentScope.declareVarName(valueNameToken, declCtx.idType);
-  if (isMissing(newVarInfo))
+  return valueName;
+}
+
+private void ensureVarInfoDeclared(final T_idDeclarationContext declCtx, final Token valueNameToken,
+                                   String valueName) {
+  Optional<VarInfo> newVarInfo = currentScope.declareNewVariable( valueNameToken, declCtx.idType
+                                                             , variableName(valueName), valueName);
+  if (newVarInfo.isEmpty())
     recoverFromRedeclaredVariable(valueNameToken);
+}
+
+@Override
+public Void visitInitializedVariable(TLantlrParser.InitializedVariableContext ctx) {
+  visitChildren(ctx);
+
+  T_expressionContext initializationExpression = ctx.t_variableInitializer().t_expression();
+  if (initializationExpression != null)
+    checkForConfusingRelationalExpression(initializationExpression);
+  return null;
+}
+
+
+@Override
+public Void
+visitT_uninitializedVariableDeclaratorId(T_uninitializedVariableDeclaratorIdContext ctx) {
+  final T_idDeclarationContext declCtx = ctx.t_idDeclaration();
+  final Token varNameToken = declCtx.getStart();
+  if (isDecorated(varNameToken))
+    errs.collectError(program, varNameToken
+                     , "A variable declaration may not be decorated unless it is initialized");
+  Optional<VarInfo> varInfo = currentScope.declareVarName(varNameToken, declCtx.idType);
+  if (varInfo.isEmpty())
+    recoverFromRedeclaredVariable(varNameToken);
   return null;
 }
 
@@ -436,16 +520,13 @@ private void recoverFromRedeclaredVariable(final Token valueNameToken) {
 }
 
 @Override
-public Void
-visitT_uninitializedVariableDeclaratorId(T_uninitializedVariableDeclaratorIdContext ctx) {
-  final T_idDeclarationContext declCtx = ctx.t_idDeclaration();
-  final Token varNameToken = declCtx.getStart();
-  if (isDecorated(varNameToken))
-    errs.collectError(program, varNameToken,
-                      "A variable declaration may not be decorated unless it is initialized");
-  Optional<VarInfo> varInfo = currentScope.declareVarName(varNameToken, declCtx.idType);
-  if  (isMissing(varInfo))
-    recoverFromRedeclaredVariable(varNameToken);
+public Void visitT_given(T_givenContext ctx) {
+  final boolean oldInLogic = isInLogic;
+  isInLogic = true;
+
+  visitChildren(ctx);
+
+  isInLogic = oldInLogic;
   return null;
 }
 
@@ -542,29 +623,32 @@ private void checkAssignment(T_identifierContext ctx) {
   Token valueNameToken = ctx.start;
   final VarInfo varInfo = ensureVarInfo(valueNameToken);
 
-  if (branchState == BranchState.InitialBranch) {
+  switch (branchState) {
+    case InitialBranch:
+      checkForAlreadyFinalValue(valueNameToken, varInfo);
+      InitialConditionalBranchScope firstScope = getEnclosingInitialScope(valueNameToken);
+      checkForPriorDefinitionOfValueName(valueNameToken, varInfo);
+      checkForMismatchedFinalDecoration(valueNameToken, varInfo);
+      String valueName1 = workingValueName(valueNameToken);
+      setDeligationObligationForEnclosingScopes(firstScope, valueName1, varInfo.getCurrentValueName());
+      defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
+      break;
 
-    checkForAlreadyFinalValue(valueNameToken, varInfo);
-    InitialConditionalBranchScope firstScope = getEnclosingInitialScope(valueNameToken);
-    checkForPriorDefinitionOfValueName(valueNameToken, varInfo);
-//    firstScope.preserveAnyEnclosingScopeLatestValue(variableName(valueNameToken));
-    String valueName = workingValueName(valueNameToken);
-    setDeligationObligationForEnclosingScopes(firstScope, valueName, varInfo.getCurrentValueName());
-    defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
+    case FollowingBranch:
+      FollowingConditionalBranchScope followingScope = getEnclosingFollowingScope(valueNameToken);
+      String valueName2 = workingValueName(valueNameToken);
+      if ( ! followingScope.getNestedValueNames().remove(valueName2))
+        errs.collectError(program, valueNameToken, "Value name "+ valueName2
+                        +" must also be defined in the initial branch of the conditional statement");
+      defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
+      break;
 
-  } else if (branchState == BranchState.FollowingBranch) {
-
-    FollowingConditionalBranchScope followingScope = getEnclosingFollowingScope(valueNameToken);
-    String valueName = workingValueName(valueNameToken);
-    if ( ! followingScope.getNestedValueNames().remove(valueName))
-      errs.collectError(program, valueNameToken, "Value name "+ valueName
-                      +" must also be defined in the initial branch of the conditional statement");
-    //firstScope.checkForOverwritingEnclosingScopeValue(varName); // TODO: remove this line
-    defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
-  } else {
-    checkForAlreadyFinalValue(valueNameToken, varInfo);
-    checkForPriorDefinitionOfValueName(valueNameToken, varInfo);
-    defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
+    case NotInsideConditionalStatement:
+      checkForAlreadyFinalValue(valueNameToken, varInfo);
+      checkForPriorDefinitionOfValueName(valueNameToken, varInfo);
+      checkForMismatchedFinalDecoration(valueNameToken, varInfo);
+      defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
+      break;
   }
 }
 
@@ -674,43 +758,56 @@ private void defineTheValueNameRegardlessOfErrors(Token valueNameToken, VarInfo 
 /** check decorated value name for prior definition */
 private void checkForPriorDefinitionOfValueName(Token valueNameToken, VarInfo varInfo) {
   String valueName = valueNameToken.getText();
-  Integer existingValueLineNum = varInfo.lineOf(valueName);
-  final boolean valueAlreadyExists = (existingValueLineNum != null);
-  if (valueAlreadyExists)
+  if (varInfo.hasDefinedValue(valueName))
     errs.collectError( program, valueNameToken, "The value "+ valueName
-                      +" has already been defined on line "+ existingValueLineNum);
+                      +" has already been defined on line "+ varInfo.lineOf(valueName));
+}
+
+private void checkForMismatchedFinalDecoration(Token valueNameToken, VarInfo varInfo) {
+  if (hasMismatchedFinalDecoration(valueNameToken.getText(), varInfo.getCurrentValueName()))
+    issueFinalDecorationNotCurrentMsg(valueNameToken, varInfo);
+}
+
+private boolean hasMismatchedFinalDecoration(String newName, String oldName) {
+  return isFinalDecorated(newName) && newName.equals(oldName + decorator)
+      || isUndecorated(newName)    && oldName.equals(newName + decorator);
 }
 
 /** The originally coded value name, or perhaps a kludged one to allow catching more error messages.
  */
 private String workingValueName(Token valueNameToken) {
-  if (isUndecorated(valueNameToken)) {
+  if (TCompiler.isRequiringDecoratedFinalValue && isUndecorated(valueNameToken)) {
     errs.collectError( program, valueNameToken,
           valueNameToken.getText() +" is not a decorated value name so it cannot receive a value");
     return kludgedValueName(valueNameToken);
-  } else
+  } else {
     return valueNameToken.getText();
+  }
 }
 
 /** A value name generated purely in hopes of helping to generate additional helpful error messages
  */
 private String kludgedValueName(Token valueNameToken) {
-  return "'" + $T$ +  variableName(valueNameToken);
+  return decorator + $T$ +  variableName(valueNameToken);
 }
 
-/** Check to see if this variable, from the valueNameToken, was already assigned a final value,
- * which is held in the varInfo. If so, we issue an error
- * message but do not stop processing the valueName assignment. Instead we proceed with error
- * checking using the new value name in hopes of finding more errors.
+/**
+ * Check to see if this variable, from the valueNameToken, was already assigned a final value, which
+ * is held in the varInfo. If so, we issue an error message but do not stop processing the valueName
+ * assignment. Instead we proceed with error checking using the new value name in hopes of finding
+ * more errors.
  */
 private void checkForAlreadyFinalValue(Token valueNameToken, VarInfo varInfo) {
-  // two quick checks to get out fast
-  if (branchState == BranchState.FollowingBranch
-              //the valueNames are already tested for alignment with the first branch
-   || isFinalDecorated(valueNameToken)
-              // the error is caught elsewhere with a better message
-     )
+  if (branchState == BranchState.FollowingBranch)
+     //the valueNames have already been tested for correspondence with the first branch
+     return;
+
+  if (TCompiler.isRequiringDecoratedFinalValue && isUndecorated(valueNameToken))
+      errs.collectError( program, valueNameToken, valueNameToken.getText() +" must be decorated");
+  
+  if (hasCorrectFinalDecoration(valueNameToken)) 
     return;
+    // prior final decorations are caught in checkForPriorDefinitionOfValueName(Token, VarInfo)
 
   final String currentValueName = varInfo.getCurrentValueName();
   if (! isAlreadyFinallyDecorated(currentValueName))
@@ -755,17 +852,23 @@ private boolean followingBranchVariable(String valueName) {
 }
 
 private VarInfo ensureVarInfo(Token valueNameToken) {
-  Optional<VarInfo> OptVar = currentScope.getOptionalExistingVarInfo(variableName(valueNameToken));
-  if ( isMissing(OptVar) ) {
-    issueUndefinedVariableError(valueNameToken);
-    OptVar = currentScope.declareVarName(valueNameToken,
-                                         "UnknownType_ForUndeclaredVariable"+ $T$);
-  }
-  return OptVar.get();
+  var OptVar = currentScope.getOptionalExistingVarInfo(variableName(valueNameToken));
+  if (OptVar.isPresent())
+    return OptVar.get();
+
+  if ( ! isValidUseOfReturn(valueNameToken))
+      issueUndefinedVariableError(valueNameToken);
+  return kludgeVariableDeclaration(valueNameToken);
 }
 
-private boolean isMissing(Optional<?> OptVar) {
-  return ! OptVar.isPresent();
+private boolean isValidUseOfReturn(Token valueNameToken) {
+  var valueName = valueNameToken.getText();
+  if (formerReturnDecoration.equals("") || formerReturnDecoration.equals(valueName))
+    ;
+  else
+    errs.collectError(program, valueNameToken
+                     , valueName +" disagrees with former return decoration");
+  return isInLogic && valueName.startsWith("return") && hasCorrectFinalDecoration(valueNameToken);
 }
 
 private boolean isAlreadyFinallyDecorated(String currentValueName) {
@@ -776,22 +879,19 @@ private boolean isAlreadyFinallyDecorated(String currentValueName) {
 private void checkReference(T_identifierContext ctx) {
   final Token valueNameToken = ctx.getStart();
   String valueName = valueNameToken.getText();
-  final String varName = variableName(valueName);
-  Optional<VarInfo> optionalVarInfo = currentScope.getOptionalExistingVarInfo(varName);
-  if (optionalVarInfo.isPresent()) {
-    VarInfo varInfo = optionalVarInfo.get();
-    if (varInfo.hasDefinedValue(valueName))
-      checkForReusingAnOverwrittenValue(valueName, varInfo);
-    else
-      errorAndRecoveryForReferenceToUndefinedValue(valueNameToken, varInfo);
-  } else {
+  var optionalVarInfo = currentScope.getOptionalExistingVarInfo(variableName(valueName));
+  if (optionalVarInfo.isEmpty()) {
     recoverFromMissingVariable(valueNameToken);
+    return;
   }
+
+  VarInfo varInfo = optionalVarInfo.get();
+  if (varInfo.hasDefinedValue(valueName))
+    checkForReusingAnOverwrittenValue(valueName, varInfo);
+  else
+    errorAndRecoveryForReferenceToUndefinedValue(valueNameToken, varInfo);
 }
-/**
- * @param valueName
- * @param varInfo
- */
+
 private void checkForReusingAnOverwrittenValue(String valueName, VarInfo varInfo) {
   if ( reusingAPreviousValueName(valueName, varInfo)) {
       if (isInExecutable && ! isInLogic) {
@@ -799,27 +899,46 @@ private void checkForReusingAnOverwrittenValue(String valueName, VarInfo varInfo
       }
   }
 }
-/**
- * @param valueName
- * @param varInfo
- * @return
- */
+
 private boolean reusingAPreviousValueName(String valueName, VarInfo varInfo) {
   return ! valueName.equals(varInfo.getCurrentValueName());
 }
 
 private void errorAndRecoveryForReferenceToUndefinedValue(Token valueNameToken, VarInfo varInfo) {
-  if (isDecorated(valueNameToken))
-    issueUndefinedValueNameMsg(valueNameToken, varInfo);
-  else
-    issueUndecoratedMsg(valueNameToken);
+  switch (valueNameToken.getType()) {
+    case PreValueName:
+    case MidValueName:
+      issueUndefinedValueNameMsg(valueNameToken, varInfo);
+      break;
+
+    case PostValueName:
+      if (hasMismatchedFinalDecoration(valueNameToken.getText(), varInfo.getCurrentValueName()))
+        issueFinalDecorationNotCurrentMsg(valueNameToken, varInfo);
+      else
+        issueUndefinedValueNameMsg(valueNameToken, varInfo);
+      break;
+
+    case UndecoratedIdentifier:
+      if (hasMismatchedFinalDecoration(valueNameToken.getText(), varInfo.getCurrentValueName()))
+        issueFinalDecorationNotCurrentMsg(valueNameToken, varInfo);
+      else
+        issueUndecoratedMsg(valueNameToken);
+      break;
+  }
   defineTheValueNameRegardlessOfErrors(valueNameToken, varInfo);
 }
 
+private void issueFinalDecorationNotCurrentMsg(Token valueNameToken, VarInfo varInfo) {
+  errs.collectError( program, valueNameToken
+      , valueNameToken.getText() +" does not use the decoration that was defined at line "
+        + varInfo.lineOf(varInfo.getCurrentValueName()) );
+}
+
 private void issueUndefinedValueNameMsg(Token valueNameToken, VarInfo varInfo) {
-  errs.collectError( program, valueNameToken, "Value "+ valueNameToken.getText()
-                      +" has not been defined for the variable "+ variableName(valueNameToken)
-                      +" that was declared in scope "+ varInfo.getScopeWhereDeclared());
+  errs.collectError( program, valueNameToken
+      , "Value "+ valueNameToken.getText()
+        +" has not been defined for the variable "+ variableName(valueNameToken)
+        +" that was declared at line "+ varInfo.getLineWhereDeclared());
 }
 
 /** We generate the missing VarInfo and make sure that it has some current value decoration, hoping
@@ -829,25 +948,23 @@ private void issueUndefinedValueNameMsg(Token valueNameToken, VarInfo varInfo) {
  *  @return A dummy VarInfo for the non-existent variable
  */
 private VarInfo recoverFromMissingVariable(Token valueNameToken) {
+  if (isValidUseOfReturn(valueNameToken))
+    return kludgeVariableDeclaration(valueNameToken);
+
   issueUndefinedVariableError(valueNameToken);
-  if (isUndecorated(valueNameToken))
+  if (isUndecorated(valueNameToken) && TCompiler.isRequiringDecoratedFinalValue)
     issueUndecoratedMsg(valueNameToken);
   return kludgeVariableDeclaration(valueNameToken);
 }
-/**
- * @param valueNameToken
- */
+
 private void issueUndefinedVariableError(Token valueNameToken) {
   errs.collectError( program, valueNameToken,
         "Variable "+variableName(valueNameToken)+" has not been defined in this scope");
 }
 
-/**
- * @param valueNameToken
- * @return
- */
-private VarInfo kludgeVariableDeclaration(Token valueNameToken) {
-  return currentScope.declareVarName(valueNameToken, "NoTypeForUndeclaredReference").get();
+  private VarInfo kludgeVariableDeclaration(Token valueNameToken) {
+  return currentScope.declareNewVarNameWithValueName(valueNameToken, "NoTypeForUndeclaredReference")
+                     .get();
 }
 
 private void issueUndecoratedMsg(Token valueNameToken) {

@@ -97,21 +97,22 @@ nnf(Fml,NNF) :- nnfdebug(['Starting ',Fml])
 %
 % Some more careful thought is needed before including something like the commented out comparison
 % translations in nnf(), below. If no < comparisons are present, they should not conflict with
-% #= comparisons. But something else causes problems.
+% #= comparisons. But something else causes problems. Perhaps the comments on the right of the
+% relation translations must be done. I think -(A = B) is handled specially in the prover
 
 
 nnf(Fml,FreeV,NNF,Paths)
  :-   ( Fml = -false          -> Fml1 = true
       ; Fml = -true           -> Fml1 = false
-      ; Fml = -(-A)              -> Fml1 = A
-      ; Fml = -(A #= B)          -> Fml1 =  (A = B)
-      ; Fml =  (A #= B)          -> Fml1 = -(A = B)
+      ; Fml = -(-A)              -> Fml1 = A                 % These must be done last to avoid
+      ; Fml = -(A #= B)          -> Fml1 =  (A = B)          % following translation problems
+      ; Fml =  (A #= B)          -> Fml1 = -(A = B)                   % ? /\ (A < B) \/ (B < A) ?
 %       ; Fml = -(A > B)           -> Fml1 =  (B =< A)
-%       ; Fml =  (A > B)           -> Fml1 =  (B < A)
+%       ; Fml =  (A > B)           -> Fml1 =  (B < A)                            % /\ -(B = A)
 %       ; Fml = -(A < B)           -> Fml1 =  (B >= A)
-%       ; Fml = -(A >= B)          -> Fml1 = (A < B)
+%       ; Fml = -(A >= B)          -> Fml1 = (A < B)                             % /\ -(A = B)
 %       ; Fml =  (A >= B)          -> Fml1 = (A > B) \/ (A = B)
-%       ; Fml = -(A =< B)          -> Fml1 = (B < A)
+%       ; Fml = -(A =< B)          -> Fml1 = (B < A)                             % /\ -(B = A)
 %       ; Fml =  (A =< B)          -> Fml1 = (A < B) \/ (A = B)
 % For quantification, X is assumed to match a free variable
       ; Fml = -all(X,F)          -> Fml1 = ex(X,-F)

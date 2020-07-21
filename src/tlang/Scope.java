@@ -41,17 +41,16 @@ public Scope(String scopeLabel, Scope parent) {
 }
 
 
-/** Track the information for a field.
+/** Track the information for an initialized field.
  * @return an Optional with the new field information. An empty Optional means that the field
  *         variable name already exists. */
-public Optional<VarInfo> declareFieldName(Token varOrValueName, String type) {
-  final String nameText = varOrValueName.getText();
-  final String varName = variableName(nameText);
+public Optional<VarInfo> declareInitializedFieldName(Token valueNameToken, String type) {
+  final String valueName = valueNameToken.getText();
+  final String varName = variableName(valueName);
   VarInfo existingVarInfo = varToInfoMap.get(varName);
   final boolean varIsNew = (existingVarInfo == null);
   if (varIsNew) {
-    final int declarationLine = varOrValueName.getLine();
-    String valueName = isUndecorated(nameText) ? "'"+nameText : nameText;
+    final int declarationLine = valueNameToken.getLine();
     VarInfo newVarInfo = new VarInfo(this, declarationLine, type, valueName);
     varToInfoMap.put(varName, newVarInfo);
     return Optional.of(newVarInfo);
@@ -60,22 +59,51 @@ public Optional<VarInfo> declareFieldName(Token varOrValueName, String type) {
   }
 }
 
+
+/** Track the information for an uninitialized field.
+ * @return an Optional with the new field information. An empty Optional means that the field
+ *         variable name already exists. */
+public Optional<VarInfo> declareUninitializedFieldName(Token variableToken, String type) {
+  final String varName = variableToken.getText();
+  final String nullValueName = null;
+  VarInfo existingVarInfo = varToInfoMap.get(varName);
+  final boolean varIsNew = (existingVarInfo == null);
+  if (varIsNew) {
+    final int declarationLine = variableToken.getLine();
+    VarInfo newVarInfo = new VarInfo(this, declarationLine, type, nullValueName);
+    varToInfoMap.put(varName, newVarInfo);
+    return Optional.of(newVarInfo);
+  } else {
+    return Optional.empty();
+  }
+}
+
+public Optional<VarInfo> declareVarName(Token varNameToken, String type) {
+  final String varName = varNameToken.getText();
+  return declareNewVariable(varNameToken, type, varName, null);
+}
+
 // TODO: Calling routine must look up VarInfo again. Save the VarInfo or issue an exception here
 /** Note that either a new VarInfo or a null value is returned. If a null is returned, a previously
  * existing varInfo exists and an error msg needs to be issued.
  *
- * @param  varOrValueName A variable name or value name Token
+ * @param  valueNameToken A variable name or value name Token
  * @param  type           The declared type of the new variable
  * @return                optional new VarInfo for the variable. If not present, a declaration for
  *                        that variable already exists. */
-public Optional<VarInfo> declareVarName(Token varOrValueName, String type) {
-  final String nameText = varOrValueName.getText();
-  final String varName = variableName(nameText);
+public Optional<VarInfo> declareNewVarNameWithValueName(Token valueNameToken, String type) {
+  final String valueName = valueNameToken.getText();
+  final String varName = variableName(valueName);
+  return declareNewVariable(valueNameToken, type, varName, valueName);
+}
+
+Optional<VarInfo> declareNewVariable(Token varOrValueName, String type
+                                         , String varName, String valueName) {
   @Nullable VarInfo existingVarInfo = getConflictingVarDeclarationInfo(varName);
   final boolean varIsNew = (existingVarInfo == null);
   if (varIsNew) {
     final int declarationLine = varOrValueName.getLine();
-    final VarInfo newVarInfo = new VarInfo(this, declarationLine, type, nameText);
+    final VarInfo newVarInfo = new VarInfo(this, declarationLine, type, valueName);
     varToInfoMap.put(varName, newVarInfo);
     return Optional.of(newVarInfo);
   } else { // error: variable already declared
@@ -258,25 +286,23 @@ void clear() {
 
 
 
+    public VarInfo(Scope scopeWhereDeclared, int lineWhereDeclared, String type) {
+      this(scopeWhereDeclared, lineWhereDeclared, type, null);
+    }
+
     public VarInfo(
       Scope scopeWhereDeclared,
       int lineWhereDeclared,
       String type,
-      String varOrValueName)
+      String valueName)
     {
       this.scopeWhereDeclared = scopeWhereDeclared;
       this.lineWhereDeclared = lineWhereDeclared;
       this.type = type;
-      if (isDecorated(varOrValueName)) {
-        this.currentValueName = varOrValueName;
-        valueToLineMap.put(varOrValueName, lineWhereDeclared);
+      if (valueName != null) {
+        this.currentValueName = valueName;
+        valueToLineMap.put(valueName, lineWhereDeclared);
       }
-    /* TODO: Why isn't this next needed? Why does it screw things up? The 'varName must be inserted as a
-     * current value at the beginning of executables in a different way */
-    //    else {
-    //      this.currentValueName = "'"+ varOrValueName;
-    //      valueToLineMap.put(varOrValueName, lineWhereDeclared);
-    //    }
     }
 
     public VarInfo(VarInfo shadowedInfo) {

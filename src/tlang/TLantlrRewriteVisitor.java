@@ -137,7 +137,7 @@ protected void executableVisit(ParserRuleContext ctx, ParserRuleContext bodyCtx)
                                .append(";");
           } else {
             tempInitializations.append(" ")       .append(varInfo.getType())
-                               .append(" ")       .append(reusedName.replace("'", $T$))
+                               .append(" ")       .append(reusedName.replace(decoratorString, $T$))
                                .append(";");
           }
         }
@@ -338,6 +338,25 @@ visitT_means(T_meansContext ctx) {
   // do not visitChildren(ctx);
   return null;
 }
+
+@Override public Void visitT_given(TLantlrParser.T_givenContext ctx) {
+  commentTheCode(ctx);
+  // do not visitChildren(ctx);
+  return null;
+}
+
+@Override public Void visitVariantStmt(TLantlrParser.VariantStmtContext ctx) {
+  commentTheCode(ctx);
+  // do not visitChildren(ctx);
+  return null;
+}
+
+@Override public Void visitInvariantStmt(TLantlrParser.InvariantStmtContext ctx) {
+  commentTheCode(ctx);
+  // do not visitChildren(ctx);
+  return null;
+}
+
 
 
 // ******** Utility Functions **********

@@ -203,7 +203,6 @@ final public static boolean isDecorated(String valueName) {
 
 final public static boolean isUndecorated(Token valueToken) {
   return valueToken.getType() == UndecoratedIdentifier;
-  //return (! isDecorated(valueToken)); //TODO: remove this line
 }
 
 final public static boolean isUndecorated(String valueName) {
@@ -227,6 +226,16 @@ final public static boolean isInitialDecorated(Token valueToken) {
 
 final public static boolean isInitialDecorated(String valueName) {
   return valueName.startsWith(decoratorString); // e.g., 'abc
+}
+
+final public static boolean hasCorrectFinalDecoration(Token valueToken) {
+  return ! TCompiler.isRequiringDecoratedFinalValue && isUndecorated(valueToken)
+      || isFinalDecorated(valueToken);
+}
+
+final public static boolean hasCorrectFinalDecoration(String valueName) {
+  return ! TCompiler.isRequiringDecoratedFinalValue && isUndecorated(valueName)
+      || isFinalDecorated(valueName);
 }
 
 final public static boolean isFinalDecorated(Token valueToken) {

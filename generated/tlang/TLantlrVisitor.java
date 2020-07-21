@@ -470,6 +470,20 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitWhileStmt(TLantlrParser.WhileStmtContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code VariantStmt}
+	 * labeled alternative in {@link TLantlrParser#t_statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitVariantStmt(TLantlrParser.VariantStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code InvariantStmt}
+	 * labeled alternative in {@link TLantlrParser#t_statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInvariantStmt(TLantlrParser.InvariantStmtContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code DoStmt}
 	 * labeled alternative in {@link TLantlrParser#t_statement}.
 	 * @param ctx the parse tree
@@ -567,6 +581,26 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitMeansStmt(TLantlrParser.MeansStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code GivenStmt}
+	 * labeled alternative in {@link TLantlrParser#t_statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitGivenStmt(TLantlrParser.GivenStmtContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ERROR_STMT}
+	 * labeled alternative in {@link TLantlrParser#t_statement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitERROR_STMT(TLantlrParser.ERROR_STMTContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link TLantlrParser#t_ERROR}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitT_ERROR(TLantlrParser.T_ERRORContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link TLantlrParser#t_assignable}.
 	 * @param ctx the parse tree
@@ -683,6 +717,13 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitConjRelationExpr(TLantlrParser.ConjRelationExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code QuantifierExpr}
+	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitQuantifierExpr(TLantlrParser.QuantifierExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code BitComplementExpr}
 	 * labeled alternative in {@link TLantlrParser#t_expressionDetail}.
@@ -928,6 +969,12 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitT_means(TLantlrParser.T_meansContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link TLantlrParser#t_given}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitT_given(TLantlrParser.T_givenContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link TLantlrParser#t_idDeclaration}.
 	 * @param ctx the parse tree

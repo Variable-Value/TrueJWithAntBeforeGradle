@@ -8,6 +8,7 @@ import org.antlr.v4.runtime.Token;
 import org.eclipse.jdt.annotation.Nullable;
 import tlang.Scope;
 import tlang.Scope.VarInfo;
+import tlang.TLantlrParser.T_idDeclarationContext;
 import static tlang.TLantlrParser.*;
 import static tlang.TUtil.variableName;
 import static tlang.Scope.*;
@@ -95,36 +96,37 @@ public Void visitT_interfaceDeclaration(T_interfaceDeclarationContext ctx) {
   return null;
 }
 
-/**
- * {@inheritDoc}
- */
 @Override
 public Void visitInitializedField(InitializedFieldContext initializedCtx) {
-  declareANewField(initializedCtx.t_idDeclaration());
+  Token fieldId = initializedCtx.getStart();
+  var newFieldInfo = currentScope.declareInitializedFieldName(fieldId, initializedCtx.idType);
+  if ( newFieldInfo.isEmpty() ) {
+    issueErrorForPreviouslyDeclared(fieldId);
+  }
   return null;
 }
 
-/**
- * {@inheritDoc}
- */
 @Override
 public Void visitUninitializedField(UninitializedFieldContext uninitializedCtx) {
-  declareANewField(uninitializedCtx.t_idDeclaration());
+  Token fieldId = uninitializedCtx.getStart();
+  var newFieldInfo = currentScope.declareUninitializedFieldName(fieldId, uninitializedCtx.idType);
+  if ( newFieldInfo.isEmpty() ) {
+    issueErrorForPreviouslyDeclared(fieldId);
+  }
+
   return null;
 }
 
-private void declareANewField(final T_idDeclarationContext idDeclarationCtx) {
-  final Token fieldId = idDeclarationCtx.getStart();
-  Optional<VarInfo> newFieldInfo = currentScope.declareFieldName(fieldId, idDeclarationCtx.idType);
-  if ( ! newFieldInfo.isPresent() ) {
-    VarInfo otherField = currentScope.getConflictingVarDeclarationInfo(variableName(fieldId));
-    errs.collectError(program, fieldId, "The field "+ otherField.varName() +" has already been declared at line "+ otherField.getLineWhereDeclared());;
-  }
+private void issueErrorForPreviouslyDeclared(Token fieldId) {
+  VarInfo otherField = currentScope.getConflictingVarDeclarationInfo(variableName(fieldId));
+  errs.collectError(program, fieldId
+                   , "The field " + otherField.varName()
+                   + " has already been declared at line " + otherField.getLineWhereDeclared());
 }
 
 
-// Skip processing for all other class components except inner types
-//   which get handled by the above code
+// Skip processing for all other class components
+//   (except inner types, which are already handled by the above code)
 
 @Override
 public Void visitT_methodDeclaration(T_methodDeclarationContext ctx) {

@@ -147,7 +147,8 @@ public Void visitT_PreValueName(T_PreValueNameContext valueNameCtx) {
 public Void visitT_MidValueName(T_MidValueNameContext valueNameCtx) {
   final String valueName = rewriter.source(valueNameCtx);         // example : varName'xxx
   final String[] n = valueName.split(decoratorString);                 // { varName,xxx }
-  final String prologName = "'" + getScopePrefix(n[0]) + n[0] + "^" + n[1] + "'"; // 'this.varName^xxx'
+  final String prologName = "'" + getScopePrefix(n[0]) + n[0] + "^" + n[1] + "'";
+                        // 'this.varName^xxx'
   rewriter.substituteText(valueNameCtx, prologName);
   return null;
 }
@@ -168,6 +169,7 @@ public Void visitT_PostValueName(T_PostValueNameContext valueNameCtx) {
   final String valueName = rewriter.source(valueNameCtx);
   final String variableName = valueName.substring(0, valueName.length() - 1);
   rewriter.substituteText(valueNameCtx, "'" + getScopePrefix(variableName) + variableName + "^'");
+    // "'" is part of the prolog name, not a decorator
   return null;
 }
 
@@ -213,7 +215,8 @@ public Void visitAssignStmt(AssignStmtContext ctx) {
   visitChildren(ctx);
 
   String rhs = rewriter.source(ctx.t_assignable());
-  String op = isBooleanIdentifier(ctx.t_assignable().t_identifier()) ? "===" : " = ";
+  String op = isBooleanIdentifier(ctx.t_assignable().t_identifier())
+              ? "===" : " = ";
   String lhs = parenthesize(rewriter.source(ctx.t_expression()));
   String src = parenthesize(rhs + op + lhs);
   rewriter.substituteText(ctx, src);
@@ -233,15 +236,54 @@ private boolean isBooleanIdentifier(T_identifierContext targetCtx) {
 }
 
 /**
- * {@inheritDoc}
- *
- * <p>The default implementation returns the result of calling
- * {@link #visitChildren} on {@code ctx}.</p>
+ * If there is a return value, allow the programmer to use either decorated or undecorated
+ * value, e.g., <code>return'</code> or <code>return</code> in logic statements. This means that the
+ * Context Checker must refuse the use of both.
  */
+@Override public Void visitReturnStmt(TLantlrParser.ReturnStmtContext ctx) {
+  visitChildren(ctx);
+
+  String expression = ctx.t_expression().getText();
+  String returnTranslation = ctx.t_expression().isEmpty() ? "true" : returnExpression(expression);
+  rewriter.substituteText(ctx, returnTranslation);
+  return null;
+}
+
+/**
+ * Gives the predicate needed to equate the returned expression to the value-name that represents
+ * the returned value, which may be either <code>return'</code> or <code>return</code>
+ *
+ * Note that the single quote marks "'" are part of the prolog name, not decorators.
+ */
+private String returnExpression(String returnedExpression) {
+  String decoratedReturn = "'" + getScopePrefix("return") + "return^'";
+  if (TCompiler.isRequiringDecoratedFinalValue)
+    return    parenthesize(decoratedReturn +" = "+ returnedExpression);
+  else
+    return    parenthesize(decoratedReturn +" = "+ returnedExpression)
+      + and + parenthesize(           "return = "+ returnedExpression);
+}
+
 @Override public Void visitEmptyStmt(TLantlrParser.EmptyStmtContext ctx) {
   rewriter.substituteText(ctx, "true");
   return null;
 }
+
+@Override public Void visitMultiplicativeExpr(TLantlrParser.MultiplicativeExprContext ctx) {
+  visitChildren(ctx);
+
+  rewriter.substituteText(ctx, parenthesize(rewriter.source(ctx)));
+  return null;
+}
+
+@Override public Void visitAdditiveExpr(TLantlrParser.AdditiveExprContext ctx) {
+  visitChildren(ctx);
+
+  rewriter.substituteText(ctx, parenthesize(rewriter.source(ctx)));
+  return null;
+}
+
+
 
 /**
  * A method declaration has a background scope for a parent in order to hold all
@@ -316,6 +358,16 @@ private T_expressionContext getExpressionCtx(T_statementContext statement) {
   return ((MeansStmtContext)statement).t_means().t_expression();
 }
 
+@Override public Void visitWhileStmt(TLantlrParser.WhileStmtContext ctx) {
+  visitChildren(ctx);
+
+  String condition = rewriter.source(ctx.t_parExpression());
+  String body = parenthesize(rewriter.source(ctx.t_statement()));
+  rewriter.substituteText(ctx, parenthesize(condition + and + body )); // rewriter.source(ctx)));
+  return null;
+}
+
+
 /** Translate if-statement to logic. */
 @Override
 public Void visitIfStmt(IfStmtContext ctx) {
@@ -353,6 +405,14 @@ private String checkBranch(String condition, T_statementContext branchCtx) {
   });
   return parenthesize(condition + and + rewriter.source(branchCtx));
 }
+
+@Override public Void visitT_expression(TLantlrParser.T_expressionContext ctx) {
+  visitChildren(ctx);
+
+  //TODO do we need this:  rewriter.substituteText(ctx, parenthesize(rewriter.source(ctx)));
+  return null;
+}
+
 
 /** Translate <code>!</code> to the provers negation <code>-</code> */
 @Override
@@ -580,7 +640,8 @@ private T_expressionDetailContext removeAnyParentheses(T_expressionDetailContext
   if (parens == null)
     return conjunction;
 
-  final var innerExpression = parens.t_expression().t_expressionDetail();
+  T_expressionContext theExpression = parens.t_expression();
+  final var innerExpression = theExpression.t_expressionDetail();
   return removeAnyParentheses(innerExpression);
 }
 
@@ -609,7 +670,8 @@ private void reportAnyError(ParserRuleContext ctx, ProofResult result) {
 /** @param node
  * @return */
 private String prologCode(ParseTree node) {
-  return expandForall(rewriter.source(node)).replaceAll("//", "%");
+  String translated = expandForall(rewriter.source(node));
+  return translated.replaceAll("//", "%");
 }
 
 /** Search for variables that are bound by a <code>forall</code> statement and add the expanded type
@@ -659,14 +721,14 @@ private String typeFullName(String idType) {
 private String varName(String val) {
   final int pos = val.indexOf(prologDecoratorChar);
   if (pos == -1)
-    return val;                         // return 'abc' for 'abc'
+    return val;                               // return 'abc' for 'abc'
   else if (pos == 1)
-    return "'" + val.substring(2);      // return 'abc' for '^abc'
+    return "'" + val.substring(2);            // return 'abc' for '^abc'
   else
     return val.substring(0, pos) + "'"; // return 'abc' for 'abc^' or 'abc^de'
 }
 
-/** Use the Java stack as an implicit stack for knowledgebases  */
+/** Use the Java execution stack as an implicit stack for knowledgebases  */
 private void withChildOfKb(Runnable acceptFunction) {
   KnowledgeBase parentKb = kb;
   kb = new KnowledgeBase(parentKb);  // create child kb

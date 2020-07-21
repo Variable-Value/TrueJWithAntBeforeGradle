@@ -483,6 +483,8 @@ t_statement
   | 'if' t_parExpression t_statement ('else' t_statement)?                       # IfStmt
   | 'for' '(' t_forControl ')' t_statement                                       # ForStmt
   | 'while' t_parExpression t_statement                                          # WhileStmt
+  | 'variant' t_expression ';'                                                   # VariantStmt
+  | 'invariant' t_expression ';'                                                 # InvariantStmt
   | 'do' t_statement 'while' t_parExpression ';'                                 # DoStmt
   | 'try' t_block (t_catchClause+ t_finallyBlock? | t_finallyBlock)              # TryStmt
   | 'try' t_resourceSpecification t_block t_catchClause* t_finallyBlock?         # TryStmt
@@ -498,6 +500,7 @@ t_statement
   | t_expression '.' 'new' t_nonWildcardTypeArguments? t_innerCreator            # CreationStmt
   | UndecoratedIdentifier ':' t_statement                                        # LabelStmt
   | t_means                                                                      # MeansStmt
+  | t_identifier t_expression                                                    # ERROR_STMT
 	;
 
 t_assignable // left hand side or method argument referring to a modified object
@@ -662,6 +665,13 @@ t_expression // in order of most sticky to least sticky
       //   A sequence of intermixed === and <==, which implies <==
       //   Other sequences are prohibited, such as A ==> B =!= C <== D,
       //                             which implies (A =!= D) | (A === false)
+
+  | 'sum' '(' t_localVariableDeclaration (';' t_localVariableDeclaration)*
+          ':' t_expressionDetail
+          ':' t_expressionDetail
+          ')'
+
+
 //  | t_expression            // only = assignment allowed so these are invalid
 //      (  '='<assoc=right>
 //      | '+='<assoc=right> // a' += 'b would be a' = <a'current> + 'b
@@ -842,6 +852,7 @@ IMPORT        : 'import';
 INSTANCEOF    : 'instanceof';
 INT           : 'int';
 INTERFACE     : 'interface';
+INVARIANT     : 'invariant';
 JAVA          : 'java';
 LEMMA         : 'lemma';
 LONG          : 'long';
@@ -868,6 +879,7 @@ THROWS        : 'throws';
 TLANGUAGE     : 'tlanguage' ;
 TRANSIENT     : 'transient';
 TRY           : 'try';
+VARIANT       : 'variant';
 VOID          : 'void';
 VOLATILE      : 'volatile';
 WHILE         : 'while';

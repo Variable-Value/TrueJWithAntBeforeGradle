@@ -38,6 +38,7 @@
 grammar TLantlr;
 
 import TJava;
+
 // @header {
 // package tlang; // provided in command line as "-package tlang"
 // }
@@ -417,8 +418,8 @@ t_defaultValue
   : 'default' t_elementValue
   ;
 
-// STATEMENTS / BLOCKS
 
+// STATEMENTS / BLOCKS
 
 t_block
   : openBrace='{'  t_blockStatement*  closeBrace='}'
@@ -426,8 +427,8 @@ t_block
 
 t_blockStatement
   : t_localVariableDeclaration ';'
-  | t_statement
   | t_typeDeclaration
+  | t_statement
   ;
 
 t_localVariableDeclaration
@@ -441,6 +442,8 @@ t_statement
   | 'if' t_parExpression t_statement ('else' t_statement)?                       # IfStmt
   | 'for' '(' t_forControl ')' t_statement                                       # ForStmt
   | 'while' t_parExpression t_statement                                          # WhileStmt
+  | 'variant' t_expression ';'                                                   # VariantStmt
+  | 'invariant' t_expression ';'                                                 # InvariantStmt
   | 'do' t_statement 'while' t_parExpression ';'                                 # DoStmt
   | 'try' t_block (t_catchClause+ t_finallyBlock? | t_finallyBlock)              # TryStmt
   | 'try' t_resourceSpecification t_block t_catchClause* t_finallyBlock?         # TryStmt
@@ -456,6 +459,15 @@ t_statement
   | t_expression '.' 'new' t_nonWildcardTypeArguments? t_innerCreator            # CreationStmt
   | UndecoratedIdentifier ':' t_statement                                        # LabelStmt
   | t_means                                                                      # MeansStmt
+  | t_given                                                                      # GivenStmt
+  | t_ERROR                                                                      # ERROR_STMT
+  ;
+
+/**
+ * Catch some errors caused by misspelled keywords
+ */
+t_ERROR
+  : t_identifier t_expression ';'
   ;
 
 t_assignable // left hand side or method argument referring to a modified object
@@ -551,7 +563,7 @@ t_expressionDetail // in order of most sticky to least sticky
   | t_expressionDetail ('*'|'/'|'%') t_expressionDetail                        # MultiplicativeExpr
   | t_expressionDetail ('+'|'-') t_expressionDetail                            # AdditiveExpr
   | t_expressionDetail ('<' '<' | '>' '>' '>' | '>' '>') t_expressionDetail    # ShiftExpr
-  | t_expressionDetail op=('<'|'<='|'='|'>='|'>'|'!=')  t_expressionDetail     # ConjRelationExpr
+  | t_expressionDetail op=('<'|'<='|'='|'>='|'>'|'!=') t_expressionDetail     # ConjRelationExpr
                                 // = is not assignment in expressions
       // Allowed conjunctive chains:
       //   A sequence of =
@@ -575,6 +587,12 @@ t_expressionDetail // in order of most sticky to least sticky
       //   A sequence of intermixed === and <==, which implies <==
       //   Other sequences are prohibited, such as A ==> B =!= C <== D,
       //                             which implies (A =!= D) | (A === false)
+
+  | ('sum' | 'prod' | 'forall' | 'forsome')
+          '(' t_localVariableDeclaration (';' t_localVariableDeclaration)*
+          ':' t_expressionDetail
+          ':' t_expressionDetail
+          ')'                                                                  # QuantifierExpr
 
 //  | t_expressionDetail     // only = assignment allowed
 //      (  '='<assoc=right>     // specified in rule (t_statement # AssignStmt)
@@ -665,6 +683,10 @@ t_means
   : MEANS t_expression ';'
   ;
 
+t_given
+  : GIVEN t_expression ';'
+  ;
+
 t_idDeclaration [String idType]
   : t_identifier
   ;
@@ -723,12 +745,14 @@ FINALLY       : 'finally';
 FLOAT         : 'float';
 FOR           : 'for';
 IF            : 'if';
+GIVEN         : 'given';
 GOTO          : 'goto';
 IMPLEMENTS    : 'implements';
 IMPORT        : 'import';
 INSTANCEOF    : 'instanceof';
 INT           : 'int';
 INTERFACE     : 'interface';
+INVARIANT     : 'invariant';
 LONG          : 'long';
 MEANS         : 'means';
 NATIVE        : 'native';
@@ -749,6 +773,7 @@ THROW         : 'throw';
 THROWS        : 'throws';
 TRANSIENT     : 'transient';
 TRY           : 'try';
+VARIANT       : 'variant';
 VOID          : 'void';
 VOLATILE      : 'volatile';
 WHILE         : 'while';

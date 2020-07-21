@@ -71,7 +71,7 @@ private static List<String> javaCompilerOptions = new ArrayList<>();
 static boolean xDiagnostics                        = false;
 static boolean xJavaTestOption                     = false;
 static boolean isGeneratedFilesDirectoryRequested  = false;
-static boolean isDecoratedFinalValueRequired       = false;
+static boolean isRequiringDecoratedFinalValue       = false;
 static boolean isCompileUnitInCommandLine          = false;
 
 static String commandLineCompileUnit = "";
@@ -388,7 +388,7 @@ saveGenerated( JavaFileHandler javaCollector
               exitWithCommandLineFormatError(args,
                     "ERROR: The compile unit code is missing after '-unit'");
             break;
-          case "-decorateFinal"    : isDecoratedFinalValueRequired = true; break;
+          case "-decorateFinal"    : isRequiringDecoratedFinalValue = true; break;
           case "-wg":
           case "-Xjavatest" : xJavaTestOption               = true; break;
           case "-Xdiagnostics"     : xDiagnostics                  = true; break;

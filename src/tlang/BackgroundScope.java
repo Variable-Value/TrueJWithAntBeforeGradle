@@ -74,7 +74,7 @@ public VarInfo getExistingVarInfo(String varName) {
     } else {
       VarInfo shadowingInfo = new VarInfo(originalInfo);
       if (shadowingInfo.getCurrentValueName() == null) {
-        final String valueName = "'"+ varName;
+        final String valueName = TUtil.decorator+ varName;
         shadowingInfo.setCurrentValueName(valueName);
         shadowingInfo.defineNewValue(valueName, shadowingInfo.getLineWhereDeclared());
       }
@@ -110,7 +110,7 @@ public Optional<VarInfo> getOptionalExistingVarInfo(String varName) {
       VarInfo shadowingInfo = new VarInfo(originalInfo.get());
       String shadowCurrentValueName = shadowingInfo.getCurrentValueName();
       if (shadowCurrentValueName == null || shadowCurrentValueName == "") {
-        final String valueName = "'"+ varName;
+        final String valueName = TUtil.decorator+ varName;
         shadowingInfo.setCurrentValueName(valueName);
         shadowingInfo.defineNewValue(valueName, shadowingInfo.getLineWhereDeclared());
       }

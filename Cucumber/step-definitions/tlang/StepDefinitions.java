@@ -71,9 +71,9 @@ public StepDefinitions() throws IOException {
   javaMgr = new JavaFileHandler(srcPath, options);
 }
 
-@Given("^requiring decorated final value names$")
-public void requiring_decorated_final_value_names() throws Throwable {
-    TCompiler.isDecoratedFinalValueRequired = true;
+@Given("^decorated final value names are required$")
+public void decorated_final_value_names_are_required() throws Throwable {
+  TCompiler.isRequiringDecoratedFinalValue = true;
 }
 
 @Given("^[Aa] valid run unit is$")
@@ -96,6 +96,13 @@ public void an_invalid_run_unit_is(String tSourceCode)
 @Then("^[Ww]e display all the error messages for inspection$")
 public void we_display_all_the_error_messages_for_inspection() {
   assertTrue("Here are the error messages:\n"+ errs.toString(), false);
+}
+
+@Then("^the following are in the error messages$")
+public void the_following_are_in_the_error_messages(String errorsToCheckFor) throws Throwable {
+  String[] requiredErrors = errorsToCheckFor.split("\\r?\\n");
+  for (String err : requiredErrors)
+    an_error_message_contains__(err);
 }
 
 @Then("^[Tt]he error messages are$")
@@ -219,12 +226,14 @@ public void notes(@SuppressWarnings("unused") String arbitraryText) {
 void runAllSteps(String tSourceCode) throws IOException, InterruptedException {
   assertNotNull("Code must be provided for processing", tSourceCode);
   tCode = tSourceCode;
+
   parse("", tCode);
   attemptContextCheck();
   attemptJavaCodeGeneration();
   attemptCompile(javaCodeFromT);
   attemptProofs();
-  TCompiler.isDecoratedFinalValueRequired = false;
+
+  TCompiler.isRequiringDecoratedFinalValue = false;
 }
 
 private void attemptProofs() {
@@ -299,6 +308,9 @@ private void parse(String name, String tCode) throws ParseCancellationException 
   tree = fastParse(parser, errs, counts);
 }
 
+/**
+ * Report all errors, if there are any.
+ */
 //TODO: remove this after replacing all uses with better msg. Actually put the
 //      msgs in ensure...() and then redirect all other uses to there.
 private void checkForErrors() {
@@ -307,9 +319,8 @@ private void checkForErrors() {
   }
 }
 
-/** checks semantics
- *
- * Visit the parse tree, finding and setting the packageName and topTypeName
+/**
+ * Check the Contextual syntax.
  */
 private void attemptContextCheck() {
   if (errs.hasErrs())
