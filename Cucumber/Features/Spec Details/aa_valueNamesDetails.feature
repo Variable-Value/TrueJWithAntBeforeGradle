@@ -314,13 +314,13 @@ Scenario: TODO: Assignment of an equality test requires the equality test to be 
   because assignment is right-associative and equality is left-associative there is a possibility
   for confusion when assigning the result of an equality test.
 
-      boolean a = b = c    could be misinterpreted as chained assignment
+      boolean a = b = c    could be misinterpreted as chained assignment or conjunctive equality
       boolean a = (b = c)  is required in this case
 
   Presently equality is treated as left associative, but we will require parenthesization in order
   to avoid confusion with conjunctive use. Later we hope to introduce conjunctive relational
   expressions such as "if (a = b = c) ..." testing for the equality of all of the operands. Then we
-  will relax the constraint on parenthesizing equality tests, but still keep the parenthese for the
+  will relax the constraint on parenthesizing equality tests, but still keep the parentheses for the
   equalities on the right-hand-side of assignment statements.
 
   When an invalid run unit is
@@ -330,27 +330,40 @@ Scenario: TODO: Assignment of an equality test requires the equality test to be 
     int a, b;
 
     void test() {
-      boolean fact1' = ('a = 'b);
-      means  (fact1' = ('a = 'b)); // Proven successfully
-
-      boolean fact2' = 'a = 'b;    // would be parsed as fact' = ('a = 'b) so parens are required
-      means  (fact2' = 'a = 'b);   // is also a syntax error, currently
+      boolean fact2' = 'a = 'b;    // Parentheses required for bool assignment: fact2' = ('a = 'b)
+      means   fact2' = ('a = 'b);
     }
 
     } // end class
     """
 
-  # TODO: uncomment these messages and implement them
-  #  Then an error message contains
-  #    """
-  #    The equality test 'a = 'b must be parenthesized before assignment to avoid confusion
-  #    """
-  #
-  # TODO: but remove this test once conjunctive relations are implemented
-  #  And an error message contains
-  #    """
-  #    Each equality expression must be parenthsized to avoid confusion with conjunctive equality
-  #    """
+    Then an error message contains
+      """
+      The right-hand side must be parenthesized to keep the assignment from looking like a conjunctive relational expression
+      """
+
+  When an invalid run unit is
+    """
+    class assignmentVsEquality {
+
+    int a, b;
+
+    void test() {
+      boolean fact2' = ('a = 'b);
+      means   fact2' === 'a = 'b;  // Use this one
+      means   fact2' = ('a = 'b);  //   or this one
+      means   fact2' = 'a = 'b;    // would be parsed as (fact' = 'a) & ('a = 'b),
+                                   //   so one of the above is required
+    }
+
+    } // end class
+    """
+
+    Then an error message contains
+      """
+      The code does not support the proof of the statement: fact2' = 'a = 'b
+      """
+
 
 Scenario: TODO: Back translation of comments requires absence of reserved characters
 
