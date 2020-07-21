@@ -24,27 +24,56 @@ Scenario: The while loop
   the body accomplishes its goal; the loop exit condition and the loop invariant, together, must
   imply the goal of the loop statement.
 
-  First we test a null case where the loop is never executed. Even here, we must ensure that the
-  invariant is maintained if the loop were executed.
+  Even when the loop is never executed, we
+  must ensure that the invariant is maintained as if the loop were executed.
+
+  # * a compile unit that parses is
+  * a valid run unit is
+    """
+    class MultiplyByAdding {
+
+    int product(int m', int n') {
+
+      given n' >= 0;
+
+      int 'product = 1;
+      int 'i = 0;
+      while ('i != n') {                  // (1)
+        variant 'i < n';
+        invariant 'product = m' * 'i;     // (2)
+
+        product' = 'product + m';
+        // means product' = m' * 'i + m';
+
+        i' = 'i + 1;
+        // means product' = m' * i';
+      }
+      // means i' = n' & product' = m' * i'; // (3)
+      return product';
+    }
+    means return' = n' * m';
+
+    }
+    """
 
   * a valid run unit is
     """
     class NullLoopExample {
-
-      boolean 'b;
+      private int n' = 0;
 
       void nullLoop() {
-        (n' --> n')
-        while 'n < 0 {
-          invar true;
-          variant 'n < 0;
+        int 'count = 0;
+        while ('count < n') { // ('count --> count')
+          invar 'count = sum(int i : 0 <=: 1 );
+          variant 'count < n';
 
-          n' = n + 1;
+          count' = 'count + 1;
         }
+        means count' = 0;
       }
-      means n' >= 0;
     }
     """
+
 
 #  # TODO:
 #  Given the assumption
