@@ -129,7 +129,7 @@ t_enumConstants
   ;
 
 t_enumConstant
-  : t_annotation* Identifier t_arguments? t_classBody?
+  : t_annotation* UndecoratedIdentifier t_arguments? t_classBody?
   ;
 
 t_enumBodyDeclarations
@@ -137,7 +137,7 @@ t_enumBodyDeclarations
   ;
 
 t_interfaceDeclaration
-  : 'interface' Identifier t_typeParameters? ('extends' t_typeList)? t_interfaceBody
+  : 'interface' UndecoratedIdentifier t_typeParameters? ('extends' t_typeList)? t_interfaceBody
   ;
 
 t_typeList
@@ -164,7 +164,7 @@ t_classBodyDeclaration
   ;
 
 t_initializer
-  : t_block
+  : t_block (t_finalMeans)?
   ;
 
 t_memberDeclaration
@@ -227,7 +227,11 @@ t_methodDeclaration
       (   t_methodBody
       | ';'
       )
-			t_means?
+      (t_finalMeans)?
+  ;
+
+t_methodBody
+  : t_block
   ;
 
 t_genericMethodDeclaration
@@ -236,7 +240,11 @@ t_genericMethodDeclaration
 
 t_constructorDeclaration
   : UndecoratedIdentifier t_formalParameters ('throws' t_qualifiedNameList)?
-      t_constructorBody
+      t_constructorBody (t_finalMeans)?
+  ;
+
+t_constructorBody
+  : t_block
   ;
 
 t_genericConstructorDeclaration
@@ -381,14 +389,6 @@ t_lastFormalParameter
   : t_variableModifier* ty=t_type '...' t_initializedVariableDeclaratorId[$ty.text]
   ;
 
-t_methodBody
-  : t_block
-  ;
-
-t_constructorBody
-  : t_block
-  ;
-
 t_qualifiedName
   : t_identifier ('.' t_identifier)*
   ;
@@ -463,13 +463,13 @@ t_defaultValue
 // STATEMENTS / BLOCKS
 
 t_block
-  : openBrace='{'  t_blockStatement*  closeBrace='}'
+  : openBrace='{'  t_blockStatement*  (t_markedFinalMeans)? closeBrace='}'
   ;
 
 t_blockStatement
   : t_localVariableDeclaration ';'
-  | t_statement
   | t_typeDeclaration
+  | t_statement
   ;
 
 t_localVariableDeclaration
@@ -500,26 +500,34 @@ t_statement
   | t_expression '.' 'new' t_nonWildcardTypeArguments? t_innerCreator            # CreationStmt
   | UndecoratedIdentifier ':' t_statement                                        # LabelStmt
   | t_means                                                                      # MeansStmt
-  | t_identifier t_expression                                                    # ERROR_STMT
+  | t_given                                                                      # GivenStmt
+  | t_ERROR                                                                      # ERROR_STMT
 	;
+
+/**
+ * Catch some errors caused by misspelled keywords
+ */
+t_ERROR
+  : t_identifier t_expression ';'
+  ;
 
 t_assignable // left hand side or method argument referring to a modified object
   : t_expression '[' t_expression ']'
   : (Identifier '.')* t_valueName ('.' Identifier)* // value name must be fresh
 	;
 
-t_locator
-  : t_identifier ('.' t_identifier)* // one Identifier must be  either a class name or old value name
-	     // TODO: allow general class names, e.g. generics
-	;
+t_catchClause
+  : 'catch' '(' t_variableModifier* t_catchType t_identifier ')' t_block
+  ;
 
 t_methodCallStatement
   : t_locator '(' t_expressionList? ')'
   ;
 
-t_catchClause
-  : 'catch' '(' t_variableModifier* t_catchType t_identifier ')' t_block
-  ;
+t_locator
+  : t_identifier ('.' t_identifier)* // one Identifier must be  either a class name or old value name
+	     // TODO: allow general class names, e.g. generics
+	;
 
 t_catchType
   : t_qualifiedName ('|' t_qualifiedName)*
@@ -785,12 +793,32 @@ t_arguments
   : '(' t_expressionList? ')'
   ;
 
+t_finalMeans
+  : t_markedFinalMeans
+  | t_genericFinalMeans
+  ;
+
+t_markedFinalMeans
+  : FINAL t_genericFinalMeans
+
+/**
+ * The final means which collects both marked and unmarked final means. Therefore this can be used
+ * by the parser to mark both as "final".
+ */
+t_genericFinalMeans
+  : t_means
+  ;
+
 t_means
   : MEANS t_expression ';'
   ;
 
 t_idDeclaration [String idType]
   : t_identifier ('[' ']' {$idType = $idType+"[]";})*
+  ;
+
+t_given
+  : GIVEN t_expression ';'
   ;
 
 t_identifier
@@ -843,7 +871,9 @@ FINAL         : 'final';
 FINALLY       : 'finally';
 FLOAT         : 'float';
 FOR           : 'for';
+FORALL        : 'forall';
 FORMAL        : 'formal';
+FORSOME       : 'forsome';
 IF            : 'if';
 GIVEN         : 'given';
 GOTO          : 'goto';
@@ -861,12 +891,14 @@ NATIVE        : 'native';
 NEW           : 'new';
 PACKAGE       : 'package';
 PRIVATE       : 'private';
+PROD          : 'prod';
 PROTECTED     : 'protected';
 PUBLIC        : 'public';
 RETURN        : 'return';
 SHORT         : 'short';
 STATIC        : 'static';
 STRICTFP      : 'strictfp';
+SUM           : 'sum';
 SUPER         : 'super';
 SWITCH        : 'switch';
 SYNCHRONIZED  : 'synchronized';
@@ -883,6 +915,21 @@ VARIANT       : 'variant';
 VOID          : 'void';
 VOLATILE      : 'volatile';
 WHILE         : 'while';
+
+// §3.10.3 Boolean Literals
+
+// Repeated here (from TJava.g4) because definition of UndecoratedIdentifier
+//   would subsume true and false
+BooleanLiteral
+    :   'true'
+    |   'false'
+    ;
+
+// §3.10.7 The Null Literal
+
+NullLiteral
+    :   'null'
+    ;
 
 // §3.11 Separators
 
@@ -918,7 +965,7 @@ SingleQuote : '\'' ;
 
 
 //
-// Whitespace and comments (just overriding "skip")
+// Whitespace and comments (override "skip" to "channel(HIDDEN)")
 //
 
 WS
