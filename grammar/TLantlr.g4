@@ -159,7 +159,7 @@ t_classBodyDeclaration
   ;
 
 t_initializer
-  : t_block
+  : t_block (t_finalMeans)?
   ;
 
 t_memberDeclaration
@@ -185,7 +185,11 @@ t_methodDeclaration
       ( t_methodBody
       | ';'
       )
-      t_means?
+      (t_finalMeans)?
+  ;
+
+t_methodBody
+  : t_block
   ;
 
 t_genericMethodDeclaration
@@ -194,7 +198,11 @@ t_genericMethodDeclaration
 
 t_constructorDeclaration
   : UndecoratedIdentifier t_formalParameters ('throws' t_qualifiedNameList)?
-      t_constructorBody
+      t_constructorBody (t_finalMeans)?
+  ;
+
+t_constructorBody
+  : t_block
   ;
 
 t_genericConstructorDeclaration
@@ -339,14 +347,6 @@ t_lastFormalParameter
   : t_variableModifier* ty=t_type '...' t_initializedVariableDeclaratorId[$ty.text]
   ;
 
-t_methodBody
-  : t_block
-  ;
-
-t_constructorBody
-  : t_block
-  ;
-
 t_qualifiedName
   : t_identifier ('.' t_identifier)*
   ;
@@ -422,7 +422,7 @@ t_defaultValue
 // STATEMENTS / BLOCKS
 
 t_block
-  : openBrace='{'  t_blockStatement*  closeBrace='}'
+  : openBrace='{'  t_blockStatement*  (t_markedFinalMeans)? closeBrace='}'
   ;
 
 t_blockStatement
@@ -563,7 +563,7 @@ t_expressionDetail // in order of most sticky to least sticky
   | t_expressionDetail ('*'|'/'|'%') t_expressionDetail                        # MultiplicativeExpr
   | t_expressionDetail ('+'|'-') t_expressionDetail                            # AdditiveExpr
   | t_expressionDetail ('<' '<' | '>' '>' '>' | '>' '>') t_expressionDetail    # ShiftExpr
-  | t_expressionDetail op=('<'|'<='|'='|'>='|'>'|'!=') t_expressionDetail     # ConjRelationExpr
+  | t_expressionDetail op=('<'|'<='|'='|'>='|'>'|'!=') t_expressionDetail      # ConjRelationExpr
                                 // = is not assignment in expressions
       // Allowed conjunctive chains:
       //   A sequence of =
@@ -588,11 +588,8 @@ t_expressionDetail // in order of most sticky to least sticky
       //   Other sequences are prohibited, such as A ==> B =!= C <== D,
       //                             which implies (A =!= D) | (A === false)
 
-  | ('sum' | 'prod' | 'forall' | 'forsome')
-          '(' t_localVariableDeclaration (';' t_localVariableDeclaration)*
-          ':' t_expressionDetail
-          ':' t_expressionDetail
-          ')'                                                                  # QuantifierExpr
+  | ('sum' | 'prod' | 'forall' | 'forsome' | 'set' | 'list' | 'bag')
+    t_quantifiedExpression                                                     # QuantifierExpr
 
 //  | t_expressionDetail     // only = assignment allowed
 //      (  '='<assoc=right>     // specified in rule (t_statement # AssignStmt)
@@ -609,6 +606,23 @@ t_expressionDetail // in order of most sticky to least sticky
 //      | '%='<assoc=right>
 //      )
 //      t_expressionDetail
+  ;
+
+/**
+ * The body of a quantified expression. The range constraint may be a collection of a super type of
+ * the identifiers, or else it is a boolean expression intended to restrict the possible range of
+ * the identifiers. The then-expression is an expression of the type needed by the type of the
+ * quantifier.
+ */
+t_quantifiedExpression
+  : '(' t_type t_identifier (',' t_identifier)*
+    ':' (t_rangeConstraint)?
+    ':' (t_expression)
+    ')'
+  ;
+
+t_rangeConstraint
+  : t_expression
   ;
 
 t_primary // any changes must coordinate with TLantlrProofVisitor.isBooleanPrimary()
@@ -679,6 +693,23 @@ t_arguments
   : '(' t_expressionList? ')'
   ;
 
+t_finalMeans
+  : t_markedFinalMeans
+  | t_genericFinalMeans
+  ;
+
+t_markedFinalMeans
+  : FINAL t_genericFinalMeans
+  ;
+
+/**
+ * The final means which collects both marked and unmarked final means. Therefore this can be used
+ * by the parser to mark both as "final".
+ */
+t_genericFinalMeans
+  : t_means
+  ;
+
 t_means
   : MEANS t_expression ';'
   ;
@@ -700,10 +731,10 @@ t_identifierDetail
 	;
 
 t_valueName
-  : // t_invalidIdentifierWithReservedString
-    PreValueName
+  : PreValueName
   | MidValueName
   | PostValueName
+  // | t_invalidIdentifierWithReservedString
   ;
 
 // t_invalidIdentifierWithReservedString
@@ -744,6 +775,8 @@ FINAL         : 'final';
 FINALLY       : 'finally';
 FLOAT         : 'float';
 FOR           : 'for';
+FORALL        : 'forall';
+FORSOME       : 'forsome';
 IF            : 'if';
 GIVEN         : 'given';
 GOTO          : 'goto';
@@ -759,12 +792,14 @@ NATIVE        : 'native';
 NEW           : 'new';
 PACKAGE       : 'package';
 PRIVATE       : 'private';
+PROD          : 'prod';
 PROTECTED     : 'protected';
 PUBLIC        : 'public';
 RETURN        : 'return';
 SHORT         : 'short';
 STATIC        : 'static';
 STRICTFP      : 'strictfp';
+SUM           : 'sum';
 SUPER         : 'super';
 SWITCH        : 'switch';
 SYNCHRONIZED  : 'synchronized';
