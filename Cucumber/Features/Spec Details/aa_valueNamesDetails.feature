@@ -157,7 +157,7 @@ Scenario: Initial values of a variable must be correctly decorated
 
   When an invalid run unit is
     """
-    class SwapError3 {
+    class SwapError4 {
 
     int a, b;
 
@@ -187,7 +187,7 @@ Scenario: Initial values of a variable must be correctly decorated
   #
   #  When an invalid run unit is
   #  """
-  #  class SwapError4 {
+  #  class SwapErrorXXX {
   #
   #  int a, b;
   #
@@ -364,6 +364,55 @@ Scenario: TODO: Assignment of an equality test requires the equality test to be 
       The code does not support the proof of the statement: fact2' = 'a = 'b
       """
 
+Scenario: The scope of value names
+
+  We wish to ensure that a final means-statement summarizes executable code in a way that we can use
+  it to understand that code without investigating the code. (By executable code we mean methods,
+  constructors, and initialization blocks). Initial value names for fields and final value names for
+  fields are easy to understand, and they are allowed, but other value names must be explicitly
+  constructed in the means-statement so that their meaning is clear. These other value names will be
+  explained in the specification of methods.
+
+  On the other hand, within the definition of executable code intermediate (mid-decorated) value
+  names for both fields and local variables may be assigned values and their scope does not end
+  until the scope of the variable ends. But these mid-decorated value names for a field do not keep
+  their meaning outside the excutable code, and the final means-statements are consider to be
+  outside of the code.
+
+  Therefore in the following example, the intermediate value a'start is defined in the method and
+  can be used in the internal means statement, but not the final means statement.
+
+  When an invalid run unit is
+    """
+    class SwapError5 {
+
+    int a, b;
+
+    void swap1() {
+      a'start = 'a;
+      a' = 'b;
+      b' = a'start;
+      means(a'start = 'a && a' = 'b && b' = a'start);
+    }
+    means(a'start = 'a && a' = 'b && b' = a'start);
+
+    void swap2() {
+      a'start = 'a;
+      a' = 'b;
+      b' = a'start;
+      means(a'start = 'a && a' = 'b && b' = a'start);
+      final means(b' = a'start);
+    }
+
+    } // end class
+
+    """
+    Then the following are in the error messages
+    """
+    11:6 for <a'start>: Mid-decorated value names are not allowed in a final means-statement
+    11:38 for <a'start>: Mid-decorated value names are not allowed in a final means-statement
+    18:19 for <a'start>: Mid-decorated value names are not allowed in a final means-statement
+    """
 
 Scenario: TODO: Back translation of comments requires absence of reserved characters
 

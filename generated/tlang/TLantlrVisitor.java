@@ -149,6 +149,12 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitT_methodDeclaration(TLantlrParser.T_methodDeclarationContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link TLantlrParser#t_methodBody}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitT_methodBody(TLantlrParser.T_methodBodyContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link TLantlrParser#t_genericMethodDeclaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -160,6 +166,12 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitT_constructorDeclaration(TLantlrParser.T_constructorDeclarationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link TLantlrParser#t_constructorBody}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitT_constructorBody(TLantlrParser.T_constructorBodyContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link TLantlrParser#t_genericConstructorDeclaration}.
 	 * @param ctx the parse tree
@@ -320,18 +332,6 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitT_lastFormalParameter(TLantlrParser.T_lastFormalParameterContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link TLantlrParser#t_methodBody}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitT_methodBody(TLantlrParser.T_methodBodyContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link TLantlrParser#t_constructorBody}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitT_constructorBody(TLantlrParser.T_constructorBodyContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link TLantlrParser#t_qualifiedName}.
 	 * @param ctx the parse tree
@@ -886,6 +886,18 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeCastExpr(TLantlrParser.TypeCastExprContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link TLantlrParser#t_quantifiedExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitT_quantifiedExpression(TLantlrParser.T_quantifiedExpressionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link TLantlrParser#t_rangeConstraint}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitT_rangeConstraint(TLantlrParser.T_rangeConstraintContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link TLantlrParser#t_primary}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -963,6 +975,24 @@ public interface TLantlrVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitT_arguments(TLantlrParser.T_argumentsContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link TLantlrParser#t_finalMeans}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitT_finalMeans(TLantlrParser.T_finalMeansContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link TLantlrParser#t_markedFinalMeans}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitT_markedFinalMeans(TLantlrParser.T_markedFinalMeansContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link TLantlrParser#t_genericFinalMeans}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitT_genericFinalMeans(TLantlrParser.T_genericFinalMeansContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link TLantlrParser#t_means}.
 	 * @param ctx the parse tree

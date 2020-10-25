@@ -35,8 +35,15 @@ private static final String invalidCharsMsg
  * initialization */
 private boolean isInExecutable = false;
 
+/** Is Context in the construction of a name of a variable or value for
+ * assignment, i.e., assignable (LHS) or method parameter
+ */
+private boolean isInAssignment = false;
+
 /** Is Context in non-executable logic statement, e.g., constraint or means, but not conjecture */
 private boolean isInLogic = false;
+
+private boolean isInFinalMeans = false;
 
 /** Are we in executable code nested within a conditional statement, e.g., then-block or else-block
  * of an if-then-else? */
@@ -49,11 +56,6 @@ private boolean isInInsideConditionalStatement() {
 
 private static final HashSet<String> EMPTY_HASH_SET = new HashSet<>(0);
 private HashSet<String> nestedValueNames = EMPTY_HASH_SET;
-
-/** Is Context in the construction of a name of a variable or value for
- * assignment, i.e., assignable (LHS) or method parameter
- */
-private boolean isInAssignment = false;
 
 private static final String program = "Context Check";
 Map<RuleContext, Scope> scopeMap;
@@ -241,27 +243,13 @@ public Void visitInitializedField(InitializedFieldContext ctx) {
    * Initialized Field names must be initial decorated or else correctly decorated final names.
    */
   private void checkForInitializedFieldDecorationErrors(final Token valueNameToken) {
-    if (isInitialDecorated(valueNameToken))
+    if (hasCorrectFinalDecoration(valueNameToken) || isInitialDecorated(valueNameToken))
       return;
 
-    if (isMidDecorated(valueNameToken)) {
-      collectErrorForMidDecoratedField(valueNameToken);
-      return;
-    }
-
-    if (hasCorrectFinalDecoration(valueNameToken) )
-      return;
-
-    final String msg = "Must use initial or correct final decoration "
+    final String msg = "Must use initial or final decoration "
                      + "if the field is declared with an initial value";
     errs.collectError(program, valueNameToken, msg);
     defineValueToMakeFollowingMessagesMoreUseful(valueNameToken);
-  }
-
-  private void collectErrorForMidDecoratedField(final Token valueNameToken) {
-    final String msg = String.format
-        ("Field declaration %s cannot be mid-decorated", valueNameToken.getText());
-    errs.collectError(program, valueNameToken, msg);
   }
 
 private void defineValueToMakeFollowingMessagesMoreUseful(final Token varOrValueNameToken) {
@@ -531,8 +519,20 @@ public Void visitT_given(T_givenContext ctx) {
 }
 
 @Override
+public Void visitT_genericFinalMeans(T_genericFinalMeansContext ctx) {
+  boolean oldInFinalMeans = isInFinalMeans;
+  isInFinalMeans = true;
+
+  visitChildren(ctx);
+
+  isInFinalMeans = oldInFinalMeans;
+  return null;
+}
+
+
+@Override
 public Void visitT_means(T_meansContext ctx) {
-  final boolean oldInLogic = isInLogic;
+  boolean oldInLogic = isInLogic;
   isInLogic = true;
 
   visitChildren(ctx);
@@ -543,7 +543,7 @@ public Void visitT_means(T_meansContext ctx) {
 
 @Override
 public Void visitT_expression(T_expressionContext ctx) {
-  final boolean oldInAssignment = isInAssignment;
+  boolean oldInAssignment = isInAssignment;
   isInAssignment = false;
 
   visitChildren(ctx);
@@ -557,13 +557,11 @@ public Void visitT_identifier(T_identifierContext ctx) {
   final Token idToken = ctx.start;
   checkForReservedChars(idToken);
 
-  // TODO: try removing next line. Isn't isInExecutable sufficient?
-  if (currentScope != null)  // i.e., we are inside a type definition
-    if (isInExecutable)
-      if (isInAssignment)
-        checkAssignment(ctx);
-      else
-        checkReference(ctx);
+  if (isInExecutable)
+    if (isInAssignment)
+      checkAssignment(ctx);
+    else
+      checkReference(ctx);
 
   visitChildren(ctx);
   return null;
@@ -773,7 +771,9 @@ private boolean hasMismatchedFinalDecoration(String newName, String oldName) {
       || isUndecorated(newName)    && oldName.equals(newName + decorator);
 }
 
-/** The originally coded value name, or perhaps a kludged one to allow catching more error messages.
+/**
+ * The text of the originally coded value name or, in the case where the name is not valid, a
+ * kludged value name to allow checking to continue and catch errors.
  */
 private String workingValueName(Token valueNameToken) {
   if (TCompiler.isRequiringDecoratedFinalValue && isUndecorated(valueNameToken)) {
@@ -785,7 +785,8 @@ private String workingValueName(Token valueNameToken) {
   }
 }
 
-/** A value name generated purely in hopes of helping to generate additional helpful error messages
+/**
+ * A value name generated purely in hopes of helping to generate additional helpful error messages
  */
 private String kludgedValueName(Token valueNameToken) {
   return decorator + $T$ +  variableName(valueNameToken);
@@ -804,8 +805,8 @@ private void checkForAlreadyFinalValue(Token valueNameToken, VarInfo varInfo) {
 
   if (TCompiler.isRequiringDecoratedFinalValue && isUndecorated(valueNameToken))
       errs.collectError( program, valueNameToken, valueNameToken.getText() +" must be decorated");
-  
-  if (hasCorrectFinalDecoration(valueNameToken)) 
+
+  if (hasCorrectFinalDecoration(valueNameToken))
     return;
     // prior final decorations are caught in checkForPriorDefinitionOfValueName(Token, VarInfo)
 
@@ -884,6 +885,10 @@ private void checkReference(T_identifierContext ctx) {
     recoverFromMissingVariable(valueNameToken);
     return;
   }
+
+  if (isInFinalMeans && isMidDecorated(valueNameToken))
+    errs.collectError( program, valueNameToken
+        , "Mid-decorated value names are not allowed in a final means-statement");
 
   VarInfo varInfo = optionalVarInfo.get();
   if (varInfo.hasDefinedValue(valueName))
