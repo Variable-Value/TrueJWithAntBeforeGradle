@@ -5,12 +5,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.stream.Collectors;
 import alice.tuprolog.*;
 import alice.tuprolog.event.*;
-import cucumber.deps.com.thoughtworks.xstream.io.path.Path;
-import org.eclipse.jdt.annotation.*;
 
 
 //@formatter:off
