@@ -1,0 +1,63 @@
+/**
+ * Build the TrueJ compiler and package it for distribution.
+ */
+
+plugins {
+  id 'java-library'
+  id 'antlr'
+}
+
+repositories {
+  mavenCentral()
+}
+
+project.ext {
+    cucumberVersion = '5.2.0'
+}
+
+dependencies {
+  // https://mvnrepository.com/artifact/org.antlr/antlr4
+  antlr group: 'org.antlr', name: 'antlr4', version: '4.8-1'
+  // https://mvnrepository.com/artifact/org.antlr/antlr4
+  //antlr group: 'org.antlr', name: 'antlr4', version: '4.5.3'
+
+  // https://mvnrepository.com/artifact/org.eclipse.jdt/org.eclipse.jdt.annotation
+  implementation group: 'org.eclipse.jdt', name: 'org.eclipse.jdt.annotation', version: '2.2.600'
+
+  // https://mvnrepository.com/artifact/io.cucumber/cucumber-java
+  // implementation group: 'io.cucumber', name: 'cucumber-java', version: '6.4.0'
+
+  // https://mvnrepository.com/artifact/org.fitnesse/fitnesse
+  compileOnly group: 'org.fitnesse', name: 'fitnesse', version: '20200501'
+
+  // https://mvnrepository.com/artifact/it.unibo.alice.tuprolog/tuprolog
+  implementation group: 'it.unibo.alice.tuprolog', name: 'tuprolog', version: '3.3.0'
+
+  testImplementation 'io.cucumber:cucumber-java:' + cucumberVersion
+  testImplementation 'io.cucumber:cucumber-junit:' + cucumberVersion
+}
+
+generateGrammarSource {
+    //maxHeapSize = "64m"
+    arguments += ["-visitor", "-no-listener", "-long-messages"
+                  // , "-package", "tlang"
+                  // , "-o", "tlang" 
+                 ]
+
+}
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_13
+  targetCompatibility = JavaVersion.VERSION_13
+}
+
+sourceSets {
+  main {
+    java {
+      srcDir "src/main/java"
+      srcDir "build/generated-src/antlr/main"
+    }
+  }
+}
+
+version = '0.0.0'

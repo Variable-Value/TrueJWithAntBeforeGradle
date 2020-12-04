@@ -1,5 +1,0 @@
-|OutOfScopeForNow.CompilerFailure||21:01:49 Wed, Mar 09, 2011|
-|CurrentWorkSuite.LogicForSimpleMethods||14:51:46 Thu, May 06, 2010|
-|TestForallStatement||09:25:10 Tue, Mar 30, 2010|
-|CurrentWorkSuite.ReusingValuesWithinMethod||14:34:12 Sat, Sep 29, 2007|
-|SuiteOfSuccessfullTests||14:11:47 Sat, Sep 29, 2007|

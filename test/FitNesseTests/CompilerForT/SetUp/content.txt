@@ -1,7 +1,0 @@
-#!*****> Imports
-#|Import|
-#|TLantlr|
-#
-#**********!
-
-We can't set up the import for TLantlr because that conflicts with DoFixture.
